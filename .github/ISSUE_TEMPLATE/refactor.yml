@@ -1,0 +1,46 @@
+name: "♻️ 리팩토링"
+description: "코드 개선 및 구조 개선 시 사용하는 템플릿입니다."
+title: "[REFACTOR] "
+labels: ["refactor"]
+
+body:
+
+- type: textarea
+  id: target
+  attributes:
+  label: "📋 리팩토링 대상"
+  description: "개선할 코드를 설명해주세요."
+  placeholder: "예) AuthService의 중복 로직 제거"
+  validations:
+  required: true
+
+- type: textarea
+  id: reason
+  attributes:
+  label: "🎯 리팩토링 목적"
+  description: "왜 리팩토링이 필요한지 작성해주세요."
+  placeholder: "예) 가독성 향상 및 유지보수성 개선"
+  validations:
+  required: true
+
+- type: textarea
+  id: tasks
+  attributes:
+  label: "✅ 작업 목록"
+  description: "수행할 작업을 작성해주세요."
+  placeholder: |
+  - [ ] 중복 코드 제거
+  - [ ] 메서드 분리
+  - [ ] 테스트 코드 수정
+  - [ ] 코드 리뷰 반영
+  validations:
+  required: true
+
+- type: textarea
+  id: notes
+  attributes:
+  label: "📝 참고 사항"
+  description: "참고할 내용이 있으면 작성해주세요. (선택)"
+  placeholder: "관련 문서, 회의 내용 등"
+  validations:
+  required: false
