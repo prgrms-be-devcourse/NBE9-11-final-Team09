@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.chatroom.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,9 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatroomId;
 
-    @Column(nullable = false, unique = true)
-    private Long fundingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funding_id", nullable = false, unique = true)
+    private Funding funding;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

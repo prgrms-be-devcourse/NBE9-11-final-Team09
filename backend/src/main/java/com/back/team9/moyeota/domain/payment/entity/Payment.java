@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.payment.entity;
 
+import com.back.team9.moyeota.domain.participation.entity.Participation;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,9 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentId;
 
-    @Column(nullable = false)
-    private Long participationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participation_id", nullable = false)
+    private Participation participation;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

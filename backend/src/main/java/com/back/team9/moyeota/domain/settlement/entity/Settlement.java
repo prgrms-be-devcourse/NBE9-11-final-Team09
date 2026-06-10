@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.settlement.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,11 +18,13 @@ public class Settlement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long settlementId;
 
-    @Column(nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(nullable = false, unique = true)
-    private Long fundingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funding_id", nullable = false, unique = true)
+    private Funding funding;
 
     @Column(nullable = false)
     private Integer totalAmount;

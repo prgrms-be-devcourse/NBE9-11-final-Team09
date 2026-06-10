@@ -1,5 +1,8 @@
 package com.back.team9.moyeota.domain.participation.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.seat.entity.Seat;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,11 +22,13 @@ public class Participation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long participationId;
 
-    @Column(nullable = false)
-    private Long fundingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funding_id", nullable = false)
+    private Funding funding;
 
-    @Column(nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -36,10 +41,13 @@ public class Participation {
     @Column(nullable = false)
     private ParticipationStatus status;
 
-    @Column(nullable = false)
-    private Long outboundSeatId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outbound_seat_id", nullable = false)
+    private Seat outboundSeat;
 
-    private Long returnSeatId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "return_seat_id")
+    private Seat returnSeat;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
