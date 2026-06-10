@@ -1,4 +1,7 @@
 package com.back.team9.moyeota.domain.settlement.repository;
 
-public class SettlementRepository {
+import com.back.team9.moyeota.domain.settlement.entity.Settlement;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 }
