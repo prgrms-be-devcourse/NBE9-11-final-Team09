@@ -1,15 +1,15 @@
 package com.back.team9.moyeota.domain.notification.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Notification {
 
     @Id
@@ -32,7 +32,6 @@ public class Notification {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(nullable = false)
     private LocalDateTime emailSentAt;
 
     @Enumerated(EnumType.STRING)
