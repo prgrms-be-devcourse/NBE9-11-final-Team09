@@ -1,15 +1,15 @@
 package com.back.team9.moyeota.domain.payment.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Payment {
 
     @Id
@@ -26,10 +26,10 @@ public class Payment {
     @Column(nullable = false)
     private Integer amount;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String tossPaymentKey;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String orderId;
 
     @Enumerated(EnumType.STRING)

@@ -1,16 +1,18 @@
 package com.back.team9.moyeota.domain.participation.entity;
 
-import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"funding_id", "member_id"})
+})
 public class Participation {
 
     @Id
@@ -25,7 +27,7 @@ public class Participation {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus paymentStatus;
+    private ParticipationPaymentStatus paymentStatus;
 
     @Column(nullable = false)
     private Integer finalAmount;
@@ -35,9 +37,9 @@ public class Participation {
     private ParticipationStatus status;
 
     @Column(nullable = false)
-    private String outboundSeatId;
+    private Long outboundSeatId;
 
-    private String returnSeatId;
+    private Long returnSeatId;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

@@ -1,21 +1,22 @@
 package com.back.team9.moyeota.domain.admin.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Admin {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long adminId;
 
+    @Column(unique = true)
     private String loginId;
 
     private String password;
