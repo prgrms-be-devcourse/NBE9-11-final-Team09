@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.pathinfo.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,9 @@ public class PathInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long pathinfoId;
 
-    @Column(nullable = false)
-    private Long fundingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funding_id", nullable = false)
+    private Funding funding;
 
     @Column(nullable = false)
     private LocalDateTime departureTime;

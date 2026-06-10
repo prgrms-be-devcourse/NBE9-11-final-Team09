@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.notification.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,11 +18,13 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long notificationId;
 
-    @Column(nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(nullable = false)
-    private Long fundingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funding_id", nullable = false)
+    private Funding funding;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

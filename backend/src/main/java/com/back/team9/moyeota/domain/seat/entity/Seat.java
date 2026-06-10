@@ -1,5 +1,8 @@
 package com.back.team9.moyeota.domain.seat.entity;
 
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,12 +19,17 @@ public class Seat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long seatId;
 
-    private Long participationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participation_id")
+    private Participation participation;
 
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
-    @Column(nullable = false)
-    private Long pathinfoId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pathinfo_id", nullable = false)
+    private PathInfo pathinfo;
 
     @Column(nullable = false)
     private String seatNumber;
