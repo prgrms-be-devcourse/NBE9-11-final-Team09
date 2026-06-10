@@ -1,6 +1,6 @@
 package com.back.team9.moyeota.global.exception;
 
-import com.back.team9.moyeota.global.dto.ErrorResponse;
+import com.back.team9.moyeota.global.response.ErrorResponse;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

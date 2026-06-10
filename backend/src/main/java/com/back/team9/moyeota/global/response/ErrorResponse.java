@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.global.dto;
+package com.back.team9.moyeota.global.response;
 
 import com.back.team9.moyeota.global.error.ErrorCode;
 
