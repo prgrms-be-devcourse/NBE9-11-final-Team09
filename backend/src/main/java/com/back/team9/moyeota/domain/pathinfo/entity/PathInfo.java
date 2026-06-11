@@ -15,7 +15,7 @@ public class PathInfo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long pathinfoId;
+    private Long pathInfoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "funding_id", nullable = false)
@@ -35,6 +35,7 @@ public class PathInfo {
     private String arrivalAddress;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Region arrivalRegion;
 
     @Enumerated(EnumType.STRING)
@@ -49,4 +50,25 @@ public class PathInfo {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public static PathInfo create(
+            Funding funding,
+            LocalDateTime departureTime,
+            String departureAddress,
+            Region departureRegion,
+            String arrivalAddress,
+            Region arrivalRegion,
+            Direction direction
+    ) {
+        PathInfo pathInfo = new PathInfo();
+        pathInfo.funding = funding;
+        pathInfo.departureTime = departureTime;
+        pathInfo.departureAddress = departureAddress;
+        pathInfo.departureRegion = departureRegion;
+        pathInfo.arrivalAddress = arrivalAddress;
+        pathInfo.arrivalRegion = arrivalRegion;
+        pathInfo.direction = direction;
+        pathInfo.status = PathInfoStatus.PENDING;
+        return pathInfo;
+    }
 }
