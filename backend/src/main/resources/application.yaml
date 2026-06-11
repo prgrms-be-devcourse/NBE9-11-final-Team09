@@ -1,3 +1,19 @@
 spring:
   application:
     name: moyeota
+
+  profiles:
+    active: dev
+
+  output:
+    ansi:
+      enabled: always
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+
+springdoc:
+  api-docs:
+    enabled: false

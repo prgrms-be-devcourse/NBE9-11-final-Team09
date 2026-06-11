@@ -71,4 +71,23 @@ public class PathInfo {
         pathInfo.status = PathInfoStatus.PENDING;
         return pathInfo;
     }
+
+    public void update(
+            LocalDateTime departureTime,
+            String departureAddress,
+            Region departureRegion,
+            String arrivalAddress,
+            Region arrivalRegion,
+            Direction direction
+    ) {
+        this.departureTime = departureTime;
+        this.departureAddress = departureAddress;
+        this.departureRegion = departureRegion;
+        this.arrivalAddress = arrivalAddress;
+        this.arrivalRegion = arrivalRegion;
+        this.direction = direction;
+    }
+    public void cancel() {
+        this.status = PathInfoStatus.CANCELLED;
+    }
 }

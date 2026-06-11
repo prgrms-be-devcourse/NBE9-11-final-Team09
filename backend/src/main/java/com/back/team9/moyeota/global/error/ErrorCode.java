@@ -37,11 +37,15 @@ public enum ErrorCode {
     FUNDING_MIN_MAX_INVALID(HttpStatus.BAD_REQUEST,"FND003", "최소 인원을 최대 인원보다 높게 설정할 수 없습니다."),
     FUNDING_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST,"FND004", "이미 취소/삭제된 펀딩입니다."),
     PATHINFO_REQUIRED(HttpStatus.BAD_REQUEST,"FND005", "최소 1개의 노선이 필요합니다."),
+    FUNDING_RESTRICTED_UPDATE(HttpStatus.BAD_REQUEST, "FND006", "참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."),
+    INVALID_PARTICIPANT_RANGE(HttpStatus.BAD_REQUEST, "FND007", "최소 인원은 최대 인원보다 클 수 없습니다."),
+    INVALID_TOTAL_PRICE(HttpStatus.BAD_REQUEST, "FND008", "목표 금액은 0보다 커야 합니다." ),
 
     // [PTH] 운행노선
     PATHINFO_NOT_FOUND(HttpStatus.NOT_FOUND,"PTH001", "존재하지 않는 노선입니다."),
     SAME_DEPARTURE_ARRIVAL(HttpStatus.BAD_REQUEST,"PTH002", "출발지와 도착지가 동일할 수 없습니다."),
-
+    INVALID_PATH_COUNT(HttpStatus.BAD_REQUEST, "PTH003", "노선은 최대 2개까지 등록할 수 있습니다."),
+    INVALID_PATH_CONFIGURATION(HttpStatus.BAD_REQUEST, "PTH004", "노선과 왕복 여부가 일치하지 않습니다."),
     // [PTC] 참여
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND,"PTC001", "탑승 참여 내역을 찾을 수 없습니다."),
     DUPLICATE_PARTICIPATION(HttpStatus.CONFLICT,"PTC002", "이미 해당 펀딩에 참여 중입니다."),

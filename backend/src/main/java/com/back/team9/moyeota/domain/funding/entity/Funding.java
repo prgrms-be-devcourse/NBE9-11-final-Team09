@@ -55,6 +55,9 @@ public class Funding {
     @Enumerated(EnumType.STRING)
     private TripType tripType;
 
+    @Column(nullable = false)
+    private Integer totalPrice;
+
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -68,6 +71,7 @@ public class Funding {
             String content,
             LocalDate departureDate,
             BusType busType,
+            Integer totalPrice,
             Integer minParticipants,
             Integer maxParticipants,
             TripType tripType
@@ -79,6 +83,7 @@ public class Funding {
         funding.departureDate = departureDate;
         funding.status = FundingStatus.RECRUITING;
         funding.busType = busType;
+        funding.totalPrice = totalPrice;
         funding.minParticipants = minParticipants;
         funding.maxParticipants = maxParticipants;
         funding.paybackHold = false;
@@ -88,5 +93,33 @@ public class Funding {
 
     public void cancel() {
         this.status = FundingStatus.CANCELLED;
+    }
+
+    public void update(
+            String title,
+            String content,
+            BusType busType,
+            Integer minParticipants,
+            Integer maxParticipants,
+            Integer totalPrice,
+            TripType tripType,
+            LocalDate departureDate
+    ) {
+        this.title = title;
+        this.content = content;
+        this.busType = busType;
+        this.minParticipants = minParticipants;
+        this.maxParticipants = maxParticipants;
+        this.totalPrice = totalPrice;
+        this.tripType = tripType;
+        this.departureDate = departureDate;
+    }
+
+    public void updateTitleAndContent(
+            String title,
+            String content
+    ) {
+        this.title = title;
+        this.content = content;
     }
 }
