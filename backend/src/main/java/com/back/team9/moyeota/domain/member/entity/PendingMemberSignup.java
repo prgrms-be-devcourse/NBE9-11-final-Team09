@@ -95,6 +95,22 @@ public class PendingMemberSignup {
         }
     }
 
+    public void update(
+            String encodedPassword,
+            String name,
+            String nickname,
+            String phoneNumber,
+            String verificationCodeHash,
+            LocalDateTime expiresAt
+    ) {
+        this.encodedPassword = encodedPassword;
+        this.name = name;
+        this.nickname = nickname;
+        this.phoneNumber = phoneNumber;
+        this.verificationCodeHash = verificationCodeHash;
+        this.expiresAt = expiresAt;
+    }
+
     public Member toMember() {
         return Member.builder()
                 .email(email)

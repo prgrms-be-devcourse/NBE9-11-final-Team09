@@ -11,7 +11,5 @@ public interface PendingMemberSignupRepository
 
     Optional<PendingMemberSignup> findByEmail(String email);
 
-    void deleteByEmail(String email);
-
     void deleteByExpiresAtBefore(LocalDateTime dateTime);
 }

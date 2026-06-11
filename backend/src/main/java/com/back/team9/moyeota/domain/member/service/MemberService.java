@@ -45,16 +45,30 @@ public class MemberService {
         validateSignupRequest(request);
         validateMemberDuplicates(request.email(), request.nickname());
 
-        pendingSignupRepository.deleteByEmail(request.email());
-
         String verificationCode = generateVerificationCode();
+        String encodedPassword = passwordEncoder.encode(request.password());
+        String verificationCodeHash = passwordEncoder.encode(verificationCode);
+        LocalDateTime expiresAt = LocalDateTime.now()
+                .plusMinutes(VERIFICATION_EXPIRATION_MINUTES);
 
-        PendingMemberSignup pendingSignup = request.toEntity(
-                passwordEncoder.encode(request.password()),
-                passwordEncoder.encode(verificationCode),
-                LocalDateTime.now()
-                        .plusMinutes(VERIFICATION_EXPIRATION_MINUTES)
-        );
+        PendingMemberSignup pendingSignup = pendingSignupRepository
+                .findByEmail(request.email())
+                .map(existingSignup -> {
+                    existingSignup.update(
+                            encodedPassword,
+                            request.name(),
+                            request.nickname(),
+                            request.phoneNumber(),
+                            verificationCodeHash,
+                            expiresAt
+                    );
+                    return existingSignup;
+                })
+                .orElseGet(() -> request.toEntity(
+                        encodedPassword,
+                        verificationCodeHash,
+                        expiresAt
+                ));
 
         pendingSignupRepository.save(pendingSignup);
         emailVerificationService.sendVerificationCode(
