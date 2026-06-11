@@ -1,6 +1,5 @@
 package com.back.team9.moyeota.domain.seat.service;
 
-
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import java.time.Duration;
 @Slf4j  // 로그 출력용
 @Service // 좌석 HOLD 관련 Redis 작업 전담
 @RequiredArgsConstructor // final 필드 생성자 자동 생성
-public class SeatService {
+public class SeatRedisService {
     private final StringRedisTemplate redisTemplate; // Redis 문자열 저장/조회
 
     private static final String SEAT_KEY_PREFIX = "seat:"; // Redis Key 접두사
