@@ -3,7 +3,11 @@ package com.back.team9.moyeota.domain.funding.entity;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Funding {
 
     @Id
@@ -28,7 +33,7 @@ public class Funding {
     private String content;
 
     @Column(nullable = false)
-    private LocalDateTime departureDate;
+    private LocalDate departureDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -50,8 +55,34 @@ public class Funding {
     @Enumerated(EnumType.STRING)
     private TripType tripType;
 
+    @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    public static Funding create(
+            Member member,
+            String title,
+            String content,
+            LocalDate departureDate,
+            BusType busType,
+            Integer minParticipants,
+            Integer maxParticipants,
+            TripType tripType
+    ) {
+        Funding funding = new Funding();
+        funding.member = member;
+        funding.title = title;
+        funding.content = content;
+        funding.departureDate = departureDate;
+        funding.status = FundingStatus.RECRUITING;
+        funding.busType = busType;
+        funding.minParticipants = minParticipants;
+        funding.maxParticipants = maxParticipants;
+        funding.paybackHold = false;
+        funding.tripType = tripType;
+        return funding;
+    }
 }
