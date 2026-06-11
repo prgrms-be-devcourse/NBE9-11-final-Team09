@@ -3,7 +3,9 @@ package com.back.team9.moyeota.domain.funding.service;
 import com.back.team9.moyeota.domain.funding.dto.FundingCreateRequest;
 import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
 import com.back.team9.moyeota.domain.funding.dto.FundingDetailResponse;
+import com.back.team9.moyeota.domain.funding.dto.FundingListResponse;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 // TODO: 현재 타 도메인의 Repository 메서드를 그대로 사용중. 이후 서비스로 전환 필요
+// TODO: 완성 후 dto 필드 from 적용해서 코드 단축
 @Service
 @RequiredArgsConstructor
 public class FundingService {
@@ -94,20 +97,54 @@ public class FundingService {
                 funding.getFundingId(),
                 funding.getTitle(),
                 funding.getContent(),
+                funding.getMember().getMemberId(),
+                funding.getMember().getNickname(),
                 funding.getDepartureDate(),
                 funding.getStatus(),
                 funding.getBusType(),
+                0, //임시 현재 참가자
                 funding.getMinParticipants(),
                 funding.getMaxParticipants(),
                 funding.getTripType(),
                 pathInfos,
                 0L, //임시 채팅Id
-                0, //임시 현재 참가자
                 false, //임시 방장 여부
                 false, //임시 참여 여부
                 funding.getCreatedAt()
         );
     }
+    // 펀딩 목록 조회
+    @Transactional(readOnly = true)
+    public List<FundingListResponse> getFundingList() {
+
+        return fundingRepository.findAll()
+                .stream()
+                .map(funding -> new FundingListResponse(
+                        funding.getFundingId(),
+                        funding.getTitle(),
+                        funding.getMember().getNickname(),
+                        "",
+                        "",
+                        null,
+                        funding.getStatus(),
+                        funding.getMinParticipants(),
+                        funding.getMaxParticipants(),
+                        0
+                ))
+                .toList();
+    }
+
+    // 펀딩 취소
+    // TODO: 방장일 경우
+    public void cancelFunding(Long fundingId){
+        Funding funding = findFundingById(fundingId);
+        if (funding.getStatus() == FundingStatus.CANCELLED) {
+            throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
+        }
+        funding.cancel();
+    }
+
+
 
 
 

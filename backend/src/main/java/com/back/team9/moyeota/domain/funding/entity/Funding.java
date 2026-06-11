@@ -85,4 +85,8 @@ public class Funding {
         funding.tripType = tripType;
         return funding;
     }
+
+    public void cancel() {
+        this.status = FundingStatus.CANCELLED;
+    }
 }
