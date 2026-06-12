@@ -22,34 +22,14 @@ public class PaymentService {
     private final PaymentWriter paymentWriter;
 
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
-
-        if (paymentRepository.findByOrderId(request.orderId()).isPresent()) {
-            throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
-        }
-
-        //Todo: participation repository 업데이트 후 수정 필요
-//        Participation participation = participationRepository.findById(request.participationId())
-//                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
-//
-//        if (!request.amount().equals(participation.getFinalAmount())) {
-//            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
-//        }
-
-        TossConfirmResponse tossResponse = tossPaymentClient.confirm(
-                request.paymentKey(),
-                request.orderId(),
-                request.amount()
-        );
-
-        //Todo: participation repository 업데이트 후 수정 필요
-        Payment payment = request.toEntity(null, tossResponse.paymentKey(), PaymentStatus.PAID, PaymentType.DEPOSIT );
-        Payment savePayment = paymentWriter.save(payment);
-
-        return PaymentResponse.from(savePayment);
-
+        return confirmPayment(request, PaymentType.DEPOSIT);
     }
 
     public PaymentResponse confirmBalance(PaymentConfirmRequest request) {
+        return confirmPayment(request, PaymentType.BALANCE);
+    }
+
+    private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType) {
 
         if (paymentRepository.findByOrderId(request.orderId()).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
@@ -70,10 +50,9 @@ public class PaymentService {
         );
 
         //Todo: participation repository 업데이트 후 수정 필요
-        Payment payment = request.toEntity(null, tossResponse.paymentKey(), PaymentStatus.PAID, PaymentType.BALANCE );
+        Payment payment = request.toEntity(null, tossResponse.paymentKey(), PaymentStatus.PAID, paymentType);
         Payment savePayment = paymentWriter.save(payment);
 
         return PaymentResponse.from(savePayment);
-
     }
 }
