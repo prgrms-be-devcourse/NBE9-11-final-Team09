@@ -1,7 +1,10 @@
 package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.EmailVerificationConfirmRequest;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.dto.MemberSignupRequest;
+import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+
+    private final MemberLoginService memberLoginService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> requestSignup(
@@ -39,6 +44,19 @@ public class MemberController {
         return ResponseEntity.ok(new ApiResponse<>(
                 "USR_EMAIL_VERIFICATION_SUCCESS",
                 "이메일 인증 및 회원가입이 완료되었습니다."
+        ));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<MemberLoginResponse>> login(
+            @Valid @RequestBody MemberLoginRequest request
+    ) {
+        MemberLoginResponse response = memberLoginService.login(request);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_LOGIN_SUCCESS",
+                "로그인 성공",
+                response
         ));
     }
 }
