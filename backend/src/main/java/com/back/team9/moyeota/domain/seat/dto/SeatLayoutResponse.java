@@ -10,7 +10,7 @@ public record SeatLayoutResponse(
 ) {
 
     // SeatLayoutResponse 생성
-    public static SeatLayoutResponse of(
+    public static SeatLayoutResponse from(
             Long pathId,
             String busType,
             List<SeatResponse> seats

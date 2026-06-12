@@ -79,28 +79,6 @@ public class SeatRedisService {
         }
     }
 
-    // 현재 좌석이 HOLD 상태인지 확인
-    public boolean isHeld(Long seatId) {
-        try {
-            return Boolean.TRUE.equals(redisTemplate.hasKey(generateKey(seatId))); // Redis Key 존재 여부 확인
-        } catch (Exception e) {
-            // Redis 장애 시 AVAILABLE로 간주
-            log.error("Redis 장애 발생 - 홀딩 여부 확인 실패. seatId={}", seatId, e);
-            return false;
-        }
-    }
-
-    // 현재 좌석을 선점한 사용자 조회
-    public Long getHoldMemberId(Long seatId) {
-        try {
-            String value = redisTemplate.opsForValue().get(generateKey(seatId));
-            return value != null ? Long.parseLong(value) : null;
-        } catch (Exception e) {
-            log.error("Redis 장애 발생 - 홀딩 유저 조회 실패. seatId={}", seatId, e);
-            return null;
-        }
-    }
-
     // 여러 좌석의 선점 유저 ID를 한 번에 조회 (N+1 최적화)
     // 기존: 좌석마다 GET 호출 → Redis 조회 N번 발생
     // 개선: MGET으로 여러 Key를 한 번에 조회 → Redis 왕복 1회

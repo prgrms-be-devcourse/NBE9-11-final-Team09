@@ -83,7 +83,7 @@ public class SeatService {
                 .toList();
 
         // 전체 좌석 배치도 응답 반환
-        return SeatLayoutResponse.of(
+        return SeatLayoutResponse.from(
                 pathId,
                 "TEMP", // TODO: Funding의 busType 연결 예정
                 seatResponses
