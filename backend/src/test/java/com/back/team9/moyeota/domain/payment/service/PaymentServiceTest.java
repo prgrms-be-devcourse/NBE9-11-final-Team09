@@ -371,7 +371,7 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.refund(1L, request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(ErrorCode.PAYMENT_ALREADY_COMPLETED));
+                        .isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
         verify(paymentWriter, never()).update(any(), any());

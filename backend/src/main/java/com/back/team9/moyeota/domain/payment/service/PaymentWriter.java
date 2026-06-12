@@ -21,6 +21,6 @@ public class PaymentWriter {
     @Transactional
     public Payment update(Payment payment, PaymentStatus status) {
         payment.updateStatus(status);
-        return payment;
+        return paymentRepository.save(payment);
     }
 }

@@ -62,8 +62,11 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        if(payment.getStatus()!=PaymentStatus.PAID) {
-            throw new BusinessException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new BusinessException(ErrorCode.ALREADY_REFUNDED);
+        }
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
         tossPaymentClient.cancel(
