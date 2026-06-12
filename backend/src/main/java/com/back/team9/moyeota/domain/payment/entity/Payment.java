@@ -45,4 +45,8 @@ public class Payment {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public void updateStatus(PaymentStatus status){
+        this.status = status;
+    }
 }
