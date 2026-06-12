@@ -23,6 +23,11 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,"USR004", "이메일 인증이 완료되지 않았습니다."),
     USER_ALREADY_WITHDRAWN(HttpStatus.FORBIDDEN,"USR005", "탈퇴한 회원입니다."),
     SOCIAL_LOGIN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"USR006", "소셜 로그인 처리 중 오류가 발생했습니다."),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "USR007", "이미 사용 중인 닉네임입니다."),
+    INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "USR008", "비밀번호는 영문+숫자+특수문자 8자리 이상이어야 합니다."),
+    INVALID_PHONE_NUMBER_FORMAT(HttpStatus.BAD_REQUEST, "USR009", "전화번호 형식이 올바르지 않습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "USR010", "인증코드가 올바르지 않습니다."),
+    VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "USR011", "인증코드가 만료되었습니다."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
