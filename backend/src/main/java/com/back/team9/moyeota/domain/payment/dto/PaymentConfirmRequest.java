@@ -16,10 +16,10 @@ public record PaymentConfirmRequest(
         @NotNull Long participationId
         ) {
 
-    public Payment toEntity(Participation participation, String tossPaymentKey, PaymentStatus status) {
+    public Payment toEntity(Participation participation, String tossPaymentKey, PaymentStatus status, PaymentType paymentType) {
         return Payment.builder()
                 .participation(participation)
-                .paymentType(PaymentType.DEPOSIT)
+                .paymentType(paymentType)
                 .amount(this.amount)
                 .tossPaymentKey(tossPaymentKey)
                 .orderId(this.orderId)
