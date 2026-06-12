@@ -2,6 +2,9 @@ package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
+import com.back.team9.moyeota.domain.member.service.MemberLoginService;
+import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberService memberService;
+
+    @MockitoBean
+    private MemberLoginService memberLoginService;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -106,5 +112,71 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(memberService).confirmEmailVerification(any());
+    }
+
+    @Test
+    @DisplayName("유효한 로그인 요청 시 200 OK와 토큰을 반환한다")
+    void loginWithValidRequestReturnsOkAndTokens() throws Exception {
+        // Given
+        MemberLoginResponse response = new MemberLoginResponse(
+                "access-token",
+                "refresh-token",
+                "Bearer",
+                3600,
+                1209600,
+                new MemberLoginResponse.UserResponse(
+                        1L,
+                        "moyeota@example.com",
+                        "홍길동",
+                        "모여타요"
+                )
+        );
+
+        when(memberLoginService.login(any())).thenReturn(response);
+
+        String requestBody = """
+            {
+              "email": "moyeota@example.com",
+              "password": "Password123!"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(post("/api/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_LOGIN_SUCCESS"))
+                .andExpect(jsonPath("$.data.accessToken")
+                        .value("access-token"))
+                .andExpect(jsonPath("$.data.refreshToken")
+                        .value("refresh-token"))
+                .andExpect(jsonPath("$.data.tokenType")
+                        .value("Bearer"))
+                .andExpect(jsonPath("$.data.user.userId").value(1));
+
+        verify(memberLoginService).login(any());
+    }
+
+    @Test
+    @DisplayName("로그인 필수 입력값이 누락되면 400 Bad Request를 반환한다")
+    void loginWithMissingRequiredFieldsReturnsBadRequest() throws Exception {
+        // Given
+        String requestBody = """
+            {
+              "email": "",
+              "password": ""
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(post("/api/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberLoginService);
     }
 }

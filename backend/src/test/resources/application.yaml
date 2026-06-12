@@ -1,0 +1,21 @@
+spring:
+  mail:
+    host: localhost
+    port: 3025
+    username: test@example.com
+    password: test-password
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+toss:
+  secret-key: test-secret-key
+  base-url: https://api.tosspayments.com
+
+jwt:
+  secret: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+  access-token-expiration: 3600000
+  refresh-token-expiration: 1209600000
