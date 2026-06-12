@@ -23,7 +23,7 @@ public class SeatController {
     //@Operation(summary = "특정 버스 좌석 배치도 조회") // Swagger API 설명
     @GetMapping("/pathinfos/{pathId}/seats") // GET /api/pathinfos/{pathId}/seats
     public ResponseEntity<ApiResponse<SeatLayoutResponse>> getSeatLayout(
-            @PathVariable Long pathId // 조회할 노선 ID
+            @PathVariable("pathId") Long pathId // 조회할 노선 ID
     ) {
 
         Long currentMemberId = 1L; //TODO: 임시 테스트용 회원 ID (인증 연동 후 제거)
@@ -42,7 +42,7 @@ public class SeatController {
     //@Operation(summary = "좌석 선점 (5분 홀딩)") // Swagger API 설명
     @PostMapping("/seats/{seatId}/hold") // POST /api/seats/{seatId}/hold
     public ResponseEntity<ApiResponse<SeatResponse>> holdSeat(
-            @PathVariable Long seatId // 선점할 좌석 ID
+            @PathVariable("seatId") Long seatId // 선점할 좌석 ID
     ) {
 
         Long currentMemberId = 1L; //TODO: 임시 테스트용 회원 ID (인증 연동 후 제거)

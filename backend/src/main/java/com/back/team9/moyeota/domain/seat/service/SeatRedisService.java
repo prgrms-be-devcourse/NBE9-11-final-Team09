@@ -22,6 +22,17 @@ public class SeatRedisService {
     private static final String SEAT_KEY_PREFIX = "seat:"; // Redis Key 접두사
     private static final Duration HOLD_DURATION = Duration.ofSeconds(300); // HOLD 5분 유지
 
+    // Lua 스크립트를 상수로 정의하여 재사용 (매 호출마다 새 객체 생성 방지)
+    private static final org.springframework.data.redis.core.script.RedisScript<Long> RELEASE_SCRIPT =
+            org.springframework.data.redis.core.script.RedisScript.of(
+                    "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                            "return redis.call('del', KEYS[1]) " +
+                            "else " +
+                            "return 0 " +
+                            "end",
+                    Long.class
+            );
+
     //Redis Key 생성, 예: seatId=3 → seat:3
     private String generateKey(Long seatId) {
         return SEAT_KEY_PREFIX + seatId;
@@ -56,20 +67,11 @@ public class SeatRedisService {
     public void releaseSeat(Long seatId, Long memberId) {
         String key = generateKey(seatId);
 
-        // 내 것인지 확인 후 삭제를 원자적으로 처리하는 Lua 스크립트
-        // KEYS[1] = key, ARGV[1] = memberId
-        // 값이 일치하면 삭제(1 반환), 불일치하면 아무것도 안 함(0 반환)
-        String script = "if redis.call('get', KEYS[1]) == ARGV[1] then " +
-                "return redis.call('del', KEYS[1]) " +
-                "else " +
-                "return 0 " +
-                "end";
-
         try {
-            // 값 비교와 삭제를 하나의 Redis 명령으로 처리
+            // RELEASE_SCRIPT 상수 재사용 (매 호출마다 새 객체 생성 방지)
             redisTemplate.execute(
-                    new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, Long.class),
-                    java.util.Collections.singletonList(key),
+                    RELEASE_SCRIPT,
+                    Collections.singletonList(key),
                     String.valueOf(memberId)
             );
         } catch (Exception e) {
