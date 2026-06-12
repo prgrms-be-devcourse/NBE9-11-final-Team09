@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service // 좌석 도메인 비즈니스 로직 담당
 @RequiredArgsConstructor // final 필드 생성자 자동 생성
@@ -32,14 +33,26 @@ public class SeatService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
 
         // 해당 노선의 전체 좌석 DB 조회
-        List<Seat> seats = seatRepository.findByPathInfoId(pathId);
+        List<Seat> seats = seatRepository.findByPathInfoPathinfoId(pathId);
+
+        // 전체 좌석 ID 목록 추출
+        List<Long> seatIds = seats.stream()
+                .map(Seat::getSeatId)
+                .toList();
+
+        // Redis MGET으로 모든 좌석의 홀딩 정보를 한 번에 조회 (N+1 최적화)
+        // 기존: 좌석마다 isHeld() + getHoldMemberId() → Redis 왕복 N×2번
+        // 개선: getHoldMemberIds() 한 번 → Redis 왕복 1번
+        Map<Long, Long> holdMemberMap = seatRedisService.getHoldMemberIds(seatIds);
 
         // 좌석별 실제 표시 상태 계산 (DB + Redis 조합)
         List<SeatResponse> seatResponses = seats.stream()
                 .map(seat -> {
 
-                    // Redis에 HOLD 중인지 확인
-                    boolean isHeld = seatRedisService.isHeld(seat.getSeatId());
+                    // MGET으로 미리 조회한 Map에서 현재 좌석의 선점 유저 ID 확인
+                    // null이면 AVAILABLE, 값 있으면 HOLD 중
+                    Long holdMemberId = holdMemberMap.get(seat.getSeatId());
+                    boolean isHeld = holdMemberId != null;
 
                     SeatDisplayStatus displayStatus;
 
@@ -56,10 +69,8 @@ public class SeatService {
                         displayStatus = SeatDisplayStatus.AVAILABLE;
                     }
 
+                    // mySeat 계산: 내가 선점한 좌석인지 확인
                     // 현재 로그인한 사용자가 선점한 좌석인지 확인
-                    // mySeat 계산: Redis에서 선점한 유저 ID 가져와서 현재 유저랑 비교
-                    Long holdMemberId = seatRedisService.getHoldMemberId(seat.getSeatId());
-
                     boolean mySeat = holdMemberId != null
                             && holdMemberId.equals(currentMemberId);
 

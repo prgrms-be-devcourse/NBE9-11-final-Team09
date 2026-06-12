@@ -18,7 +18,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,9 +62,10 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoId(pathId)).willReturn(List.of(seat));
-        given(seatRedisService.isHeld(1L)).willReturn(false);
-        given(seatRedisService.getHoldMemberId(1L)).willReturn(null);
+        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        // MGET 결과: 홀딩 중인 좌석 없음
+        given(seatRedisService.getHoldMemberIds(List.of(1L)))
+                .willReturn(Collections.emptyMap());
 
         // When
         SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
@@ -106,16 +109,17 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoId(pathId)).willReturn(List.of(seat));
-        given(seatRedisService.isHeld(1L)).willReturn(true);
-        given(seatRedisService.getHoldMemberId(1L)).willReturn(holdMemberId);
+        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        // MGET 결과: 1번 좌석을 2번 유저가 선점 중
+        given(seatRedisService.getHoldMemberIds(List.of(1L)))
+                .willReturn(Map.of(1L, holdMemberId));
 
         // When
         SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
 
         // Then
         assertThat(response.seats().get(0).status()).isEqualTo(SeatDisplayStatus.HOLD);
-        assertThat(response.seats().get(0).mySeat()).isFalse();
+        assertThat(response.seats().get(0).mySeat()).isFalse(); // 내가 선점한 게 아님
     }
 
     @Test
@@ -133,16 +137,17 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoId(pathId)).willReturn(List.of(seat));
-        given(seatRedisService.isHeld(1L)).willReturn(true);
-        given(seatRedisService.getHoldMemberId(1L)).willReturn(currentMemberId); // 내가 선점
+        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        // MGET 결과: 1번 좌석을 내가 선점 중
+        given(seatRedisService.getHoldMemberIds(List.of(1L)))
+                .willReturn(Map.of(1L, currentMemberId));
 
         // When
         SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
 
         // Then
         assertThat(response.seats().get(0).status()).isEqualTo(SeatDisplayStatus.HOLD);
-        assertThat(response.seats().get(0).mySeat()).isTrue();
+        assertThat(response.seats().get(0).mySeat()).isTrue(); // 내가 선점한 좌석!
     }
 
     // ==================== holdSeat 테스트 ====================

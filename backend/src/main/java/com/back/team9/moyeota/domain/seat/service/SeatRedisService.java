@@ -8,6 +8,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j  // 로그 출력용
 @Service // 좌석 HOLD 관련 Redis 작업 전담
@@ -34,8 +38,9 @@ public class SeatRedisService {
             Boolean success = redisTemplate.opsForValue()
                     .setIfAbsent(key, value, HOLD_DURATION); // 키가 없을 때만 저장
 
-            if (Boolean.FALSE.equals(success)) {
-                throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED); // 이미 선점된 좌석
+            // success가 null이거나 false일 때 모두 예외 발생
+            if (!Boolean.TRUE.equals(success)) {
+                throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED);
             }
 
         } catch (BusinessException e) {
@@ -86,6 +91,47 @@ public class SeatRedisService {
         } catch (Exception e) {
             log.error("Redis 장애 발생 - 홀딩 유저 조회 실패. seatId={}", seatId, e);
             return null;
+        }
+    }
+
+    // 여러 좌석의 선점 유저 ID를 한 번에 조회 (N+1 최적화)
+    //기존: 좌석마다 GET 호출 → Redis 조회 N번 발생
+    // 개선: MGET으로 여러 Key를 한 번에 조회 → Redis 왕복 1회
+    public Map<Long, Long> getHoldMemberIds(List<Long> seatIds) {
+        // 조회할 좌석이 없으면 빈 Map 반환
+        if (seatIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // seatId 목록 → Redis Key 목록 변환
+        // 예: [1, 2, 3] → ["seat:1", "seat:2", "seat:3"]
+        List<String> keys = seatIds.stream()
+                .map(this::generateKey)
+                .toList();
+
+        try {
+            // Redis MGET 수행
+            List<String> values =
+                    redisTemplate.opsForValue().multiGet(keys);
+
+            if (values == null) {
+                return Collections.emptyMap();
+            }
+
+            Map<Long, Long> holdMap = new HashMap<>();
+            // 조회 결과를 Map<seatId, memberId> 형태로 변환
+            for (int i = 0; i < seatIds.size(); i++) {
+                String val = values.get(i);
+                // value가 존재하면 HOLD 중인 좌석
+                if (val != null) {
+                    holdMap.put(seatIds.get(i), Long.parseLong(val));
+                }
+            }
+            return holdMap;
+
+        } catch (Exception e) {
+            log.error("Redis 장애 발생 - 다중 홀딩 유저 조회 실패. seatIds={}", seatIds, e);
+            return Collections.emptyMap();
         }
     }
 }
