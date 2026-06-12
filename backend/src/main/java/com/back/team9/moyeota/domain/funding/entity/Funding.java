@@ -73,7 +73,6 @@ public class Funding {
             BusType busType,
             Integer totalPrice,
             Integer minParticipants,
-            Integer maxParticipants,
             TripType tripType
     ) {
         Funding funding = new Funding();
@@ -85,7 +84,7 @@ public class Funding {
         funding.busType = busType;
         funding.totalPrice = totalPrice;
         funding.minParticipants = minParticipants;
-        funding.maxParticipants = maxParticipants;
+        funding.maxParticipants = busType.getCapacity();
         funding.paybackHold = false;
         funding.tripType = tripType;
         return funding;
@@ -100,7 +99,6 @@ public class Funding {
             String content,
             BusType busType,
             Integer minParticipants,
-            Integer maxParticipants,
             Integer totalPrice,
             TripType tripType,
             LocalDate departureDate
@@ -109,7 +107,7 @@ public class Funding {
         this.content = content;
         this.busType = busType;
         this.minParticipants = minParticipants;
-        this.maxParticipants = maxParticipants;
+        this.maxParticipants = busType.getCapacity();
         this.totalPrice = totalPrice;
         this.tripType = tripType;
         this.departureDate = departureDate;

@@ -14,6 +14,16 @@ spring:
       enabled: true
 
 
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
 springdoc:
   api-docs:
     enabled: false

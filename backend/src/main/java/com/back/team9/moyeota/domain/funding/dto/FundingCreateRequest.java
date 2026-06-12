@@ -11,7 +11,6 @@ public record FundingCreateRequest(
         String content,
         BusType busType,
         Integer minParticipants,
-        Integer maxParticipants,
         TripType tripType,
         Integer totalPrice,
         List<PathInfoCreateRequest> paths

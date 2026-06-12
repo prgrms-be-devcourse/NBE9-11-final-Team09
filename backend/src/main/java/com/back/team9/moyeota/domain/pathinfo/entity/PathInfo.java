@@ -1,8 +1,12 @@
 package com.back.team9.moyeota.domain.pathinfo.entity;
 
+import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class PathInfo {
 
     @Id
@@ -44,11 +49,17 @@ public class PathInfo {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private BusType busType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Direction direction;
 
+    @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     public static PathInfo create(
@@ -67,6 +78,7 @@ public class PathInfo {
         pathInfo.departureRegion = departureRegion;
         pathInfo.arrivalAddress = arrivalAddress;
         pathInfo.arrivalRegion = arrivalRegion;
+        pathInfo.busType = funding.getBusType();
         pathInfo.direction = direction;
         pathInfo.status = PathInfoStatus.PENDING;
         return pathInfo;
@@ -85,9 +97,13 @@ public class PathInfo {
         this.departureRegion = departureRegion;
         this.arrivalAddress = arrivalAddress;
         this.arrivalRegion = arrivalRegion;
+        this.busType = funding.getBusType();
         this.direction = direction;
     }
     public void cancel() {
         this.status = PathInfoStatus.CANCELLED;
+    }
+    public void changeBusType(BusType busType) {
+        this.busType = busType;
     }
 }

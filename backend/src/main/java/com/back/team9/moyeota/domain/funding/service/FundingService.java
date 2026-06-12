@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.funding.service;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
@@ -14,20 +15,16 @@ import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
-// TODO: 현재 타 도메인의 Repository 메서드를 그대로 사용중. 이후 서비스로 전환 필요
-// TODO: 완성 후 dto 필드 from 적용해서 코드 단축
 @Service
 @RequiredArgsConstructor
 public class FundingService {
 
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
-
     private final PathInfoService pathInfoService;
 
     // 펀딩 생성
@@ -39,7 +36,7 @@ public class FundingService {
 
         validateFundingRequest(
                 request.minParticipants(),
-                request.maxParticipants(),
+                request.busType(),
                 request.totalPrice()
         );
 
@@ -55,7 +52,6 @@ public class FundingService {
                 departureDate,
                 request.busType(),
                 request.minParticipants(),
-                request.maxParticipants(),
                 request.totalPrice(),
                 request.tripType()
         );
@@ -84,8 +80,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
 
-        List<PathInfoResponse> pathInfos = pathInfoService
-                .getPathInfoResponses(fundingId);
+        List<PathInfoResponse> pathInfos = pathInfoService.getPathInfoResponses(fundingId);
 
         return FundingDetailResponse.from(
                 funding,
@@ -104,19 +99,14 @@ public class FundingService {
         return fundingRepository.findAll()
                 .stream()
                 .map(funding -> {
-
-                    PathInfo pathInfo = pathInfoService
-                            .getFirstPathInfo(
-                                    funding.getFundingId()
-                            );
+                    PathInfo pathInfo = pathInfoService.getFirstPathInfo(funding.getFundingId());
 
                     return FundingListResponse.from(
                             funding,
                             pathInfo,
                             0 // TODO 현재 참가자 수
                     );
-                })
-                .toList();
+                }).toList();
     }
 
     // 펀딩 취소
@@ -128,67 +118,38 @@ public class FundingService {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
         funding.cancel();
-        pathInfoService.cancelPathInfos(
-                fundingId
-        );
+        pathInfoService.cancelPathInfos(fundingId);
     }
 
     @Transactional
-    public void updateFunding(
-            Long fundingId,
-            FundingUpdateRequest request
-    ) {
+    public void updateFunding(Long fundingId, FundingUpdateRequest request) {
 
         Funding funding = findFundingById(fundingId);
 
         int currentParticipants = 0; // TODO
 
         if (currentParticipants > 0) {
-            updateFundingWithParticipants(
-                    funding,
-                    request
-            );
+            updateFundingWithParticipants(funding, request);
             return;
         }
 
         validateFundingRequest(
                 request.minParticipants(),
-                request.maxParticipants(),
+                request.busType(),
                 request.totalPrice()
         );
 
-        updateFundingWithoutParticipants(
-                funding,
-                request
-        );
+        updateFundingWithoutParticipants(funding, request);
+
     }
 
-    private void updateFundingWithParticipants(
-            Funding funding,
-            FundingUpdateRequest request
-    ) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
 
         boolean changed =
-                !Objects.equals(
-                        funding.getBusType(),
-                        request.busType()
-                )
-                        || !Objects.equals(
-                        funding.getMinParticipants(),
-                        request.minParticipants()
-                )
-                        || !Objects.equals(
-                        funding.getMaxParticipants(),
-                        request.maxParticipants()
-                )
-                        || !Objects.equals(
-                        funding.getTotalPrice(),
-                        request.totalPrice()
-                )
-                        || !Objects.equals(
-                        funding.getTripType(),
-                        request.tripType()
-                )
+                !Objects.equals(funding.getBusType(), request.busType())
+                        || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
+                        || !Objects.equals(funding.getTotalPrice(), request.totalPrice())
+                        || !Objects.equals(funding.getTripType(), request.tripType())
                         || (request.paths() != null
                         && !request.paths().isEmpty());
 
@@ -198,10 +159,7 @@ public class FundingService {
             );
         }
 
-        funding.updateTitleAndContent(
-                request.title(),
-                request.content()
-        );
+        funding.updateTitleAndContent(request.title(), request.content());
     }
 
     private void updateFundingWithoutParticipants(
@@ -219,7 +177,6 @@ public class FundingService {
                 request.content(),
                 request.busType(),
                 request.minParticipants(),
-                request.maxParticipants(),
                 request.totalPrice(),
                 request.tripType(),
                 departureDate
@@ -230,6 +187,11 @@ public class FundingService {
                 request.tripType(),
                 request.paths()
         );
+        pathInfoService.syncBusType(
+                funding.getFundingId(),
+                funding.getBusType()
+        );
+
     }
 
 
@@ -242,13 +204,13 @@ public class FundingService {
 
     private void validateFundingRequest(
             Integer minParticipants,
-            Integer maxParticipants,
+            BusType busType,
             Integer totalPrice
     ) {
 
-        if (minParticipants > maxParticipants) {
+        if (minParticipants > busType.getCapacity()) {
             throw new BusinessException(
-                    ErrorCode.INVALID_PARTICIPANT_RANGE
+                    ErrorCode.FUNDING_MIN_INVALID
             );
         }
 

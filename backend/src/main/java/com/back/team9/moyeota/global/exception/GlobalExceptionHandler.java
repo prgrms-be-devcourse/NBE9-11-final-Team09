@@ -21,10 +21,14 @@ public class GlobalExceptionHandler{
 
     // 2. Request @Valid 유효성 검사 실패 예외
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e){
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult()
+                        .getFieldError()
+                        .getDefaultMessage();
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
-                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE));
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, message)
+                );
     }
 
     // 3. 핸들링하지 못한 기타 모든 예외 (500 Error)
@@ -34,4 +38,6 @@ public class GlobalExceptionHandler{
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
     }
+
+
 }

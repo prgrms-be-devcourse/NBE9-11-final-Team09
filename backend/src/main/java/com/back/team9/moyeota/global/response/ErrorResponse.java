@@ -18,4 +18,15 @@ public record ErrorResponse(
                 LocalDateTime.now()
         );
     }
+    public static ErrorResponse of(
+            ErrorCode errorCode,
+            String message
+    ) {
+        return new ErrorResponse(
+                errorCode.getHttpStatus().value(),
+                errorCode.getCode(),
+                message,
+                LocalDateTime.now()
+        );
+    }
 }
