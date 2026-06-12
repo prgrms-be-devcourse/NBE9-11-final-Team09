@@ -1,20 +1,22 @@
 package com.back.team9.moyeota.domain.pathinfo.service;
 
+import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoCreateRequest;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoUpdateRequest;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathInfoValidator;
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -27,68 +29,102 @@ public class PathInfoService {
     public void createPathInfos(
             Funding funding,
             TripType tripType,
-            List<PathInfoCreateRequest> requests
+            RouteRequest route
     ) {
+        pathInfoValidator.validateCreateTripType(tripType, route);
 
-        pathInfoValidator.validateCreateTripType(tripType, requests);
-        List<PathInfo> pathInfos = requests.stream()
-                .map(request -> PathInfo.create(
-                        funding,
-                        request.departureTime(),
-                        request.departureAddress(),
-                        request.departureRegion(),
-                        request.arrivalAddress(),
-                        request.arrivalRegion(),
-                        request.direction()
-                )).toList();
+        PathInfo outbound = PathInfo.create(
+                funding,
+                route.departureTime(),
+                route.departureAddress(),
+                route.departureRegion(),
+                route.arrivalAddress(),
+                route.arrivalRegion(),
+                Direction.OUTBOUND
+        );
 
-        pathInfoRepository.saveAll(pathInfos);
+        pathInfoRepository.save(outbound);
+
+        if (tripType == TripType.ROUND) {
+            PathInfo returned = PathInfo.create(
+                    funding,
+                    route.returnTime(),
+                    route.arrivalAddress(),
+                    route.arrivalRegion(),
+                    route.departureAddress(),
+                    route.departureRegion(),
+                    Direction.RETURN
+            );
+
+            pathInfoRepository.save(returned);
+        }
     }
 
     @Transactional
     public void updatePathInfos(
             Funding funding,
             TripType tripType,
-            List<PathInfoUpdateRequest> requests
+            RouteRequest route
     ) {
-        pathInfoValidator.validateUpdateTripType(tripType, requests);
-        List<PathInfo> existingPaths = pathInfoRepository.findByFunding_FundingId(funding.getFundingId());
+        pathInfoValidator.validateUpdateTripType(tripType, route);
 
-        for (PathInfoUpdateRequest request : requests) {
-
-            PathInfo existing = existingPaths.stream()
-                    .filter(path -> path.getDirection() == request.direction())
-                    .findFirst()
-                    .orElse(null);
-
-            if (existing != null) {
-                existing.update(
-                        request.departureTime(),
-                        request.departureAddress(),
-                        request.departureRegion(),
-                        request.arrivalAddress(),
-                        request.arrivalRegion(),
-                        request.direction()
+        List<PathInfo> existingPaths =
+                pathInfoRepository.findByFunding_FundingId(
+                        funding.getFundingId()
                 );
 
-            } else {
-                PathInfo newPath = PathInfo.create(
+        PathInfo outbound = existingPaths.stream()
+                .filter(path -> path.getDirection() == Direction.OUTBOUND)
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.PATHINFO_REQUIRED
+                ));
+
+        outbound.update(
+                route.departureTime(),
+                route.departureAddress(),
+                route.departureRegion(),
+                route.arrivalAddress(),
+                route.arrivalRegion(),
+                Direction.OUTBOUND
+        );
+
+        PathInfo returned = existingPaths.stream()
+                .filter(path -> path.getDirection() == Direction.RETURN)
+                .findFirst()
+                .orElse(null);
+
+        if (tripType == TripType.ROUND) {
+            if (returned == null) {
+                PathInfo newReturn = PathInfo.create(
                         funding,
-                        request.departureTime(),
-                        request.departureAddress(),
-                        request.departureRegion(),
-                        request.arrivalAddress(),
-                        request.arrivalRegion(),
-                        request.direction()
+                        route.returnTime(),
+                        route.arrivalAddress(),
+                        route.arrivalRegion(),
+                        route.departureAddress(),
+                        route.departureRegion(),
+                        Direction.RETURN
                 );
 
-                pathInfoRepository.save(newPath);
+                pathInfoRepository.save(newReturn);
+                return;
             }
+
+            returned.update(
+                    route.returnTime(),
+                    route.arrivalAddress(),
+                    route.arrivalRegion(),
+                    route.departureAddress(),
+                    route.departureRegion(),
+                    Direction.RETURN
+            );
+
+            return;
         }
 
-        existingPaths.stream()
-                .filter(path -> requests.stream().noneMatch(request -> request.direction() == path.getDirection()))
-                .forEach(pathInfoRepository::delete);
+        if (returned != null) {
+            pathInfoRepository.delete(returned);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -140,4 +176,67 @@ public class PathInfoService {
         return pathInfoRepository.findByFunding_FundingIdInAndDirection(fundingIds, direction);
     }
 
+    @Transactional(readOnly = true)
+    public boolean isRouteChanged(
+            Long fundingId,
+            TripType tripType,
+            RouteRequest route
+    ) {
+
+        PathInfo outbound = pathInfoRepository
+                .findByFunding_FundingId(fundingId)
+                .stream()
+                .filter(path ->
+                        path.getDirection() == Direction.OUTBOUND
+                )
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.PATHINFO_REQUIRED
+                ));
+
+        boolean outboundChanged =
+                !Objects.equals(
+                        outbound.getDepartureTime(),
+                        route.departureTime()
+                )
+                        || !Objects.equals(
+                        outbound.getDepartureAddress(),
+                        route.departureAddress()
+                )
+                        || !Objects.equals(
+                        outbound.getDepartureRegion(),
+                        route.departureRegion()
+                )
+                        || !Objects.equals(
+                        outbound.getArrivalAddress(),
+                        route.arrivalAddress()
+                )
+                        || !Objects.equals(
+                        outbound.getArrivalRegion(),
+                        route.arrivalRegion()
+                );
+
+        if (outboundChanged) {
+            return true;
+        }
+
+        PathInfo returned = pathInfoRepository
+                .findByFunding_FundingId(fundingId)
+                .stream()
+                .filter(path ->
+                        path.getDirection() == Direction.RETURN
+                )
+                .findFirst()
+                .orElse(null);
+
+        if (tripType == TripType.ONE_WAY) {
+            return route.returnTime() != null;
+        }
+
+        return returned == null
+                || !Objects.equals(
+                returned.getDepartureTime(),
+                route.returnTime()
+        );
+    }
 }

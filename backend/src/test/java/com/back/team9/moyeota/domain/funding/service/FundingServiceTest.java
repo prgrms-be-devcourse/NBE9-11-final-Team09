@@ -9,8 +9,6 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoCreateRequest;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoUpdateRequest;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathInfoStatus;
@@ -70,15 +68,13 @@ public class FundingServiceTest {
                         70,
                         TripType.ONE_WAY,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -117,39 +113,6 @@ public class FundingServiceTest {
     }
 
     @Test
-    void createFunding_편도인데RETURN노선인경우_예외발생() {
-
-        // Given
-        Member member = saveMember();
-
-        FundingCreateRequest request =
-                new FundingCreateRequest(
-                        "제목",
-                        "내용",
-                        BusType.BUS_45,
-                        20,
-                        TripType.ONE_WAY,
-                        100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        "인천",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
-                        )
-                );
-
-        // When & Then
-        assertThatThrownBy(() -> fundingService.createFunding(member.getMemberId(), request))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_PATH_CONFIGURATION);
-    }
-
-    @Test
     void createFunding_왕복인데노선이한개인경우_예외발생() {
 
         // Given
@@ -163,15 +126,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        "인천",
-                                        Region.INCHEON,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -298,27 +259,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         500000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(
-                                                2027, 6, 20, 8, 0
-                                        ),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(
-                                                2027, 6, 20, 23, 0
-                                        ),
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        "인천역",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 20, 23, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -404,23 +351,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         500000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(2027, 6, 21, 10, 0),
-                                        "강남역",
-                                        Region.SEOUL_B,
-                                        "잠실",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(2027, 6, 21, 23, 0),
-                                        "잠실",
-                                        Region.SEOUL_A,
-                                        "강남역",
-                                        Region.SEOUL_B,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 20, 23, 0),
+                                "강남역",
+                                Region.SEOUL_B,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -445,15 +382,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ONE_WAY,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실역",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "인천역",
+                                Region.INCHEON
                         )
                 );
 
@@ -478,15 +413,13 @@ public class FundingServiceTest {
                         10,
                         TripType.ONE_WAY,
                         300000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(2027, 7, 1, 10, 0),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실종합운동장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "인천역",
+                                Region.INCHEON
                         )
                 );
 
@@ -510,15 +443,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ONE_WAY,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.now().plusDays(7),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.now().plusDays(7),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -542,23 +473,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.now().plusDays(20).withHour(18),
-                                        "인천",
-                                        Region.INCHEON,
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.now().plusDays(20).withHour(12),
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        "인천",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 20, 5, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -581,23 +502,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.now().plusDays(20),
-                                        "인천",
-                                        Region.INCHEON,
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.now().plusDays(21),
-                                        "서울",
-                                        Region.SEOUL_A,
-                                        "인천",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 22, 23, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -626,15 +537,13 @@ public class FundingServiceTest {
                         10,
                         TripType.ONE_WAY,
                         300000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.now().plusDays(7),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실종합운동장",
-                                        Region.SEOUL_B,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.now().plusDays(7),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -664,27 +573,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         500000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.now()
-                                                .plusDays(20)
-                                                .withHour(18),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.now()
-                                                .plusDays(20)
-                                                .withHour(12),
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        "인천역",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 20, 5, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -713,25 +608,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         500000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.now()
-                                                .plusDays(20),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.now()
-                                                .plusDays(21),
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        "인천역",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 22, 23, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -860,27 +743,13 @@ public class FundingServiceTest {
                         20,
                         TripType.ROUND,
                         500000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(
-                                                2027, 6, 20, 8, 0
-                                        ),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                ),
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(
-                                                2027, 6, 20, 23, 0
-                                        ),
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        "인천역",
-                                        Region.INCHEON,
-                                        Direction.RETURN
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                LocalDateTime.of(2027, 6, 20, 23, 0),
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -978,17 +847,13 @@ public class FundingServiceTest {
                         10,
                         TripType.ONE_WAY,
                         300000,
-                        List.of(
-                                new PathInfoUpdateRequest(
-                                        LocalDateTime.of(
-                                                2026, 7, 1, 10, 0
-                                        ),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실종합운동장",
-                                        Region.SEOUL_B,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
                         )
                 );
 
@@ -1021,15 +886,13 @@ public class FundingServiceTest {
                 20,
                 TripType.ONE_WAY,
                 500000,
-                List.of(
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                "인천역",
-                                Region.INCHEON,
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                Direction.OUTBOUND
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 20, 8, 0),
+                        null,
+                        "인천역",
+                        Region.INCHEON,
+                        "서울월드컵경기장",
+                        Region.SEOUL_A
                 )
         );
     }
@@ -1042,23 +905,13 @@ public class FundingServiceTest {
                 20,
                 TripType.ROUND,
                 500000,
-                List.of(
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                "인천역",
-                                Region.INCHEON,
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                Direction.OUTBOUND
-                        ),
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 23, 0),
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                "인천역",
-                                Region.INCHEON,
-                                Direction.RETURN
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 20, 8, 0),
+                        LocalDateTime.of(2027, 6, 20, 23, 0),
+                        "인천역",
+                        Region.INCHEON,
+                        "서울월드컵경기장",
+                        Region.SEOUL_A
                 )
         );
     }
@@ -1071,15 +924,13 @@ public class FundingServiceTest {
                 10,
                 TripType.ONE_WAY,
                 300000,
-                List.of(
-                        new PathInfoUpdateRequest(
-                                LocalDateTime.of(2027, 6, 1, 10, 0),
-                                "강남역",
-                                Region.SEOUL_A,
-                                "잠실종합운동장",
-                                Region.SEOUL_B,
-                                Direction.OUTBOUND
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 20, 8, 0),
+                        null,
+                        "인천역",
+                        Region.INCHEON,
+                        "서울월드컵경기장",
+                        Region.SEOUL_A
                 )
         );
     }

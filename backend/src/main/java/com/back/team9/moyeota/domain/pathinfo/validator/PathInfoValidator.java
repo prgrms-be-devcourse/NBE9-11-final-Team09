@@ -1,16 +1,13 @@
 package com.back.team9.moyeota.domain.pathinfo.validator;
 
+import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoCreateRequest;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoUpdateRequest;
-import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class PathInfoValidator {
@@ -48,120 +45,57 @@ public class PathInfoValidator {
         }
     }
 
-    public void validateCreateTripType(TripType tripType, List<PathInfoCreateRequest> paths) {
-
-        if (paths == null || paths.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.PATHINFO_REQUIRED
-            );
-        }
-
-        for (PathInfoCreateRequest path : paths) {
-            validateRegion(path.departureRegion(), path.arrivalRegion());
-            validateDepartureDate(path.departureTime());
-        }
-
-
-
-        boolean hasOutbound = paths.stream()
-                .anyMatch(path -> path.direction() == Direction.OUTBOUND);
-
-        boolean hasReturn = paths.stream()
-                .anyMatch(path -> path.direction() == Direction.RETURN);
-
-        if (tripType == TripType.ONE_WAY) {
-            if (paths.size() != 1 || !hasOutbound) {
-                throw new BusinessException(
-                        ErrorCode.INVALID_PATH_CONFIGURATION
-                );
-            }
-        }
-
-        if (tripType == TripType.ROUND) {
-
-            if (paths.size() != 2
-                    || !hasOutbound
-                    || !hasReturn) {
-                throw new BusinessException(
-                        ErrorCode.INVALID_PATH_CONFIGURATION
-                );
-            }
-
-            PathInfoCreateRequest outbound = paths.stream()
-                    .filter(path -> path.direction() == Direction.OUTBOUND)
-                    .findFirst()
-                    .orElseThrow();
-
-            PathInfoCreateRequest returned =
-                    paths.stream()
-                            .filter(path -> path.direction() == Direction.RETURN)
-                            .findFirst()
-                            .orElseThrow();
-
-            validateRoundTripTime(
-                    outbound.departureTime(),
-                    returned.departureTime()
-            );
-        }
-
-
+    public void validateCreateTripType(
+            TripType tripType,
+            RouteRequest route
+    ) {
+        validateRoute(tripType, route);
     }
 
-    public void validateUpdateTripType(TripType tripType, List<PathInfoUpdateRequest> paths) {
+    public void validateUpdateTripType(
+            TripType tripType,
+            RouteRequest route
+    ) {
+        validateRoute(tripType, route);
+    }
 
-        if (paths == null || paths.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.PATHINFO_REQUIRED
-            );
+    private void validateRoute(
+            TripType tripType,
+            RouteRequest route
+    ) {
+        if (route == null) {
+            throw new BusinessException(ErrorCode.PATHINFO_REQUIRED);
         }
 
-        for (PathInfoUpdateRequest path : paths) {
+        validateRegion(
+                route.departureRegion(),
+                route.arrivalRegion()
+        );
 
-            validateRegion(path.departureRegion(), path.arrivalRegion());
-            validateDepartureDate(path.departureTime());
-        }
-
-
-        boolean hasOutbound = paths.stream()
-                .anyMatch(path -> path.direction() == Direction.OUTBOUND);
-
-        boolean hasReturn = paths.stream()
-                .anyMatch(path -> path.direction() == Direction.RETURN);
+        validateDepartureDate(route.departureTime());
 
         if (tripType == TripType.ONE_WAY) {
-            if (paths.size() != 1 || !hasOutbound) {
+            if (route.returnTime() != null) {
                 throw new BusinessException(
                         ErrorCode.INVALID_PATH_CONFIGURATION
                 );
             }
+            return;
         }
 
         if (tripType == TripType.ROUND) {
-
-            if (paths.size() != 2
-                    || !hasOutbound
-                    || !hasReturn) {
-
+            if (route.returnTime() == null) {
                 throw new BusinessException(
                         ErrorCode.INVALID_PATH_CONFIGURATION
                 );
             }
-            PathInfoUpdateRequest outbound =
-                    paths.stream()
-                            .filter(path -> path.direction() == Direction.OUTBOUND)
-                            .findFirst()
-                            .orElseThrow();
-
-            PathInfoUpdateRequest returned =
-                    paths.stream()
-                            .filter(path -> path.direction() == Direction.RETURN)
-                            .findFirst()
-                            .orElseThrow();
 
             validateRoundTripTime(
-                    outbound.departureTime(),
-                    returned.departureTime()
+                    route.departureTime(),
+                    route.returnTime()
             );
         }
+
+
     }
 }

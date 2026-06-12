@@ -1,16 +1,10 @@
 package com.back.team9.moyeota.domain.funding.controller;
 
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateRequest;
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingDetailResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingUpdateRequest;
+import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.service.FundingService;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoCreateRequest;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoUpdateRequest;
-import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -27,7 +21,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -35,7 +28,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 @SpringBootTest
@@ -58,9 +50,14 @@ class FundingControllerTest {
     void createFunding_정상요청_생성성공() throws Exception {
 
         FundingCreateRequest request = createOneWayRequest();
+
         given(
-                fundingService.createFunding(anyLong(), any(FundingCreateRequest.class))
-        ).willReturn(new FundingCreateResponse(
+                fundingService.createFunding(
+                        anyLong(),
+                        any(FundingCreateRequest.class)
+                )
+        ).willReturn(
+                new FundingCreateResponse(
                         1L,
                         FundingStatus.RECRUITING,
                         LocalDateTime.now()
@@ -70,7 +67,11 @@ class FundingControllerTest {
         mockMvc.perform(
                         post("/api/fundings")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(
+                                                request
+                                        )
+                                )
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
@@ -90,22 +91,24 @@ class FundingControllerTest {
                         20,
                         TripType.ONE_WAY,
                         0,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실역",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "강남역",
+                                Region.SEOUL_A,
+                                "잠실역",
+                                Region.SEOUL_A
                         )
                 );
 
         mockMvc.perform(
                         post("/api/fundings")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(
+                                                request
+                                        )
+                                )
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
@@ -122,25 +125,26 @@ class FundingControllerTest {
                         20,
                         TripType.ONE_WAY,
                         100000,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "강남역",
-                                        Region.SEOUL_A,
-                                        "잠실역",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "강남역",
+                                Region.SEOUL_A,
+                                "잠실역",
+                                Region.SEOUL_A
                         )
                 );
 
         mockMvc.perform(
                         post("/api/fundings")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(
+                                                request
+                                        )
+                                )
                 )
                 .andExpect(status().isBadRequest())
-                .andDo(print())
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -153,13 +157,20 @@ class FundingControllerTest {
         mockMvc.perform(
                         put("/api/fundings/{id}", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(
+                                                request
+                                        )
+                                )
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.msg").value("펀딩 수정 성공"));
 
         verify(fundingService)
-                .updateFunding(eq(1L), any(FundingUpdateRequest.class));
+                .updateFunding(
+                        eq(1L),
+                        any(FundingUpdateRequest.class)
+                );
     }
 
     @Test
@@ -173,23 +184,33 @@ class FundingControllerTest {
                 )
         )
                 .given(fundingService)
-                .updateFunding(eq(1L), any(FundingUpdateRequest.class));
+                .updateFunding(
+                        eq(1L),
+                        any(FundingUpdateRequest.class)
+                );
 
         mockMvc.perform(
                         put("/api/fundings/{id}", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(
+                                                request
+                                        )
+                                )
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("FND006"))
-                .andExpect(jsonPath("$.message").value("참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다.")
+                );
     }
 
     @Test
     void cancelFunding_정상요청_취소성공() throws Exception {
 
         mockMvc.perform(
-                    delete("/api/fundings/{id}", 1L)
+                        delete("/api/fundings/{id}", 1L)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.msg").value("펀딩 취소 성공"));
@@ -214,7 +235,10 @@ class FundingControllerTest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("FND004"))
-                .andExpect(jsonPath("$.message").value("이미 취소/삭제된 펀딩입니다."));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("이미 취소/삭제된 펀딩입니다.")
+                );
     }
 
     @Test
@@ -249,11 +273,11 @@ class FundingControllerTest {
                 )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("FND001"))
-                .andExpect(jsonPath("$.message").value("존재하지 않는 펀딩입니다."));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("존재하지 않는 펀딩입니다.")
+                );
     }
-
-
-
 
     private FundingCreateRequest createOneWayRequest() {
         return new FundingCreateRequest(
@@ -263,15 +287,13 @@ class FundingControllerTest {
                 20,
                 TripType.ONE_WAY,
                 500000,
-                List.of(
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                "인천역",
-                                Region.INCHEON,
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                Direction.OUTBOUND
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 20, 8, 0),
+                        null,
+                        "인천역",
+                        Region.INCHEON,
+                        "서울월드컵경기장",
+                        Region.SEOUL_A
                 )
         );
     }
@@ -284,23 +306,13 @@ class FundingControllerTest {
                 20,
                 TripType.ROUND,
                 500000,
-                List.of(
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                "인천역",
-                                Region.INCHEON,
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                Direction.OUTBOUND
-                        ),
-                        new PathInfoCreateRequest(
-                                LocalDateTime.of(2027, 6, 20, 23, 0),
-                                "서울월드컵경기장",
-                                Region.SEOUL_A,
-                                "인천역",
-                                Region.INCHEON,
-                                Direction.RETURN
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 20, 8, 0),
+                        LocalDateTime.of(2027, 6, 20, 23, 0),
+                        "인천역",
+                        Region.INCHEON,
+                        "서울월드컵경기장",
+                        Region.SEOUL_A
                 )
         );
     }
@@ -313,15 +325,13 @@ class FundingControllerTest {
                 10,
                 TripType.ONE_WAY,
                 300000,
-                List.of(
-                        new PathInfoUpdateRequest(
-                                LocalDateTime.of(2027, 6, 1, 10, 0),
-                                "강남역",
-                                Region.SEOUL_A,
-                                "잠실종합운동장",
-                                Region.SEOUL_B,
-                                Direction.OUTBOUND
-                        )
+                new RouteRequest(
+                        LocalDateTime.of(2027, 6, 1, 10, 0),
+                        null,
+                        "강남역",
+                        Region.SEOUL_A,
+                        "잠실종합운동장",
+                        Region.SEOUL_B
                 )
         );
     }

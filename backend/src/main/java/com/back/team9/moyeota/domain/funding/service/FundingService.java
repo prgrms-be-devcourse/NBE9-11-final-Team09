@@ -45,8 +45,7 @@ public class FundingService {
                 request.totalPrice()
         );
 
-        LocalDate departureDate = request.paths()
-                .getFirst()
+        LocalDate departureDate = request.route()
                 .departureTime()
                 .toLocalDate();
 
@@ -66,7 +65,7 @@ public class FundingService {
         pathInfoService.createPathInfos(
                 savedFunding,
                 request.tripType(),
-                request.paths()
+                request.route()
         );
 
         // TODO: 채팅방 생성
@@ -180,8 +179,11 @@ public class FundingService {
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
                         || !Objects.equals(funding.getTotalPrice(), request.totalPrice())
                         || !Objects.equals(funding.getTripType(), request.tripType())
-                        || (request.paths() != null
-                        && !request.paths().isEmpty());
+                        || pathInfoService.isRouteChanged(
+                        funding.getFundingId(),
+                        funding.getTripType(),
+                        request.route()
+                );
 
         if (changed) {
             throw new BusinessException(
@@ -197,8 +199,7 @@ public class FundingService {
             FundingUpdateRequest request
     ) {
 
-        LocalDate departureDate = request.paths()
-                .getFirst()
+        LocalDate departureDate = request.route()
                 .departureTime()
                 .toLocalDate();
 
@@ -215,7 +216,7 @@ public class FundingService {
         pathInfoService.updatePathInfos(
                 funding,
                 request.tripType(),
-                request.paths()
+                request.route()
         );
         pathInfoService.syncBusType(
                 funding.getFundingId(),
