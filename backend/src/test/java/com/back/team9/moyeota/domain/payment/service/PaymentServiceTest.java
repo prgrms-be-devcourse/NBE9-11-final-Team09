@@ -1,6 +1,5 @@
 package com.back.team9.moyeota.domain.payment.service;
 
-import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
@@ -39,7 +38,7 @@ class PaymentServiceTest {
     private TossPaymentClient tossPaymentClient;
 
     @Mock
-    private ParticipationRepository participationRepository;
+    private PaymentWriter paymentWriter;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -69,7 +68,7 @@ class PaymentServiceTest {
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000)).willReturn(tossResponse);
-        given(paymentRepository.save(any(Payment.class))).willReturn(savedPayment);
+        given(paymentWriter.save(any(Payment.class))).willReturn(savedPayment);
 
         // When
         PaymentResponse response = paymentService.confirmDeposit(request);
@@ -81,7 +80,7 @@ class PaymentServiceTest {
         assertThat(response.tossPaymentKey()).isEqualTo("test_paymentKey");
         assertThat(response.orderId()).isEqualTo("test_orderId");
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
-        verify(paymentRepository).save(any(Payment.class));
+        verify(paymentWriter).save(any(Payment.class));
     }
 
     @Test
@@ -107,7 +106,7 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.DUPLICATE_PAYMENT));
 
         verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
-        verify(paymentRepository, never()).save(any());
+        verify(paymentWriter, never()).save(any());
     }
 
     //Todo: ParticipationRepository 팀원 머지 후 주석 해제 — 금액 일치 시 정상 결제 성공 케이스
@@ -150,7 +149,7 @@ class PaymentServiceTest {
 //        // Then
 //        assertThat(response.participationId()).isEqualTo(1L);
 //        assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
-//        verify(paymentRepository).save(any(Payment.class));
+//        verify(paymentWriter).save(any(Payment.class));
 //    }
 
     //Todo: ParticipationRepository 팀원 머지 후 주석 해제 — 금액 불일치 시 PAYMENT_AMOUNT_MISMATCH 예외 케이스
@@ -177,7 +176,7 @@ class PaymentServiceTest {
 //                        .isEqualTo(ErrorCode.PAYMENT_AMOUNT_MISMATCH));
 //
 //        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
-//        verify(paymentRepository, never()).save(any());
+//        verify(paymentWriter, never()).save(any());
 //    }
 
     @Test
@@ -198,6 +197,6 @@ class PaymentServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));
 
-        verify(paymentRepository, never()).save(any());
+        verify(paymentWriter, never()).save(any());
     }
 }

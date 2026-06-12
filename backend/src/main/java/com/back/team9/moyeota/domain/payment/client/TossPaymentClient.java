@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.payment.client;
 
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -10,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Component
+@Slf4j
 public class TossPaymentClient {
 
     private final RestClient restClient;
@@ -36,9 +38,11 @@ public class TossPaymentClient {
                     .retrieve()
                     .body(TossConfirmResponse.class);
         } catch (Exception e) {
+            log.error("Toss payment confirmation failed. paymentKey: {}, orderId: {}", paymentKey, orderId, e);
             throw new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED);
         }
     }
 
-    private record ConfirmRequest(String paymentKey, String orderId, Integer amount) {}
+    private record ConfirmRequest(String paymentKey, String orderId, Integer amount) {
+    }
 }

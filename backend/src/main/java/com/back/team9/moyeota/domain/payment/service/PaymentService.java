@@ -1,7 +1,5 @@
 package com.back.team9.moyeota.domain.payment.service;
 
-import com.back.team9.moyeota.domain.participation.entity.Participation;
-import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
@@ -13,7 +11,6 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +18,8 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TossPaymentClient tossPaymentClient;
-    private final ParticipationRepository participationRepository;
+    private final PaymentWriter paymentWriter;
 
-    @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
 
         if (paymentRepository.findByOrderId(request.orderId()).isPresent()) {
@@ -46,7 +42,7 @@ public class PaymentService {
 
         //Todo: participation repository 업데이트 후 수정 필요
         Payment payment = request.toEntity(null, tossResponse.paymentKey(), PaymentStatus.PAID);
-        Payment savePayment = paymentRepository.save(payment);
+        Payment savePayment = paymentWriter.save(payment);
 
         return PaymentResponse.from(savePayment);
 
