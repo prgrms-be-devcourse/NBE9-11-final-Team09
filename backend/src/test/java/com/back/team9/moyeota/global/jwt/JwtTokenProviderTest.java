@@ -133,4 +133,49 @@ class JwtTokenProviderTest {
         // Then
         assertThat(remainingExpiration).isZero();
     }
+
+    @Test
+    @DisplayName("유효한 Access Token에서 회원 ID를 조회한다")
+    void findMemberIdFromAccessTokenReturnsMemberId() {
+        // Given
+        String accessToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.ACCESS,
+                ACCESS_EXPIRATION
+        );
+
+        // When / Then
+        assertThat(jwtTokenProvider.findMemberIdFromAccessToken(accessToken))
+                .contains(1L);
+    }
+
+    @Test
+    @DisplayName("Refresh Token에서는 회원 ID를 조회하지 않는다")
+    void findMemberIdFromRefreshTokenReturnsEmpty() {
+        // Given
+        String refreshToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.REFRESH,
+                REFRESH_EXPIRATION
+        );
+
+        // When / Then
+        assertThat(jwtTokenProvider.findMemberIdFromAccessToken(refreshToken))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("만료된 Access Token에서는 회원 ID를 조회하지 않는다")
+    void findMemberIdFromExpiredAccessTokenReturnsEmpty() {
+        // Given
+        String expiredToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.ACCESS,
+                -1000
+        );
+
+        // When / Then
+        assertThat(jwtTokenProvider.findMemberIdFromAccessToken(expiredToken))
+                .isEmpty();
+    }
 }

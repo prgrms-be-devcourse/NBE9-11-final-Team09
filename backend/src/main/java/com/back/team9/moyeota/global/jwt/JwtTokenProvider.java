@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -96,6 +97,25 @@ public class JwtTokenProvider {
             return Math.max(remaining, 0);
         } catch (JwtException | IllegalArgumentException exception) {
             return 0;
+        }
+    }
+
+    /**
+     * 유효한 Access Token에서 회원 ID를 추출
+     * 만료·위조·형식 오류 토큰과 Refresh Token은 빈 Optional을 반환
+     */
+    public Optional<Long> findMemberIdFromAccessToken(String token) {
+        try {
+            Claims claims = getClaims(token);
+            String tokenType = claims.get("tokenType", String.class);
+
+            if (!TokenType.ACCESS.name().equals(tokenType)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(Long.valueOf(claims.getSubject()));
+        } catch (JwtException | IllegalArgumentException exception) {
+            return Optional.empty();
         }
     }
 

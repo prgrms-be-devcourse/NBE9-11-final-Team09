@@ -5,6 +5,8 @@ import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import static org.mockito.Mockito.when;
+
+import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberLoginService memberLoginService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
