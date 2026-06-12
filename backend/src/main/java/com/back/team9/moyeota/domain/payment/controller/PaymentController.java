@@ -26,4 +26,12 @@ public class PaymentController {
         PaymentResponse response = paymentService.confirmDeposit(request);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS","보증금 결제가 완료되었습니다.", response));
     }
+
+    @PostMapping("/balance/confirm")
+    public ResponseEntity<ApiResponse<PaymentResponse>> confirmBalance(
+            @RequestBody @Valid PaymentConfirmRequest request
+    ) {
+        PaymentResponse response = paymentService.confirmBalance(request);
+        return ResponseEntity.ok(new ApiResponse<>("SUCCESS","잔액 결제가 완료되었습니다.", response));
+    }
 }
