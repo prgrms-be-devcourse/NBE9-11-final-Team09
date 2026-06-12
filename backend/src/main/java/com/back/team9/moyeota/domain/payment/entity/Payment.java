@@ -17,8 +17,9 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentId;
 
+    //Todo: participation merge 후 nullable 수정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "participation_id", nullable = false)
+    @JoinColumn(name = "participation_id", nullable = true)
     private Participation participation;
 
     @Enumerated(EnumType.STRING)
