@@ -109,7 +109,7 @@ class PaymentServiceTest {
         verify(paymentWriter, never()).save(any());
     }
 
-    //Todo: ParticipationRepository 팀원 머지 후 주석 해제 — 금액 일치 시 정상 결제 성공 케이스
+    //Todo: ParticipationRepository  머지 후 주석 해제 — 금액 일치 시 정상 결제 성공 케이스
 //    @Test
 //    @DisplayName("보증금 결제 승인 - 참여 금액 일치 시 결제 성공")
 //    void confirmDeposit_금액일치_결제성공() {
@@ -152,7 +152,7 @@ class PaymentServiceTest {
 //        verify(paymentWriter).save(any(Payment.class));
 //    }
 
-    //Todo: ParticipationRepository 팀원 머지 후 주석 해제 — 금액 불일치 시 PAYMENT_AMOUNT_MISMATCH 예외 케이스
+    //Todo: ParticipationRepository 머지 후 주석 해제 — 금액 불일치 시 PAYMENT_AMOUNT_MISMATCH 예외 케이스
 //    @Test
 //    @DisplayName("보증금 결제 승인 - 참여 금액 불일치 시 PAYMENT_AMOUNT_MISMATCH 예외 발생")
 //    void confirmDeposit_금액불일치_PAYMENT_AMOUNT_MISMATCH예외() {
@@ -178,6 +178,93 @@ class PaymentServiceTest {
 //        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
 //        verify(paymentWriter, never()).save(any());
 //    }
+
+    @Test
+    @DisplayName("잔액 결제 승인 - 정상 결제 성공")
+    void confirmBalance_정상요청_결제성공() {
+        // Given
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", "test_orderId", 50000, 1L
+        );
+
+        TossConfirmResponse tossResponse = new TossConfirmResponse(
+                "test_paymentKey", "test_orderId", "DONE", 50000
+        );
+
+        Payment savedPayment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.BALANCE)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.PAID)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000)).willReturn(tossResponse);
+        given(paymentWriter.save(any(Payment.class))).willReturn(savedPayment);
+
+        // When
+        PaymentResponse response = paymentService.confirmBalance(request);
+
+        // Then
+        assertThat(response.paymentId()).isEqualTo(1L);
+        assertThat(response.paymentType()).isEqualTo(PaymentType.BALANCE);
+        assertThat(response.amount()).isEqualTo(50000);
+        assertThat(response.tossPaymentKey()).isEqualTo("test_paymentKey");
+        assertThat(response.orderId()).isEqualTo("test_orderId");
+        assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
+        verify(paymentWriter).save(any(Payment.class));
+    }
+
+    @Test
+    @DisplayName("잔액 결제 승인 - 중복 orderId 요청 시 DUPLICATE_PAYMENT 예외 발생")
+    void confirmBalance_중복orderId_DUPLICATE_PAYMENT예외() {
+        // Given
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", "test_orderId", 50000, 1L
+        );
+
+        given(paymentRepository.findByOrderId("test_orderId"))
+                .willReturn(Optional.of(Payment.builder()
+                        .paymentId(1L)
+                        .orderId("test_orderId")
+                        .status(PaymentStatus.PAID)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.confirmBalance(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.DUPLICATE_PAYMENT));
+
+        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
+        verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("잔액 결제 승인 - 토스 API 실패 시 TOSS_PAYMENT_FAILED 예외 발생")
+    void confirmBalance_토스API실패_TOSS_PAYMENT_FAILED예외() {
+        // Given
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", "test_orderId", 50000, 1L
+        );
+
+        given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000))
+                .willThrow(new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED));
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.confirmBalance(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));
+
+        verify(paymentWriter, never()).save(any());
+    }
 
     @Test
     @DisplayName("보증금 결제 승인 - 토스 API 실패 시 TOSS_PAYMENT_FAILED 예외 발생")
