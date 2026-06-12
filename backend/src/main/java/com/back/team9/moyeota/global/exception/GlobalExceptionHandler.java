@@ -22,9 +22,9 @@ public class GlobalExceptionHandler{
     // 2. Request @Valid 유효성 검사 실패 예외
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult()
-                        .getFieldError()
-                        .getDefaultMessage();
+        String message = e.getBindingResult().getFieldError() != null
+                ? e.getBindingResult().getFieldError().getDefaultMessage()
+                : "잘못된 입력값입니다.";
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
                 .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, message)

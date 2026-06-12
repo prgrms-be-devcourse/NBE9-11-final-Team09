@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
+import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
 import com.back.team9.moyeota.domain.pathinfo.service.PathInfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
@@ -18,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -98,17 +101,42 @@ public class FundingService {
     @Transactional(readOnly = true)
     public List<FundingListResponse> getFundingList() {
 
-        return fundingRepository.findAll()
-                .stream()
-                .map(funding -> {
-                    PathInfo pathInfo = pathInfoService.getFirstPathInfo(funding.getFundingId());
+        List<Funding> fundings = fundingRepository.findAll();
 
-                    return FundingListResponse.from(
-                            funding,
-                            pathInfo,
-                            0 // TODO 현재 참가자 수
-                    );
-                }).toList();
+        List<Long> fundingIds =
+                fundings.stream()
+                        .map(Funding::getFundingId)
+                        .toList();
+
+        List<PathInfo> pathInfos =
+                pathInfoService
+                        .findByFunding_FundingIdInAndDirection(
+                                fundingIds,
+                                Direction.OUTBOUND
+                        );
+
+        Map<Long, PathInfo> pathInfoMap =
+                pathInfos.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        path ->
+                                                path.getFunding()
+                                                        .getFundingId(),
+                                        path -> path
+                                )
+                        );
+
+        return fundings.stream()
+                .map(funding ->
+                        FundingListResponse.from(
+                                funding,
+                                pathInfoMap.get(
+                                        funding.getFundingId()
+                                ),
+                                0
+                        )
+                )
+                .toList();
     }
 
     // 펀딩 취소

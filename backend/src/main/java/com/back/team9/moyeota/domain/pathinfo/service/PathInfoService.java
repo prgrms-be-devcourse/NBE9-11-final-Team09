@@ -6,6 +6,7 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoCreateRequest;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoUpdateRequest;
+import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathInfoValidator;
@@ -131,5 +132,12 @@ public class PathInfoService {
         pathInfoRepository.findByFunding_FundingId(fundingId).forEach(path -> path.changeBusType(busType));
     }
 
+    @Transactional
+    public List<PathInfo> findByFunding_FundingIdInAndDirection(
+            List<Long> fundingIds,
+            Direction direction
+    ) {
+        return pathInfoRepository.findByFunding_FundingIdInAndDirection(fundingIds, direction);
+    }
 
 }
