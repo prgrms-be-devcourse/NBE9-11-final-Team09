@@ -16,11 +16,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
-public class PathInfo {
+public class Pathinfo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long pathInfoId;
+    private Long pathinfoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "funding_id", nullable = false)
@@ -45,7 +45,7 @@ public class PathInfo {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PathInfoStatus status;
+    private PathinfoStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -62,7 +62,7 @@ public class PathInfo {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    public static PathInfo create(
+    public static Pathinfo create(
             Funding funding,
             LocalDateTime departureTime,
             String departureAddress,
@@ -71,17 +71,17 @@ public class PathInfo {
             Region arrivalRegion,
             Direction direction
     ) {
-        PathInfo pathInfo = new PathInfo();
-        pathInfo.funding = funding;
-        pathInfo.departureTime = departureTime;
-        pathInfo.departureAddress = departureAddress;
-        pathInfo.departureRegion = departureRegion;
-        pathInfo.arrivalAddress = arrivalAddress;
-        pathInfo.arrivalRegion = arrivalRegion;
-        pathInfo.busType = funding.getBusType();
-        pathInfo.direction = direction;
-        pathInfo.status = PathInfoStatus.PENDING;
-        return pathInfo;
+        Pathinfo pathinfo = new Pathinfo();
+        pathinfo.funding = funding;
+        pathinfo.departureTime = departureTime;
+        pathinfo.departureAddress = departureAddress;
+        pathinfo.departureRegion = departureRegion;
+        pathinfo.arrivalAddress = arrivalAddress;
+        pathinfo.arrivalRegion = arrivalRegion;
+        pathinfo.busType = funding.getBusType();
+        pathinfo.direction = direction;
+        pathinfo.status = PathinfoStatus.PENDING;
+        return pathinfo;
     }
 
     public void update(
@@ -101,7 +101,7 @@ public class PathInfo {
         this.direction = direction;
     }
     public void cancel() {
-        this.status = PathInfoStatus.CANCELLED;
+        this.status = PathinfoStatus.CANCELLED;
     }
     public void changeBusType(BusType busType) {
         this.busType = busType;

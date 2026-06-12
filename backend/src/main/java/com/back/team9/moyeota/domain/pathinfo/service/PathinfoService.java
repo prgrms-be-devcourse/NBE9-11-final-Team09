@@ -4,11 +4,11 @@ import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
+import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
-import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
-import com.back.team9.moyeota.domain.pathinfo.validator.PathInfoValidator;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -20,20 +20,20 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class PathInfoService {
+public class PathinfoService {
 
-    private final PathInfoRepository pathInfoRepository;
-    private final PathInfoValidator pathInfoValidator;
+    private final PathinfoRepository pathinfoRepository;
+    private final PathinfoValidator pathinfoValidator;
 
     @Transactional
-    public void createPathInfos(
+    public void createPathinfos(
             Funding funding,
             TripType tripType,
             RouteRequest route
     ) {
-        pathInfoValidator.validateCreateTripType(tripType, route);
+        pathinfoValidator.validateCreateTripType(tripType, route);
 
-        PathInfo outbound = PathInfo.create(
+        Pathinfo outbound = Pathinfo.create(
                 funding,
                 route.departureTime(),
                 route.departureAddress(),
@@ -43,10 +43,10 @@ public class PathInfoService {
                 Direction.OUTBOUND
         );
 
-        pathInfoRepository.save(outbound);
+        pathinfoRepository.save(outbound);
 
         if (tripType == TripType.ROUND) {
-            PathInfo returned = PathInfo.create(
+            Pathinfo returned = Pathinfo.create(
                     funding,
                     route.returnTime(),
                     route.arrivalAddress(),
@@ -56,24 +56,24 @@ public class PathInfoService {
                     Direction.RETURN
             );
 
-            pathInfoRepository.save(returned);
+            pathinfoRepository.save(returned);
         }
     }
 
     @Transactional
-    public void updatePathInfos(
+    public void updatePathinfos(
             Funding funding,
             TripType tripType,
             RouteRequest route
     ) {
-        pathInfoValidator.validateUpdateTripType(tripType, route);
+        pathinfoValidator.validateUpdateTripType(tripType, route);
 
-        List<PathInfo> existingPaths =
-                pathInfoRepository.findByFunding_FundingId(
+        List<Pathinfo> existingPaths =
+                pathinfoRepository.findByFunding_FundingId(
                         funding.getFundingId()
                 );
 
-        PathInfo outbound = existingPaths.stream()
+        Pathinfo outbound = existingPaths.stream()
                 .filter(path -> path.getDirection() == Direction.OUTBOUND)
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(
@@ -89,14 +89,14 @@ public class PathInfoService {
                 Direction.OUTBOUND
         );
 
-        PathInfo returned = existingPaths.stream()
+        Pathinfo returned = existingPaths.stream()
                 .filter(path -> path.getDirection() == Direction.RETURN)
                 .findFirst()
                 .orElse(null);
 
         if (tripType == TripType.ROUND) {
             if (returned == null) {
-                PathInfo newReturn = PathInfo.create(
+                Pathinfo newReturn = Pathinfo.create(
                         funding,
                         route.returnTime(),
                         route.arrivalAddress(),
@@ -106,7 +106,7 @@ public class PathInfoService {
                         Direction.RETURN
                 );
 
-                pathInfoRepository.save(newReturn);
+                pathinfoRepository.save(newReturn);
                 return;
             }
 
@@ -123,24 +123,24 @@ public class PathInfoService {
         }
 
         if (returned != null) {
-            pathInfoRepository.delete(returned);
+            pathinfoRepository.delete(returned);
         }
     }
 
     @Transactional(readOnly = true)
-    public List<PathInfoResponse> getPathInfoResponses(Long fundingId) {
+    public List<PathinfoResponse> getPathinfoResponses(Long fundingId) {
 
-        return pathInfoRepository
+        return pathinfoRepository
                 .findByFunding_FundingId(fundingId)
                 .stream()
-                .map(PathInfoResponse::from)
+                .map(PathinfoResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public PathInfo getFirstPathInfo(Long fundingId) {
+    public Pathinfo getFirstPathinfo(Long fundingId) {
 
-        return pathInfoRepository
+        return pathinfoRepository
                 .findByFunding_FundingId(fundingId)
                 .stream()
                 .findFirst()
@@ -148,32 +148,32 @@ public class PathInfoService {
     }
 
     @Transactional(readOnly = true)
-    public List<PathInfo> findByFundingId(Long fundingId) {
+    public List<Pathinfo> findByFundingId(Long fundingId) {
 
-        return pathInfoRepository.findByFunding_FundingId(
+        return pathinfoRepository.findByFunding_FundingId(
                 fundingId
         );
     }
 
     @Transactional
-    public void cancelPathInfos(Long fundingId) {
+    public void cancelPathinfos(Long fundingId) {
 
-        List<PathInfo> pathInfos = pathInfoRepository.findByFunding_FundingId(fundingId);
+        List<Pathinfo> pathinfos = pathinfoRepository.findByFunding_FundingId(fundingId);
 
-        pathInfos.forEach(PathInfo::cancel);
+        pathinfos.forEach(Pathinfo::cancel);
     }
 
     @Transactional
     public void syncBusType(Long fundingId, BusType busType) {
-        pathInfoRepository.findByFunding_FundingId(fundingId).forEach(path -> path.changeBusType(busType));
+        pathinfoRepository.findByFunding_FundingId(fundingId).forEach(path -> path.changeBusType(busType));
     }
 
     @Transactional
-    public List<PathInfo> findByFunding_FundingIdInAndDirection(
+    public List<Pathinfo> findByFunding_FundingIdInAndDirection(
             List<Long> fundingIds,
             Direction direction
     ) {
-        return pathInfoRepository.findByFunding_FundingIdInAndDirection(fundingIds, direction);
+        return pathinfoRepository.findByFunding_FundingIdInAndDirection(fundingIds, direction);
     }
 
     @Transactional(readOnly = true)
@@ -183,7 +183,7 @@ public class PathInfoService {
             RouteRequest route
     ) {
 
-        PathInfo outbound = pathInfoRepository
+        Pathinfo outbound = pathinfoRepository
                 .findByFunding_FundingId(fundingId)
                 .stream()
                 .filter(path ->
@@ -220,7 +220,7 @@ public class PathInfoService {
             return true;
         }
 
-        PathInfo returned = pathInfoRepository
+        Pathinfo returned = pathinfoRepository
                 .findByFunding_FundingId(fundingId)
                 .stream()
                 .filter(path ->

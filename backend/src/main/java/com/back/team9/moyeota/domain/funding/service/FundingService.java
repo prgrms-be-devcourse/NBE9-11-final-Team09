@@ -7,10 +7,10 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
+import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
-import com.back.team9.moyeota.domain.pathinfo.service.PathInfoService;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class FundingService {
 
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
-    private final PathInfoService pathInfoService;
+    private final PathinfoService pathinfoService;
     private final FundingValidator fundingValidator;
 
     // 펀딩 생성
@@ -62,7 +62,7 @@ public class FundingService {
 
         Funding savedFunding = fundingRepository.save(funding);
 
-        pathInfoService.createPathInfos(
+        pathinfoService.createPathinfos(
                 savedFunding,
                 request.tripType(),
                 request.route()
@@ -84,11 +84,11 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
 
-        List<PathInfoResponse> pathInfos = pathInfoService.getPathInfoResponses(fundingId);
+        List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponses(fundingId);
 
         return FundingDetailResponse.from(
                 funding,
-                pathInfos,
+                pathinfos,
                 0,      // TODO 현재 참가자 수
                 null,   // TODO 채팅방 ID
                 false,  // TODO 방장 여부
@@ -107,15 +107,15 @@ public class FundingService {
                         .map(Funding::getFundingId)
                         .toList();
 
-        List<PathInfo> pathInfos =
-                pathInfoService
+        List<Pathinfo> pathinfos =
+                pathinfoService
                         .findByFunding_FundingIdInAndDirection(
                                 fundingIds,
                                 Direction.OUTBOUND
                         );
 
-        Map<Long, PathInfo> pathInfoMap =
-                pathInfos.stream()
+        Map<Long, Pathinfo> pathinfoMap =
+                pathinfos.stream()
                         .collect(
                                 Collectors.toMap(
                                         path ->
@@ -129,7 +129,7 @@ public class FundingService {
                 .map(funding ->
                         FundingListResponse.from(
                                 funding,
-                                pathInfoMap.get(
+                                pathinfoMap.get(
                                         funding.getFundingId()
                                 ),
                                 0
@@ -147,7 +147,7 @@ public class FundingService {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
         funding.cancel();
-        pathInfoService.cancelPathInfos(fundingId);
+        pathinfoService.cancelPathinfos(fundingId);
     }
 
     @Transactional
@@ -179,7 +179,7 @@ public class FundingService {
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
                         || !Objects.equals(funding.getTotalPrice(), request.totalPrice())
                         || !Objects.equals(funding.getTripType(), request.tripType())
-                        || pathInfoService.isRouteChanged(
+                        || pathinfoService.isRouteChanged(
                         funding.getFundingId(),
                         funding.getTripType(),
                         request.route()
@@ -213,12 +213,12 @@ public class FundingService {
                 departureDate
         );
 
-        pathInfoService.updatePathInfos(
+        pathinfoService.updatePathinfos(
                 funding,
                 request.tripType(),
                 request.route()
         );
-        pathInfoService.syncBusType(
+        pathinfoService.syncBusType(
                 funding.getFundingId(),
                 funding.getBusType()
         );

@@ -4,7 +4,7 @@ import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
-import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
+import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,7 +26,7 @@ public record FundingDetailResponse(
         Integer totalPrice,
         Integer minPrice,
         Integer maxPrice,
-        List<PathInfoResponse> pathInfos,
+        List<PathinfoResponse> pathinfos,
         Long chatRoomId,
         Boolean isHost,
         Boolean isJoined,
@@ -34,7 +34,7 @@ public record FundingDetailResponse(
 ) {
     public static FundingDetailResponse from(
             Funding funding,
-            List<PathInfoResponse> pathInfos,
+            List<PathinfoResponse> pathinfos,
             Integer currentParticipants,
             Long chatRoomId,
             Boolean isHost,
@@ -65,7 +65,7 @@ public record FundingDetailResponse(
                 funding.getTotalPrice(),
                 minPrice,
                 maxPrice,
-                pathInfos,
+                pathinfos,
                 chatRoomId,
                 isHost,
                 isJoined,

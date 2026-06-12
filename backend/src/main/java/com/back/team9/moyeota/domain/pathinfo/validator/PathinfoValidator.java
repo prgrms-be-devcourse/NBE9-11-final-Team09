@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
-public class PathInfoValidator {
+public class PathinfoValidator {
 
     public void validateDepartureDate(LocalDateTime departureTime) {
 

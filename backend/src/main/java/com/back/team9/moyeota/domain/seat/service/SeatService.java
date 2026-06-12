@@ -1,8 +1,8 @@
 package com.back.team9.moyeota.domain.seat.service;
 
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfoStatus;
-import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
+import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.seat.dto.SeatLayoutResponse;
 import com.back.team9.moyeota.domain.seat.dto.SeatResponse;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
@@ -23,17 +23,17 @@ import java.util.Map;
 public class SeatService {
     private final SeatRepository seatRepository; // 좌석 DB 조회
     private final SeatRedisService seatRedisService; // 좌석 HOLD Redis 처리
-    private final PathInfoRepository pathInfoRepository; // 노선 조회
+    private final PathinfoRepository pathinfoRepository; // 노선 조회
 
     @Transactional(readOnly = true) // 조회 전용 트랜잭션
-    public SeatLayoutResponse getSeatLayout(Long pathId, Long currentMemberId) {
+    public SeatLayoutResponse getSeatLayout(Long pathid, Long currentMemberId) {
 
         // 노선 존재 여부 확인
-        PathInfo pathInfo = pathInfoRepository.findById(pathId)
+        Pathinfo pathinfo = pathinfoRepository.findById(pathid)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
 
         // 해당 노선의 전체 좌석 DB 조회
-        List<Seat> seats = seatRepository.findByPathInfoPathinfoId(pathId);
+        List<Seat> seats = seatRepository.findByPathinfoPathinfoId(pathid);
 
         // 전체 좌석 ID 목록 추출
         List<Long> seatIds = seats.stream()
@@ -84,7 +84,7 @@ public class SeatService {
 
         // 전체 좌석 배치도 응답 반환
         return SeatLayoutResponse.from(
-                pathId,
+                pathid,
                 "TEMP", // TODO: Funding의 busType 연결 예정
                 seatResponses
         );
@@ -98,11 +98,11 @@ public class SeatService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
 
         // 노선 상태 확인
-        // TODO: PathInfoStatus에 CANCELLED 추가 후 CANCELLED 체크 로직 추가 필요
-        PathInfo pathInfo = seat.getPathInfo();
+        // TODO: PathinfoStatus에 CANCELLED 추가 후 CANCELLED 체크 로직 추가 필요
+        Pathinfo pathinfo = seat.getPathinfo();
 
         // 운행 완료 노선은 선점 불가
-        if (pathInfo.getStatus() == PathInfoStatus.COMPLETED) {
+        if (pathinfo.getStatus() == PathinfoStatus.COMPLETED) {
             throw new BusinessException(ErrorCode.PATH_INVALID_STATUS);
         }
 

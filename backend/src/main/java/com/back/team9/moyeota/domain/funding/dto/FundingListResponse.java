@@ -2,7 +2,7 @@ package com.back.team9.moyeota.domain.funding.dto;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 
 import java.time.LocalDateTime;
 
@@ -23,7 +23,7 @@ public record FundingListResponse(
 ) {
     public static FundingListResponse from(
             Funding funding,
-            PathInfo pathInfo,
+            Pathinfo pathinfo,
             Integer currentParticipants
     ) {
 
@@ -39,9 +39,9 @@ public record FundingListResponse(
                 funding.getFundingId(),
                 funding.getTitle(),
                 funding.getMember().getNickname(),
-                pathInfo.getDepartureAddress(),
-                pathInfo.getArrivalAddress(),
-                pathInfo.getDepartureTime(),
+                pathinfo.getDepartureAddress(),
+                pathinfo.getArrivalAddress(),
+                pathinfo.getDepartureTime(),
                 funding.getStatus(),
                 currentParticipants,
                 funding.getMinParticipants(),

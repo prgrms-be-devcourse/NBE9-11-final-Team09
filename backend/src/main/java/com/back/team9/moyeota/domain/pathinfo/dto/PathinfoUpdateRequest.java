@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-public record PathInfoUpdateRequest(
+public record PathinfoUpdateRequest(
         @NotNull(message = "출발 시간은 필수입니다.")
         LocalDateTime departureTime,
 

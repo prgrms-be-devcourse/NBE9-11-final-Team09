@@ -10,10 +10,10 @@ import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfoStatus;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
-import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ public class FundingServiceTest {
     @Autowired
     private MemberRepository memberRepository;
     @Autowired
-    private PathInfoRepository pathInfoRepository;
+    private PathinfoRepository pathinfoRepository;
 
     @Test
     void createFunding_편도펀딩_생성성공() {
@@ -52,7 +52,7 @@ public class FundingServiceTest {
         Funding funding = fundingRepository.findById(response.fundingId()).orElseThrow();
 
         assertThat(funding.getTitle()).isEqualTo(request.title());
-        assertThat(pathInfoRepository.findByFunding_FundingId(funding.getFundingId())).hasSize(1);
+        assertThat(pathinfoRepository.findByFunding_FundingId(funding.getFundingId())).hasSize(1);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class FundingServiceTest {
         FundingCreateResponse response = fundingService.createFunding(member.getMemberId(), request);
 
         // Then
-        assertThat(pathInfoRepository.findByFunding_FundingId(response.fundingId())).hasSize(2);
+        assertThat(pathinfoRepository.findByFunding_FundingId(response.fundingId())).hasSize(2);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class FundingServiceTest {
         // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
         assertThat(result.title()).isEqualTo("축구 경기 버스");
-        assertThat(result.pathInfos()).hasSize(1);
+        assertThat(result.pathinfos()).hasSize(1);
     }
 
     @Test
@@ -277,7 +277,7 @@ public class FundingServiceTest {
 
         // Then
         assertThat(
-                pathInfoRepository.findByFunding_FundingId(
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 )
         ).hasSize(2);
@@ -306,13 +306,13 @@ public class FundingServiceTest {
 
         // Then
         assertThat(
-                pathInfoRepository.findByFunding_FundingId(
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 )
         ).hasSize(1);
 
         assertThat(
-                pathInfoRepository.findByFunding_FundingId(
+                pathinfoRepository.findByFunding_FundingId(
                                 response.fundingId()
                         )
                         .getFirst()
@@ -333,8 +333,8 @@ public class FundingServiceTest {
         fundingService.cancelFunding(response.fundingId());
 
         // Then
-        assertThat(pathInfoRepository.findByFunding_FundingId(response.fundingId()))
-                .allMatch(pathInfo -> pathInfo.getStatus() == PathInfoStatus.CANCELLED);
+        assertThat(pathinfoRepository.findByFunding_FundingId(response.fundingId()))
+                .allMatch(pathinfo -> pathinfo.getStatus() == PathinfoStatus.CANCELLED);
     }
 
     @Test
@@ -365,8 +365,8 @@ public class FundingServiceTest {
         fundingService.updateFunding(response.fundingId(), request);
 
         // Then
-        List<PathInfo> paths = pathInfoRepository.findByFunding_FundingId(response.fundingId());
-        assertThat(paths).extracting(PathInfo::getDepartureAddress).contains("강남역");
+        List<Pathinfo> paths = pathinfoRepository.findByFunding_FundingId(response.fundingId());
+        assertThat(paths).extracting(Pathinfo::getDepartureAddress).contains("강남역");
     }
 
     @Test
@@ -643,13 +643,13 @@ public class FundingServiceTest {
                         response.fundingId()
                 ).orElseThrow();
 
-        List<PathInfo> pathInfos =
-                pathInfoRepository.findByFunding_FundingId(
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 );
 
         // Then
-        assertThat(pathInfos)
+        assertThat(pathinfos)
                 .hasSize(2);
 
         assertThat(
@@ -658,8 +658,8 @@ public class FundingServiceTest {
                 BusType.BUS_45
         );
 
-        assertThat(pathInfos)
-                .extracting(PathInfo::getBusType)
+        assertThat(pathinfos)
+                .extracting(Pathinfo::getBusType)
                 .containsOnly(
                         funding.getBusType()
                 );
@@ -688,8 +688,8 @@ public class FundingServiceTest {
                         response.fundingId()
                 ).orElseThrow();
 
-        List<PathInfo> pathInfos =
-                pathInfoRepository.findByFunding_FundingId(
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 );
 
@@ -700,8 +700,8 @@ public class FundingServiceTest {
                 BusType.BUS_25
         );
 
-        assertThat(pathInfos)
-                .extracting(PathInfo::getBusType)
+        assertThat(pathinfos)
+                .extracting(Pathinfo::getBusType)
                 .containsOnly(
                         BusType.BUS_25
                 );
@@ -728,11 +728,11 @@ public class FundingServiceTest {
                 .isEqualTo(BusType.BUS_45);
 
         assertThat(
-                pathInfoRepository.findByFunding_FundingId(
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 )
         )
-                .extracting(PathInfo::getBusType)
+                .extracting(Pathinfo::getBusType)
                 .containsOnly(BusType.BUS_45);
 
         FundingUpdateRequest request =
@@ -765,24 +765,24 @@ public class FundingServiceTest {
                         response.fundingId()
                 ).orElseThrow();
 
-        List<PathInfo> pathInfos =
-                pathInfoRepository.findByFunding_FundingId(
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findByFunding_FundingId(
                         response.fundingId()
                 );
 
         assertThat(fundingAfter.getBusType())
                 .isEqualTo(BusType.BUS_25);
 
-        assertThat(pathInfos)
+        assertThat(pathinfos)
                 .hasSize(2);
 
-        assertThat(pathInfos)
-                .extracting(PathInfo::getBusType)
+        assertThat(pathinfos)
+                .extracting(Pathinfo::getBusType)
                 .containsOnly(BusType.BUS_25);
-        assertThat(pathInfos.get(0).getBusType())
+        assertThat(pathinfos.get(0).getBusType())
                 .isEqualTo(fundingAfter.getBusType());
 
-        assertThat(pathInfos.get(1).getBusType())
+        assertThat(pathinfos.get(1).getBusType())
                 .isEqualTo(fundingAfter.getBusType());
     }
 

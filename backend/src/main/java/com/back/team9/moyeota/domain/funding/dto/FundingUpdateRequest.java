@@ -27,7 +27,7 @@ public record FundingUpdateRequest(
         Integer totalPrice,
 
 //        @NotEmpty(message = "최소 1개의 노선이 필요합니다.")
-//        List<PathInfoUpdateRequest> paths
+//        List<PathinfoUpdateRequest> paths
         @NotNull(message = "노선 정보는 필수입니다.")
         @Valid
         RouteRequest route
