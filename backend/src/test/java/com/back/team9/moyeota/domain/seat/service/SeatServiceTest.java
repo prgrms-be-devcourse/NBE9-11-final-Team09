@@ -51,7 +51,7 @@ class SeatServiceTest {
     @DisplayName("좌석 배치도 조회 - 정상 조회 성공")
     void getSeatLayout_정상조회_좌석목록반환() {
         // Given
-        Long pathid = 1L;
+        Long pathId = 1L;
         Long currentMemberId = 1L;
 
         Pathinfo pathinfo = mock(Pathinfo.class);
@@ -61,17 +61,17 @@ class SeatServiceTest {
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathinfoRepository.findById(pathid)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathid)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 홀딩 중인 좌석 없음
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Collections.emptyMap());
 
         // When
-        SeatLayoutResponse response = seatService.getSeatLayout(pathid, currentMemberId);
+        SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
 
         // Then
-        assertThat(response.pathid()).isEqualTo(pathid);
+        assertThat(response.pathId()).isEqualTo(pathId);
         assertThat(response.seats()).hasSize(1);
         assertThat(response.seats().get(0).status()).isEqualTo(SeatDisplayStatus.AVAILABLE);
         assertThat(response.seats().get(0).mySeat()).isFalse();
@@ -81,13 +81,13 @@ class SeatServiceTest {
     @DisplayName("좌석 배치도 조회 - 존재하지 않는 노선 PATH_NOT_FOUND 예외 발생")
     void getSeatLayout_존재하지않는노선_PATH_NOT_FOUND예외() {
         // Given
-        Long pathid = 999L;
+        Long pathId = 999L;
         Long currentMemberId = 1L;
 
-        given(pathinfoRepository.findById(pathid)).willReturn(Optional.empty());
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> seatService.getSeatLayout(pathid, currentMemberId))
+        assertThatThrownBy(() -> seatService.getSeatLayout(pathId, currentMemberId))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.PATH_NOT_FOUND));
@@ -97,7 +97,7 @@ class SeatServiceTest {
     @DisplayName("좌석 배치도 조회 - HOLD 중인 좌석 상태 HOLD로 반환")
     void getSeatLayout_홀딩중인좌석_HOLD상태반환() {
         // Given
-        Long pathid = 1L;
+        Long pathId = 1L;
         Long currentMemberId = 1L;
         Long holdMemberId = 2L; // 다른 유저가 선점 중
 
@@ -108,14 +108,14 @@ class SeatServiceTest {
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathinfoRepository.findById(pathid)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathid)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 2번 유저가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, holdMemberId));
 
         // When
-        SeatLayoutResponse response = seatService.getSeatLayout(pathid, currentMemberId);
+        SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
 
         // Then
         assertThat(response.seats().get(0).status()).isEqualTo(SeatDisplayStatus.HOLD);
@@ -126,7 +126,7 @@ class SeatServiceTest {
     @DisplayName("좌석 배치도 조회 - 내가 선점한 좌석 mySeat true 반환")
     void getSeatLayout_내가선점한좌석_mySeat_true반환() {
         // Given
-        Long pathid = 1L;
+        Long pathId = 1L;
         Long currentMemberId = 1L;
 
         Pathinfo pathinfo = mock(Pathinfo.class);
@@ -136,14 +136,14 @@ class SeatServiceTest {
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathinfoRepository.findById(pathid)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathid)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 내가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, currentMemberId));
 
         // When
-        SeatLayoutResponse response = seatService.getSeatLayout(pathid, currentMemberId);
+        SeatLayoutResponse response = seatService.getSeatLayout(pathId, currentMemberId);
 
         // Then
         assertThat(response.seats().get(0).status()).isEqualTo(SeatDisplayStatus.HOLD);

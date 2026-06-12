@@ -71,8 +71,8 @@ public class Funding {
             String content,
             LocalDate departureDate,
             BusType busType,
-            Integer totalPrice,
             Integer minParticipants,
+            Integer totalPrice,
             TripType tripType
     ) {
         Funding funding = new Funding();

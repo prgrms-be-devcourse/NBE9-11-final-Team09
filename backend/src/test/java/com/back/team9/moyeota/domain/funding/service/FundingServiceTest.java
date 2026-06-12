@@ -14,6 +14,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,8 @@ public class FundingServiceTest {
     private MemberRepository memberRepository;
     @Autowired
     private PathinfoRepository pathinfoRepository;
+    @Autowired
+    private PathinfoService pathinfoService;
 
     @Test
     void createFunding_편도펀딩_생성성공() {
@@ -308,21 +311,37 @@ public class FundingServiceTest {
         );
 
         // Then
-        assertThat(
+        List<Pathinfo> pathinfos =
                 pathinfoRepository.findByFunding_FundingId(
+                        response.fundingId()
+                );
+
+        assertThat(pathinfos).hasSize(2);
+
+        Pathinfo outbound = pathinfos.stream()
+                .filter(path ->
+                        path.getDirection() == Direction.OUTBOUND
+                )
+                .findFirst()
+                .orElseThrow();
+
+        Pathinfo returned = pathinfos.stream()
+                .filter(path ->
+                        path.getDirection() == Direction.RETURN
+                )
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(outbound.getStatus())
+                .isEqualTo(PathinfoStatus.PENDING);
+
+        assertThat(returned.getStatus())
+                .isEqualTo(PathinfoStatus.CANCELLED);
+        assertThat(
+                pathinfoService.getPathinfoResponses(
                         response.fundingId()
                 )
         ).hasSize(1);
-
-        assertThat(
-                pathinfoRepository.findByFunding_FundingId(
-                                response.fundingId()
-                        )
-                        .getFirst()
-                        .getDirection()
-        ).isEqualTo(
-                Direction.OUTBOUND
-        );
     }
 
     @Test

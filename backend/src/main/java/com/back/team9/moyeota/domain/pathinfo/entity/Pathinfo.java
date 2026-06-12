@@ -16,6 +16,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@Table(uniqueConstraints = {@UniqueConstraint(
+                        name = "uk_pathinfo_funding_direction",
+                        columnNames = {"funding_id", "direction"}
+                )
+        }
+)
 public class Pathinfo {
 
     @Id
@@ -99,6 +105,7 @@ public class Pathinfo {
         this.arrivalRegion = arrivalRegion;
         this.busType = funding.getBusType();
         this.direction = direction;
+        this.status = PathinfoStatus.PENDING;
     }
     public void cancel() {
         this.status = PathinfoStatus.CANCELLED;

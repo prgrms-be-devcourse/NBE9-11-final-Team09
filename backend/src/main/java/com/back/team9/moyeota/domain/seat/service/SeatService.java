@@ -26,14 +26,14 @@ public class SeatService {
     private final PathinfoRepository pathinfoRepository; // 노선 조회
 
     @Transactional(readOnly = true) // 조회 전용 트랜잭션
-    public SeatLayoutResponse getSeatLayout(Long pathid, Long currentMemberId) {
+    public SeatLayoutResponse getSeatLayout(Long pathId, Long currentMemberId) {
 
         // 노선 존재 여부 확인
-        Pathinfo pathinfo = pathinfoRepository.findById(pathid)
+        Pathinfo pathinfo = pathinfoRepository.findById(pathId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
 
         // 해당 노선의 전체 좌석 DB 조회
-        List<Seat> seats = seatRepository.findByPathinfoPathinfoId(pathid);
+        List<Seat> seats = seatRepository.findByPathinfoPathinfoId(pathId);
 
         // 전체 좌석 ID 목록 추출
         List<Long> seatIds = seats.stream()
@@ -84,7 +84,7 @@ public class SeatService {
 
         // 전체 좌석 배치도 응답 반환
         return SeatLayoutResponse.from(
-                pathid,
+                pathId,
                 "TEMP", // TODO: Funding의 busType 연결 예정
                 seatResponses
         );

@@ -21,16 +21,16 @@ public class SeatController {
 
     // TODO: Swagger 설정 팀이랑 맞춘 후 @Tag, @Operation 주석 해제
     //@Operation(summary = "특정 버스 좌석 배치도 조회") // Swagger API 설명
-    @GetMapping("/pathinfos/{pathid}/seats") // GET /api/pathinfos/{pathid}/seats
+    @GetMapping("/pathinfos/{pathId}/seats") // GET /api/pathinfos/{pathId}/seats
     public ResponseEntity<ApiResponse<SeatLayoutResponse>> getSeatLayout(
-            @PathVariable("pathid") Long pathid // 조회할 노선 ID
+            @PathVariable("pathId") Long pathId // 조회할 노선 ID
     ) {
 
         Long currentMemberId = 1L; //TODO: 임시 테스트용 회원 ID (인증 연동 후 제거)
 
         // 좌석 배치도 조회
         SeatLayoutResponse response =
-                seatService.getSeatLayout(pathid, currentMemberId);
+                seatService.getSeatLayout(pathId, currentMemberId);
 
         // 공통 응답 포맷 반환
         return ResponseEntity.ok(

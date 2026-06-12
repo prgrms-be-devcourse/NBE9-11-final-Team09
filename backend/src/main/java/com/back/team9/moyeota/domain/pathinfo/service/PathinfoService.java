@@ -7,6 +7,7 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
 import com.back.team9.moyeota.global.error.ErrorCode;
@@ -68,14 +69,11 @@ public class PathinfoService {
     ) {
         pathinfoValidator.validateUpdateTripType(tripType, route);
 
-        List<Pathinfo> existingPaths =
-                pathinfoRepository.findByFunding_FundingId(
-                        funding.getFundingId()
-                );
-
-        Pathinfo outbound = existingPaths.stream()
-                .filter(path -> path.getDirection() == Direction.OUTBOUND)
-                .findFirst()
+        Pathinfo outbound = pathinfoRepository
+                .findByFunding_FundingIdAndDirection(
+                        funding.getFundingId(),
+                        Direction.OUTBOUND
+                )
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.PATHINFO_REQUIRED
                 ));
@@ -89,9 +87,11 @@ public class PathinfoService {
                 Direction.OUTBOUND
         );
 
-        Pathinfo returned = existingPaths.stream()
-                .filter(path -> path.getDirection() == Direction.RETURN)
-                .findFirst()
+        Pathinfo returned = pathinfoRepository
+                .findByFunding_FundingIdAndDirection(
+                        funding.getFundingId(),
+                        Direction.RETURN
+                )
                 .orElse(null);
 
         if (tripType == TripType.ROUND) {
@@ -123,15 +123,17 @@ public class PathinfoService {
         }
 
         if (returned != null) {
-            pathinfoRepository.delete(returned);
+            returned.cancel();
         }
     }
 
     @Transactional(readOnly = true)
     public List<PathinfoResponse> getPathinfoResponses(Long fundingId) {
-
         return pathinfoRepository
-                .findByFunding_FundingId(fundingId)
+                .findByFunding_FundingIdAndStatusNot(
+                        fundingId,
+                        PathinfoStatus.CANCELLED
+                )
                 .stream()
                 .map(PathinfoResponse::from)
                 .toList();
@@ -139,11 +141,12 @@ public class PathinfoService {
 
     @Transactional(readOnly = true)
     public Pathinfo getFirstPathinfo(Long fundingId) {
-
         return pathinfoRepository
-                .findByFunding_FundingId(fundingId)
-                .stream()
-                .findFirst()
+                .findByFunding_FundingIdAndDirectionAndStatusNot(
+                        fundingId,
+                        Direction.OUTBOUND,
+                        PathinfoStatus.CANCELLED
+                )
                 .orElse(null);
     }
 
@@ -168,12 +171,17 @@ public class PathinfoService {
         pathinfoRepository.findByFunding_FundingId(fundingId).forEach(path -> path.changeBusType(busType));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Pathinfo> findByFunding_FundingIdInAndDirection(
             List<Long> fundingIds,
             Direction direction
     ) {
-        return pathinfoRepository.findByFunding_FundingIdInAndDirection(fundingIds, direction);
+        return pathinfoRepository
+                .findByFunding_FundingIdInAndDirectionAndStatusNot(
+                        fundingIds,
+                        direction,
+                        PathinfoStatus.CANCELLED
+                );
     }
 
     @Transactional(readOnly = true)
@@ -182,17 +190,12 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-
-        Pathinfo outbound = pathinfoRepository
-                .findByFunding_FundingId(fundingId)
-                .stream()
-                .filter(path ->
-                        path.getDirection() == Direction.OUTBOUND
-                )
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findByFunding_FundingId(fundingId);
+        Pathinfo outbound = pathinfos.stream()
+                .filter(path -> path.getDirection() == Direction.OUTBOUND)
                 .findFirst()
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.PATHINFO_REQUIRED
-                ));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PATHINFO_REQUIRED));
 
         boolean outboundChanged =
                 !Objects.equals(
@@ -220,12 +223,8 @@ public class PathinfoService {
             return true;
         }
 
-        Pathinfo returned = pathinfoRepository
-                .findByFunding_FundingId(fundingId)
-                .stream()
-                .filter(path ->
-                        path.getDirection() == Direction.RETURN
-                )
+        Pathinfo returned = pathinfos.stream()
+                .filter(path -> path.getDirection() == Direction.RETURN)
                 .findFirst()
                 .orElse(null);
 
