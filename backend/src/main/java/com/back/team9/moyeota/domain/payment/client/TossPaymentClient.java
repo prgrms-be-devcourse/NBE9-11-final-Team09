@@ -43,6 +43,21 @@ public class TossPaymentClient {
         }
     }
 
+    public void cancel(String paymentKey, String cancelReason) {
+        try {
+            restClient.post()
+                    .uri("/v1/payments/{paymentKey}/cancel", paymentKey)
+                    .body(new CancelRequest(cancelReason))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error("Toss payment cancel failed. paymentKey: {}", paymentKey, e);
+            throw new BusinessException(ErrorCode.REFUND_FAILED);
+        }
+    }
+
     private record ConfirmRequest(String paymentKey, String orderId, Integer amount) {
+    }
+    private record CancelRequest(String cancelReason) {
     }
 }
