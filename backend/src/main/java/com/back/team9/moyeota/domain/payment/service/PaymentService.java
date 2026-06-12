@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.payment.service;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
@@ -54,5 +55,23 @@ public class PaymentService {
         Payment savePayment = paymentWriter.save(payment);
 
         return PaymentResponse.from(savePayment);
+    }
+
+    public PaymentResponse refund(Long paymentId, PaymentRefundRequest request) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        if(payment.getStatus()!=PaymentStatus.PAID) {
+            throw new BusinessException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
+        }
+
+        tossPaymentClient.cancel(
+                payment.getTossPaymentKey(),
+                request.cancelReason()
+        );
+
+        Payment updatedPayment = paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        return PaymentResponse.from(updatedPayment);
     }
 }

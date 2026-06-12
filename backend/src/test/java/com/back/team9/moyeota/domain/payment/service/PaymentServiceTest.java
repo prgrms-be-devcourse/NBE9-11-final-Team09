@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.payment.service;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
@@ -24,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -285,5 +288,122 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));
 
         verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("환불 - 정상 환불 성공")
+    void refund_정상요청_환불성공() {
+        // Given
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+
+        Payment payment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.PAID)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Payment refundedPayment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.REFUNDED)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+        given(paymentWriter.update(any(Payment.class), eq(PaymentStatus.REFUNDED))).willReturn(refundedPayment);
+
+        // When
+        PaymentResponse response = paymentService.refund(1L, request);
+
+        // Then
+        assertThat(response.status()).isEqualTo(PaymentStatus.REFUNDED);
+        verify(tossPaymentClient).cancel("test_paymentKey", "변심");
+        verify(paymentWriter).update(any(Payment.class), eq(PaymentStatus.REFUNDED));
+    }
+
+    @Test
+    @DisplayName("환불 - 존재하지 않는 결제 ID 요청 시 ORDER_NOT_FOUND 예외 발생")
+    void refund_존재하지않는결제_ORDER_NOT_FOUND예외() {
+        // Given
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+
+        given(paymentRepository.findById(999L)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.refund(999L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ORDER_NOT_FOUND));
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("환불 - 이미 환불된 결제 요청 시 PAYMENT_ALREADY_COMPLETED 예외 발생")
+    void refund_이미환불된결제_PAYMENT_ALREADY_COMPLETED예외() {
+        // Given
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+
+        Payment refundedPayment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.REFUNDED)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(refundedPayment));
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.refund(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PAYMENT_ALREADY_COMPLETED));
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("환불 - 토스 API 실패 시 REFUND_FAILED 예외 발생")
+    void refund_토스API실패_REFUND_FAILED예외() {
+        // Given
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+
+        Payment payment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.PAID)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+        willThrow(new BusinessException(ErrorCode.REFUND_FAILED))
+                .given(tossPaymentClient).cancel(anyString(), anyString());
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.refund(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REFUND_FAILED));
+
+        verify(paymentWriter, never()).update(any(), any());
     }
 }

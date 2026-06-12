@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.payment.entity.Payment;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,5 +16,11 @@ public class PaymentWriter {
     @Transactional
     public Payment save(Payment payment) {
         return paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public Payment update(Payment payment, PaymentStatus status) {
+        payment.updateStatus(status);
+        return payment;
     }
 }
