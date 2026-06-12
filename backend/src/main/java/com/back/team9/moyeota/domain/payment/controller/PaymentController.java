@@ -1,16 +1,14 @@
 package com.back.team9.moyeota.domain.payment.controller;
 
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.service.PaymentService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -33,5 +31,14 @@ public class PaymentController {
     ) {
         PaymentResponse response = paymentService.confirmBalance(request);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS","잔액 결제가 완료되었습니다.", response));
+    }
+
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<ApiResponse<PaymentResponse>> refund(
+            @PathVariable Long paymentId,
+            @RequestBody @Valid PaymentRefundRequest request
+    ) {
+        PaymentResponse response = paymentService.refund(paymentId, request);
+        return ResponseEntity.ok(new ApiResponse<>("SUCCESS","환불이 완료되었습니다.", response));
     }
 }

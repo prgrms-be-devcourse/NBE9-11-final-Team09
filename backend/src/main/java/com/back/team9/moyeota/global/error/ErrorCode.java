@@ -64,12 +64,13 @@ public enum ErrorCode {
     // [PAY] 결제
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST,"PAY001", "결제 요청 금액이 일치하지 않습니다."),
     TOSS_PAYMENT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"PAY002", "토스페이먼츠 결제 승인에 실패했습니다."),
-    PAYMENT_ALREADY_COMPLETED(HttpStatus.CONFLICT,"PAY003", "이미 완료된 결제입니다."),
+    INVALID_PAYMENT_STATUS(HttpStatus.CONFLICT,"PAY003", "환불 가능한 상태가 아닙니다."),
     DEPOSIT_NOT_PAID(HttpStatus.BAD_REQUEST,"PAY004", "보증금 미결제 상태입니다."),
     REFUND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"PAY005", "환불 처리 중 오류가 발생했습니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND,"PAY006", "존재하지 않는 주문입니다."),
     DUPLICATE_PAYMENT(HttpStatus.CONFLICT,"PAY007", "중복 결제 요청입니다."),
     BALANCE_PAYMENT_EXPIRED(HttpStatus.BAD_REQUEST,"PAY008", "잔액 결제 기한이 만료되었습니다."),
+    ALREADY_REFUNDED(HttpStatus.CONFLICT, "PAY009", "이미 환불된 결제입니다."),
 
     // [STL] 정산
     SETTLEMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST,"STL001", "이미 방장 페이백이 완료된 펀딩입니다."),
