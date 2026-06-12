@@ -1,10 +1,10 @@
 package com.back.team9.moyeota.domain.funding.service;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
-import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathInfoResponse;
@@ -15,6 +15,7 @@ import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +27,7 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final PathInfoService pathInfoService;
+    private final FundingValidator fundingValidator;
 
     // 펀딩 생성
     @Transactional
@@ -34,7 +36,7 @@ public class FundingService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        validateFundingRequest(
+        fundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType(),
                 request.totalPrice()
@@ -133,7 +135,7 @@ public class FundingService {
             return;
         }
 
-        validateFundingRequest(
+        fundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType(),
                 request.totalPrice()
@@ -202,22 +204,4 @@ public class FundingService {
 
 
 
-    private void validateFundingRequest(
-            Integer minParticipants,
-            BusType busType,
-            Integer totalPrice
-    ) {
-
-        if (minParticipants > busType.getCapacity()) {
-            throw new BusinessException(
-                    ErrorCode.FUNDING_MIN_INVALID
-            );
-        }
-
-        if (totalPrice <= 0) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_TOTAL_PRICE
-            );
-        }
-    }
 }

@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.funding.controller;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.service.FundingService;
 import com.back.team9.moyeota.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class FundingController {
     // 펀딩 생성
     @PostMapping
     public ApiResponse<FundingCreateResponse> createFunding(
-            @RequestBody FundingCreateRequest request
+            @RequestBody @Valid FundingCreateRequest request
     ) {
 
         FundingCreateResponse response =
@@ -64,7 +65,7 @@ public class FundingController {
     @PutMapping("/{fundingId}")
     public ApiResponse<Void> updateFunding(
             @PathVariable Long fundingId,
-            @RequestBody FundingUpdateRequest request
+            @RequestBody @Valid FundingUpdateRequest request
     ) {
 
         fundingService.updateFunding(

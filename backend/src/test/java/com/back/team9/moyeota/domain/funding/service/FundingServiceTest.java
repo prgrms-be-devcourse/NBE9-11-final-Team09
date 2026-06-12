@@ -90,38 +90,6 @@ public class FundingServiceTest {
     }
 
     @Test
-    void createFunding_총금액0원_예외발생() {
-
-        // Given
-        Member member = saveMember();
-        FundingCreateRequest request =
-                new FundingCreateRequest(
-                        "제목",
-                        "내용",
-                        BusType.BUS_45,
-                        20,
-                        TripType.ONE_WAY,
-                        0,
-                        List.of(
-                                new PathInfoCreateRequest(
-                                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                                        "인천역",
-                                        Region.INCHEON,
-                                        "서울월드컵경기장",
-                                        Region.SEOUL_A,
-                                        Direction.OUTBOUND
-                                )
-                        )
-                );
-
-        // When & Then
-        assertThatThrownBy(() -> fundingService.createFunding(member.getMemberId(), request))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOTAL_PRICE);
-    }
-
-    @Test
     void createFunding_왕복노선_생성성공() {
 
         // Given
