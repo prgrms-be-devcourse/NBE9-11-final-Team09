@@ -1,4 +1,61 @@
 package com.back.team9.moyeota.domain.settlement.service;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.settlement.dto.SettlementCreateRequest;
+import com.back.team9.moyeota.domain.settlement.dto.SettlementResponse;
+import com.back.team9.moyeota.domain.settlement.entity.Settlement;
+import com.back.team9.moyeota.domain.settlement.entity.SettlementStatus;
+import com.back.team9.moyeota.domain.settlement.repository.SettlementRepository;
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
 public class SettlementService {
+
+    private final SettlementRepository settlementRepository;
+    private final FundingRepository fundingRepository;
+
+    //TODO: 플랫폼 수수료 수정예정
+    private static final double PLATFORM_FEE_RATE = 0.05;
+
+    @Transactional
+    public SettlementResponse create(SettlementCreateRequest request){
+
+        if(settlementRepository.existsByFunding_FundingId(request.fundingId())){
+            throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
+        }
+
+        Funding funding = fundingRepository.findById(request.fundingId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        int platformFee = (int) (request.totalAmount() * PLATFORM_FEE_RATE);
+        int hostPaybackAmount = request.totalAmount() - platformFee;
+
+        Settlement settlement = Settlement.builder()
+                .member(funding.getMember())
+                .funding(funding)
+                .totalAmount(request.totalAmount())
+                .platformFee(platformFee)
+                .hostPaybackAmount(hostPaybackAmount)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(funding.getPaybackHold())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Settlement saved = settlementRepository.save(settlement);
+        return SettlementResponse.from(saved);
+    }
+
+    public SettlementResponse getByFundingId(Long fundingId) {
+        Settlement settlement = settlementRepository.findByFunding_FundingId(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        return SettlementResponse.from(settlement);
+    }
 }
