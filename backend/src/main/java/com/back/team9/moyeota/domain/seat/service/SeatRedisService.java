@@ -56,18 +56,23 @@ public class SeatRedisService {
     public void releaseSeat(Long seatId, Long memberId) {
         String key = generateKey(seatId);
 
+        // 내 것인지 확인 후 삭제를 원자적으로 처리하는 Lua 스크립트
+        // KEYS[1] = key, ARGV[1] = memberId
+        // 값이 일치하면 삭제(1 반환), 불일치하면 아무것도 안 함(0 반환)
+        String script = "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                "return redis.call('del', KEYS[1]) " +
+                "else " +
+                "return 0 " +
+                "end";
+
         try {
-            String savedValue = redisTemplate.opsForValue().get(key);
-
-            //내 것인지 확인 후 삭제 → 다른 유저 것을 실수로 해제하는 것 방지
-            if (String.valueOf(memberId).equals(savedValue)) {
-                redisTemplate.delete(key);
-            }
-            // 내 것이 아니거나 이미 만료된 경우 → 아무것도 안 함 (정상 케이스)
-
+            // 값 비교와 삭제를 하나의 Redis 명령으로 처리
+            redisTemplate.execute(
+                    new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, Long.class),
+                    java.util.Collections.singletonList(key),
+                    String.valueOf(memberId)
+            );
         } catch (Exception e) {
-            // Redis 장애 시 로그만 남기고 넘어감
-            // 어차피 TTL 만료되면 자동 해제되므로 치명적이지 않음
             log.error("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
         }
     }
@@ -95,7 +100,7 @@ public class SeatRedisService {
     }
 
     // 여러 좌석의 선점 유저 ID를 한 번에 조회 (N+1 최적화)
-    //기존: 좌석마다 GET 호출 → Redis 조회 N번 발생
+    // 기존: 좌석마다 GET 호출 → Redis 조회 N번 발생
     // 개선: MGET으로 여러 Key를 한 번에 조회 → Redis 왕복 1회
     public Map<Long, Long> getHoldMemberIds(List<Long> seatIds) {
         // 조회할 좌석이 없으면 빈 Map 반환
@@ -120,7 +125,8 @@ public class SeatRedisService {
 
             Map<Long, Long> holdMap = new HashMap<>();
             // 조회 결과를 Map<seatId, memberId> 형태로 변환
-            for (int i = 0; i < seatIds.size(); i++) {
+            int size = Math.min(seatIds.size(), values.size());
+            for (int i = 0; i < size; i++) {
                 String val = values.get(i);
                 // value가 존재하면 HOLD 중인 좌석
                 if (val != null) {
