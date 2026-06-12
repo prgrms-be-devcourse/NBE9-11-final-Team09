@@ -44,6 +44,8 @@ public enum ErrorCode {
 
     // [PTH] 운행노선
     SAME_DEPARTURE_ARRIVAL(HttpStatus.BAD_REQUEST,"PTH001", "출발지와 도착지가 동일할 수 없습니다."),
+    PATH_NOT_FOUND(HttpStatus.NOT_FOUND,"PTH002", "존재하지 않는 노선입니다."),
+    PATH_INVALID_STATUS(HttpStatus.BAD_REQUEST,"PTH003", "운행이 마감되거나 취소된 노선입니다."),
 
     // [PTC] 참여
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND,"PTC001", "탑승 참여 내역을 찾을 수 없습니다."),
