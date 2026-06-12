@@ -169,6 +169,7 @@ class FundingControllerTest {
         verify(fundingService)
                 .updateFunding(
                         eq(1L),
+                        eq(1L),
                         any(FundingUpdateRequest.class)
                 );
     }
@@ -185,6 +186,7 @@ class FundingControllerTest {
         )
                 .given(fundingService)
                 .updateFunding(
+                        eq(1L),
                         eq(1L),
                         any(FundingUpdateRequest.class)
                 );
@@ -216,7 +218,7 @@ class FundingControllerTest {
                 .andExpect(jsonPath("$.msg").value("펀딩 취소 성공"));
 
         verify(fundingService)
-                .cancelFunding(1L);
+                .cancelFunding(1L,1L);
     }
 
     @Test
@@ -228,7 +230,7 @@ class FundingControllerTest {
                 )
         )
                 .given(fundingService)
-                .cancelFunding(1L);
+                .cancelFunding(1L,1L);
 
         mockMvc.perform(
                         delete("/api/fundings/{id}", 1L)

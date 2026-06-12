@@ -192,7 +192,7 @@ public class FundingServiceTest {
         FundingCreateResponse response = fundingService.createFunding(member.getMemberId(), createOneWayRequest());
 
         // When
-        fundingService.updateFunding(response.fundingId(), createUpdateRequest());
+        fundingService.updateFunding(member.getMemberId(), response.fundingId(), createUpdateRequest());
 
         // Then
         Funding funding = fundingRepository.findById(response.fundingId()).orElseThrow();
@@ -203,7 +203,8 @@ public class FundingServiceTest {
     @Test
     void updateFunding_존재하지않는펀딩_예외발생() {
 
-        assertThatThrownBy(() -> fundingService.updateFunding(999L, createUpdateRequest()))
+        Member member = saveMember();
+        assertThatThrownBy(() -> fundingService.updateFunding(member.getMemberId(),999L, createUpdateRequest()))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
@@ -217,7 +218,7 @@ public class FundingServiceTest {
         FundingCreateResponse response = fundingService.createFunding(member.getMemberId(), createOneWayRequest());
 
         // When
-        fundingService.cancelFunding(response.fundingId());
+        fundingService.cancelFunding(member.getMemberId(),response.fundingId());
 
         // Then
         Funding funding = fundingRepository.findById(response.fundingId()).orElseThrow();
@@ -230,10 +231,10 @@ public class FundingServiceTest {
         // Given
         Member member = saveMember();
         FundingCreateResponse response = fundingService.createFunding(member.getMemberId(), createOneWayRequest());
-        fundingService.cancelFunding(response.fundingId());
+        fundingService.cancelFunding(member.getMemberId(),response.fundingId());
 
         // When & Then
-        assertThatThrownBy(() -> fundingService.cancelFunding(response.fundingId()))
+        assertThatThrownBy(() -> fundingService.cancelFunding(member.getMemberId(),response.fundingId()))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_ALREADY_CANCELLED);
@@ -271,6 +272,7 @@ public class FundingServiceTest {
 
         // When
         fundingService.updateFunding(
+                member.getMemberId(),
                 response.fundingId(),
                 request
         );
@@ -300,6 +302,7 @@ public class FundingServiceTest {
 
         // When
         fundingService.updateFunding(
+                member.getMemberId(),
                 response.fundingId(),
                 request
         );
@@ -330,7 +333,7 @@ public class FundingServiceTest {
         FundingCreateResponse response = fundingService.createFunding(member.getMemberId(), createRoundRequest());
 
         // When
-        fundingService.cancelFunding(response.fundingId());
+        fundingService.cancelFunding(member.getMemberId(),response.fundingId());
 
         // Then
         assertThat(pathinfoRepository.findByFunding_FundingId(response.fundingId()))
@@ -362,7 +365,7 @@ public class FundingServiceTest {
                 );
 
         // When
-        fundingService.updateFunding(response.fundingId(), request);
+        fundingService.updateFunding(member.getMemberId(),response.fundingId(), request);
 
         // Then
         List<Pathinfo> paths = pathinfoRepository.findByFunding_FundingId(response.fundingId());
@@ -424,7 +427,7 @@ public class FundingServiceTest {
                 );
 
         // When & Then
-        assertThatThrownBy(() -> fundingService.updateFunding(response.fundingId(), request))
+        assertThatThrownBy(() -> fundingService.updateFunding(member.getMemberId(),response.fundingId(), request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.SAME_DEPARTURE_ARRIVAL);
@@ -548,7 +551,7 @@ public class FundingServiceTest {
                 );
 
         // When & Then
-        assertThatThrownBy(() -> fundingService.updateFunding(response.fundingId(), request))
+        assertThatThrownBy(() -> fundingService.updateFunding(member.getMemberId(),response.fundingId(), request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DEPARTURE_DATE_TOO_SOON);
@@ -584,7 +587,7 @@ public class FundingServiceTest {
                 );
 
         // When & Then
-        assertThatThrownBy(() -> fundingService.updateFunding(response.fundingId(), request))
+        assertThatThrownBy(() -> fundingService.updateFunding(member.getMemberId(),response.fundingId(), request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.RETURN_TIME_BEFORE_OUTBOUND);
@@ -619,7 +622,7 @@ public class FundingServiceTest {
                 );
 
         // When & Then
-        assertThatThrownBy(() -> fundingService.updateFunding(response.fundingId(), request))
+        assertThatThrownBy(() -> fundingService.updateFunding(member.getMemberId(),response.fundingId(), request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.RETURN_DATE_MUST_MATCH_OUTBOUND);
@@ -679,6 +682,7 @@ public class FundingServiceTest {
 
         // When
         fundingService.updateFunding(
+                member.getMemberId(),
                 response.fundingId(),
                 createUpdateRequest()
         );
@@ -755,6 +759,7 @@ public class FundingServiceTest {
 
         // When
         fundingService.updateFunding(
+                member.getMemberId(),
                 response.fundingId(),
                 request
         );
@@ -859,6 +864,7 @@ public class FundingServiceTest {
 
         // When
         fundingService.updateFunding(
+                member.getMemberId(),
                 response.fundingId(),
                 request
         );
@@ -877,6 +883,64 @@ public class FundingServiceTest {
                         BusType.BUS_25.getCapacity()
                 );
     }
+
+    @Test
+    void cancelFunding_다른회원_예외발생() {
+        Member host = saveMember();
+        Member other = saveOtherMember();
+
+        FundingCreateRequest request =
+                new FundingCreateRequest(
+                        "제목",
+                        "내용",
+                        BusType.BUS_45,
+                        70,
+                        TripType.ONE_WAY,
+                        100000,
+                        new RouteRequest(
+                                LocalDateTime.of(2027, 6, 20, 8, 0),
+                                null,
+                                "인천역",
+                                Region.INCHEON,
+                                "서울월드컵경기장",
+                                Region.SEOUL_A
+                        )
+                );
+
+        // When & Then
+        FundingCreateResponse response =
+                fundingService.createFunding(
+                        host.getMemberId(),
+                        createRoundRequest()
+                );
+
+        Funding funding =
+                fundingRepository.findById(
+                        response.fundingId()
+                ).orElseThrow();
+        assertThatThrownBy(() ->
+                fundingService.cancelFunding(
+                        other.getMemberId(),
+                        funding.getFundingId()
+                )
+        )
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e ->
+                        assertThat(((BusinessException) e).getErrorCode())
+                                .isEqualTo(ErrorCode.FUNDING_FORBIDDEN)
+                );
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     private FundingCreateRequest createOneWayRequest() {
         return new FundingCreateRequest(
@@ -942,6 +1006,18 @@ public class FundingServiceTest {
                 .name("테스트")
                 .nickname("테스터")
                 .phoneNumber("01012341234")
+                .status(MemberStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+        return memberRepository.save(member);
+    }
+    private Member saveOtherMember() {
+        Member member = Member.builder()
+                .email("test2@test.com")
+                .password("1234")
+                .name("테스트2")
+                .nickname("테스터2")
+                .phoneNumber("01012345678")
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();

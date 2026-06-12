@@ -141,8 +141,9 @@ public class FundingService {
     // 펀딩 취소
     // TODO: 방장일 경우
     @Transactional
-    public void cancelFunding(Long fundingId) {
+    public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
+        fundingValidator.validateHost(funding, memberId);
         if (funding.getStatus() == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
@@ -151,10 +152,10 @@ public class FundingService {
     }
 
     @Transactional
-    public void updateFunding(Long fundingId, FundingUpdateRequest request) {
+    public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
 
         Funding funding = findFundingById(fundingId);
-
+        fundingValidator.validateHost(funding, memberId);
         int currentParticipants = 0; // TODO
 
         if (currentParticipants > 0) {
