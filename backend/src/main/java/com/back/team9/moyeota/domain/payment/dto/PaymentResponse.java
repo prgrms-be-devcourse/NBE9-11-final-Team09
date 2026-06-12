@@ -1,4 +1,35 @@
 package com.back.team9.moyeota.domain.payment.dto;
 
-public class PaymentResponse {
+import com.back.team9.moyeota.domain.payment.entity.Payment;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentType;
+
+import java.time.LocalDateTime;
+
+public record PaymentResponse(
+        Long paymentId,
+        Long participationId,
+        PaymentType paymentType,
+        String orderId,
+        Integer amount,
+        String tossPaymentKey,
+        PaymentStatus status,
+        LocalDateTime createdAt
+) {
+
+    public static PaymentResponse from(Payment payment) {
+        return new PaymentResponse(
+                payment.getPaymentId(),
+//Todo: participation merge 후 nullable 수정
+//                payment.getParticipation().getParticipationId(),
+                null,
+                payment.getPaymentType(),
+                payment.getOrderId(),
+                payment.getAmount(),
+                payment.getTossPaymentKey(),
+                payment.getStatus(),
+                payment.getCreatedAt()
+        );
+    }
+
 }
