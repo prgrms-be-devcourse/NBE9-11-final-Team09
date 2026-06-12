@@ -115,4 +115,22 @@ class JwtTokenProviderTest {
         assertThat(jwtTokenProvider.validateToken(expiredToken))
                 .isFalse();
     }
+
+    @Test
+    @DisplayName("만료된 토큰의 남은 유효 시간은 0을 반환한다")
+    void getRemainingExpirationWithExpiredTokenReturnsZero() {
+        // Given
+        String expiredToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.ACCESS,
+                -1000
+        );
+
+        // When
+        long remainingExpiration =
+                jwtTokenProvider.getRemainingExpiration(expiredToken);
+
+        // Then
+        assertThat(remainingExpiration).isZero();
+    }
 }

@@ -88,11 +88,15 @@ public class JwtTokenProvider {
     }
 
     public long getRemainingExpiration(String token) {
-        long remaining = getClaims(token)
-                .getExpiration()
-                .getTime() - System.currentTimeMillis();
+        try {
+            long remaining = getClaims(token)
+                    .getExpiration()
+                    .getTime() - System.currentTimeMillis();
 
-        return Math.max(remaining, 0);
+            return Math.max(remaining, 0);
+        } catch (JwtException | IllegalArgumentException exception) {
+            return 0;
+        }
     }
 
     public boolean validateToken(String token) {
