@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +39,9 @@ class MemberServiceTest {
     private PendingMemberSignupRepository pendingSignupRepository;
 
     @Mock
+    private PendingMemberSignupService pendingMemberSignupService;
+
+    @Mock
     private EmailVerificationService emailVerificationService;
 
     @Mock
@@ -52,9 +56,6 @@ class MemberServiceTest {
         // Given
         MemberSignupRequest request = createSignupRequest();
 
-        when(pendingSignupRepository.findByEmail(request.email()))
-                .thenReturn(Optional.empty());
-
         when(passwordEncoder.encode(anyString()))
                 .thenAnswer(invocation ->
                         "encoded-" + invocation.getArgument(0, String.class)
@@ -64,73 +65,22 @@ class MemberServiceTest {
         memberService.requestSignup(request);
 
         // Then
-        ArgumentCaptor<PendingMemberSignup> signupCaptor =
-                ArgumentCaptor.forClass(PendingMemberSignup.class);
-
-        ArgumentCaptor<String> codeCaptor =
-                ArgumentCaptor.forClass(String.class);
-
-        verify(pendingSignupRepository).save(signupCaptor.capture());
-        verify(emailVerificationService).sendVerificationCode(
-                eq(request.email()),
-                codeCaptor.capture()
+        InOrder inOrder = inOrder(
+                pendingMemberSignupService,
+                emailVerificationService
         );
 
-        PendingMemberSignup savedSignup = signupCaptor.getValue();
-
-        assertThat(savedSignup.getEmail()).isEqualTo(request.email());
-        assertThat(savedSignup.getName()).isEqualTo(request.name());
-        assertThat(savedSignup.getNickname()).isEqualTo(request.nickname());
-        assertThat(savedSignup.getPhoneNumber())
-                .isEqualTo(request.phoneNumber());
-        assertThat(savedSignup.getEncodedPassword())
-                .isEqualTo("encoded-" + request.password());
-        assertThat(savedSignup.getExpiresAt())
-                .isAfter(LocalDateTime.now());
-        assertThat(codeCaptor.getValue()).hasSize(6);
-    }
-
-    @Test
-    @DisplayName("동일한 이메일로 재요청하면 기존 가입 대기 정보를 갱신한다")
-    void requestSignupWithSameEmailUpdatesExistingPendingSignup() {
-        // Given
-        MemberSignupRequest request = createSignupRequest();
-
-        PendingMemberSignup existingSignup = PendingMemberSignup.create(
-                request.email(),
-                "old-password",
-                "기존이름",
-                "기존닉네임",
-                "010-0000-0000",
-                "old-code",
-                LocalDateTime.now().plusMinutes(10)
+        inOrder.verify(pendingMemberSignupService).saveOrUpdate(
+                eq(request),
+                eq("encoded-" + request.password()),
+                anyString(),
+                any(LocalDateTime.class)
         );
 
-        when(pendingSignupRepository.findByEmail(request.email()))
-                .thenReturn(Optional.of(existingSignup));
-
-        when(passwordEncoder.encode(anyString()))
-                .thenAnswer(invocation ->
-                        "encoded-" + invocation.getArgument(0, String.class)
-                );
-
-        // When
-        memberService.requestSignup(request);
-
-        // Then
-        verify(pendingSignupRepository).save(existingSignup);
-        verify(emailVerificationService).sendVerificationCode(
+        inOrder.verify(emailVerificationService).sendVerificationCode(
                 eq(request.email()),
                 anyString()
         );
-
-        assertThat(existingSignup.getName()).isEqualTo(request.name());
-        assertThat(existingSignup.getNickname())
-                .isEqualTo(request.nickname());
-        assertThat(existingSignup.getPhoneNumber())
-                .isEqualTo(request.phoneNumber());
-        assertThat(existingSignup.getEncodedPassword())
-                .isEqualTo("encoded-" + request.password());
     }
 
     @Test

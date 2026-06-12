@@ -39,8 +39,9 @@ public class MemberService {
     private final PendingMemberSignupRepository pendingSignupRepository;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncoder passwordEncoder;
+    private final PendingMemberSignupService pendingMemberSignupService;
 
-    @Transactional
+
     public void requestSignup(MemberSignupRequest request) {
         validateSignupRequest(request);
         validateMemberDuplicates(request.email(), request.nickname());
@@ -51,26 +52,13 @@ public class MemberService {
         LocalDateTime expiresAt = LocalDateTime.now()
                 .plusMinutes(VERIFICATION_EXPIRATION_MINUTES);
 
-        PendingMemberSignup pendingSignup = pendingSignupRepository
-                .findByEmail(request.email())
-                .map(existingSignup -> {
-                    existingSignup.update(
-                            encodedPassword,
-                            request.name(),
-                            request.nickname(),
-                            request.phoneNumber(),
-                            verificationCodeHash,
-                            expiresAt
-                    );
-                    return existingSignup;
-                })
-                .orElseGet(() -> request.toEntity(
-                        encodedPassword,
-                        verificationCodeHash,
-                        expiresAt
-                ));
+        pendingMemberSignupService.saveOrUpdate(
+                request,
+                encodedPassword,
+                verificationCodeHash,
+                expiresAt
+        );
 
-        pendingSignupRepository.save(pendingSignup);
         emailVerificationService.sendVerificationCode(
                 request.email(),
                 verificationCode
