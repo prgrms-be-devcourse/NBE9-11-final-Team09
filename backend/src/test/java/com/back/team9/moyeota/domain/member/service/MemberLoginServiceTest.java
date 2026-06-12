@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -160,6 +161,40 @@ class MemberLoginServiceTest {
         );
 
         verifyNoInteractions(jwtTokenProvider);
+    }
+
+    @Test
+    @DisplayName("비밀번호가 없는 소셜 회원이 일반 로그인을 요청하면 로그인에 실패한다")
+    void loginWithSocialMemberReturnsInvalidCredentials() {
+        // Given
+        Member socialMember = Member.builder()
+                .memberId(1L)
+                .email("social@example.com")
+                .password(null)
+                .name("홍길동")
+                .nickname("소셜회원")
+                .phoneNumber("010-1234-5678")
+                .provider(Provider.KAKAO)
+                .providerId("kakao-provider-id")
+                .status(MemberStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        MemberLoginRequest request = new MemberLoginRequest(
+                "social@example.com",
+                "Password123!"
+        );
+
+        when(memberRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(socialMember));
+
+        // When / Then
+        assertThatThrownBy(() -> memberLoginService.login(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_LOGIN_CREDENTIALS);
+
+        verifyNoInteractions(passwordEncoder, jwtTokenProvider);
     }
 
     private void assertBusinessException(

@@ -29,7 +29,7 @@ public class MemberLoginService {
                         ErrorCode.INVALID_LOGIN_CREDENTIALS
                 ));
 
-        if (!passwordEncoder.matches(
+        if (member.getPassword() == null || !passwordEncoder.matches(
                 request.password(),
                 member.getPassword()
         )) {
