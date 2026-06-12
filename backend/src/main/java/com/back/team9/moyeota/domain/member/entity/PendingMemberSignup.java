@@ -10,6 +10,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
+/**
+ * 이메일 인증 전 회원가입 정보를 임시 저장하는 회원 도메인 내부 엔티티
+ * 인증 완료 시 Member로 변환 후 삭제되며 다른 도메인에서는 참조하지 않는 엔티티
+ * 추후 Redis 도입 시 삭제 예정
+ */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
