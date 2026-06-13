@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.settlement.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementCreateRequest;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementResponse;
@@ -34,6 +35,10 @@ public class SettlementService {
 
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        if (funding.getStatus() != FundingStatus.COMPLETED) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
+        }
 
         int platformFee = (int) (request.totalAmount() * PLATFORM_FEE_RATE);
         int hostPaybackAmount = request.totalAmount() - platformFee;

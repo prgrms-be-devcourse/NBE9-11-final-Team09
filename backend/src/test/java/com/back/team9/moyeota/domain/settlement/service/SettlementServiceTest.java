@@ -185,6 +185,37 @@ class SettlementServiceTest {
     }
 
     @Test
+    @DisplayName("정산 생성 - COMPLETED 아닌 펀딩 요청 시 SETTLEMENT_NOT_AVAILABLE 예외, save 미실행")
+    void create_COMPLETED아닌펀딩_SETTLEMENT_NOT_AVAILABLE예외() {
+        // Given
+        Funding recruitingFunding = Funding.builder()
+                .fundingId(1L)
+                .member(hostMember)
+                .title("모집 중 펀딩")
+                .departureDate(LocalDateTime.now().plusDays(7))
+                .status(FundingStatus.RECRUITING)
+                .busType(BusType.BUS_45)
+                .minParticipants(10)
+                .maxParticipants(45)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+
+        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(recruitingFunding));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("정산 생성 - 존재하지 않는 펀딩 ID 요청 시 FUNDING_NOT_FOUND 예외, save 미실행")
     void create_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
         // Given

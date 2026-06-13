@@ -19,6 +19,7 @@ public class SecurityConfig {
                                 "/api/users/email-verification/confirm",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
+//                                "/api/settlements/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
