@@ -197,6 +197,39 @@ class MemberLoginServiceTest {
         verifyNoInteractions(passwordEncoder, jwtTokenProvider);
     }
 
+    @Test
+    @DisplayName("회원 상태가 없으면 로그인에 실패한다")
+    void loginWithNullStatusThrowsException() {
+        // Given
+        MemberLoginRequest request = createLoginRequest();
+
+        Member member = Member.builder()
+                .memberId(1L)
+                .email("moyeota@example.com")
+                .password("encoded-password")
+                .name("홍길동")
+                .nickname("모여타요")
+                .phoneNumber("010-1234-5678")
+                .status(null)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(memberRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(member));
+        when(passwordEncoder.matches(
+                request.password(),
+                member.getPassword()
+        )).thenReturn(true);
+
+        // When / Then
+        assertBusinessException(
+                () -> memberLoginService.login(request),
+                ErrorCode.INVALID_LOGIN_CREDENTIALS
+        );
+
+        verifyNoInteractions(jwtTokenProvider);
+    }
+
     private void assertBusinessException(
             Runnable action,
             ErrorCode expectedErrorCode

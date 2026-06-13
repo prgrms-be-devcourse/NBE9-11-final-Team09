@@ -48,14 +48,25 @@ public class MemberLoginService {
     }
 
     private void validateMemberStatus(Member member) {
-        if (member.getStatus() == MemberStatus.SUSPENDED) {
-            throw new BusinessException(ErrorCode.USER_SUSPENDED);
-        }
-
-        if (member.getStatus() == MemberStatus.WITHDRAWN) {
+        if (member.getStatus() == null) {
             throw new BusinessException(
-                    ErrorCode.USER_ALREADY_WITHDRAWN
+                    ErrorCode.INVALID_LOGIN_CREDENTIALS
             );
         }
+
+        switch (member.getStatus()) {
+            case ACTIVE -> {
+                return;
+            }
+            case SUSPENDED ->
+                    throw new BusinessException(ErrorCode.USER_SUSPENDED);
+            case WITHDRAWN ->
+                    throw new BusinessException(
+                            ErrorCode.USER_ALREADY_WITHDRAWN
+                    );
+        }
+
+        // 새로운 상태가 추가되더라도 명시적으로 허용하기 전에는 로그인 차단
+        throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
     }
 }
