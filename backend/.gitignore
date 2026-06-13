@@ -26,3 +26,6 @@ application-secret.yml
 
 # Compiled
 *.class
+
+*.mv.db
+*.trace.db
