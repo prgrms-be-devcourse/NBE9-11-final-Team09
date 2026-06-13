@@ -55,7 +55,7 @@ public class JwtTokenProvider {
         );
     }
 
-    public String createToken(
+    String createToken(
             Long memberId,
             TokenType tokenType,
             long expiration
