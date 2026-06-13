@@ -1,12 +1,19 @@
 package com.back.team9.moyeota.domain.member.controller;
 
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
+import com.back.team9.moyeota.domain.member.service.MemberLoginService;
+import static org.mockito.Mockito.when;
+
+import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,8 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MemberController.class)
 @Import({GlobalExceptionHandler.class})
@@ -28,6 +34,12 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberService memberService;
+
+    @MockitoBean
+    private MemberLoginService memberLoginService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -106,5 +118,87 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(memberService).confirmEmailVerification(any());
+    }
+
+    @Test
+    @DisplayName("유효한 로그인 요청 시 200 OK와 토큰을 반환한다")
+    void loginWithValidRequestReturnsOkAndTokens() throws Exception {
+        // Given
+        MemberLoginResponse response = new MemberLoginResponse(
+                "access-token",
+                "Bearer",
+                3600,
+                new MemberLoginResponse.UserResponse(
+                        1L,
+                        "moyeota@example.com",
+                        "홍길동",
+                        "모여타요"
+                )
+        );
+
+        MemberLoginResult result = new MemberLoginResult(
+                response,
+                "refresh-token",
+                1209600
+        );
+
+        when(memberLoginService.login(any())).thenReturn(result);
+
+        String requestBody = """
+            {
+              "email": "moyeota@example.com",
+              "password": "Password123!"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(post("/api/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_LOGIN_SUCCESS"))
+                .andExpect(jsonPath("$.data.accessToken")
+                        .value("access-token"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken=refresh-token"
+                                ),
+                                org.hamcrest.Matchers.containsString("HttpOnly"),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                ),
+                                org.hamcrest.Matchers.not(
+                                                org.hamcrest.Matchers.containsString("Secure")
+                                        )                        )                ))
+                .andExpect(jsonPath("$.data.tokenType")
+                        .value("Bearer"))
+                .andExpect(jsonPath("$.data.user.userId").value(1));
+
+        verify(memberLoginService).login(any());
+    }
+
+    @Test
+    @DisplayName("로그인 필수 입력값이 누락되면 400 Bad Request를 반환한다")
+    void loginWithMissingRequiredFieldsReturnsBadRequest() throws Exception {
+        // Given
+        String requestBody = """
+            {
+              "email": "",
+              "password": ""
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(post("/api/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberLoginService);
     }
 }
