@@ -100,7 +100,7 @@ public class FundingService {
     @Transactional(readOnly = true)
     public List<FundingListResponse> getFundingList() {
 
-        List<Funding> fundings = fundingRepository.findAll();
+        List<Funding> fundings = fundingRepository.findAllWithMember();
 
         List<Long> fundingIds =
                 fundings.stream()
