@@ -28,6 +28,8 @@ public enum ErrorCode {
     INVALID_PHONE_NUMBER_FORMAT(HttpStatus.BAD_REQUEST, "USR009", "전화번호 형식이 올바르지 않습니다."),
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "USR010", "인증코드가 올바르지 않습니다."),
     VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "USR011", "인증코드가 만료되었습니다."),
+    INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "USR012", "이메일 또는 비밀번호가 올바르지 않습니다."),
+    USER_SUSPENDED(HttpStatus.FORBIDDEN, "USR013", "정지된 계정입니다."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
@@ -85,6 +87,8 @@ public enum ErrorCode {
     SETTLEMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN,"STL003", "정산 내역 조회 권한이 없습니다."),
     SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"STL004", "정산 내역이 존재하지 않습니다."),
     SETTLEMENT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST,"STL005", "정산 가능한 상태가 아닙니다."),
+    SETTLEMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "STL006", "이미 정산 내역이 존재하는 펀딩입니다."),
+
 
     // [NTF] 알림
     NOTIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"NTF001", "알림 발송에 실패했습니다."),

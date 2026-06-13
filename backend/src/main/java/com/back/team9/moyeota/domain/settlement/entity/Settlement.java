@@ -39,7 +39,6 @@ public class Settlement {
     @Column(nullable = false)
     private SettlementStatus status;
 
-    @Column(nullable = false)
     private LocalDateTime paybackPaidAt;
 
     @Column(nullable = false)

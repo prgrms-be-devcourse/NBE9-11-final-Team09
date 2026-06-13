@@ -349,8 +349,8 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("환불 - 이미 환불된 결제 요청 시 PAYMENT_ALREADY_COMPLETED 예외 발생")
-    void refund_이미환불된결제_PAYMENT_ALREADY_COMPLETED예외() {
+    @DisplayName("환불 - 이미 환불된 결제 요청 시 ALREADY_REFUNDED 예외 발생")
+    void refund_이미환불된결제_ALREADY_REFUNDED예외() {
         // Given
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
 
@@ -366,6 +366,35 @@ class PaymentServiceTest {
                 .build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(refundedPayment));
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.refund(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ALREADY_REFUNDED));
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("환불 - PAID 아닌 다른 상태(FAILED 등) 요청 시 INVALID_PAYMENT_STATUS 예외 발생")
+    void refund_FAILED상태결제_INVALID_PAYMENT_STATUS예외() {
+        // Given
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+
+        Payment failedPayment = Payment.builder()
+                .paymentId(1L)
+                .participation(null)
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(50000)
+                .tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId")
+                .status(PaymentStatus.FAILED)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(failedPayment));
 
         // When & Then
         assertThatThrownBy(() -> paymentService.refund(1L, request))
