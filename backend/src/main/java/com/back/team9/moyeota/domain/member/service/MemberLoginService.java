@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
@@ -23,7 +24,7 @@ public class MemberLoginService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional(readOnly = true)
-    public MemberLoginResponse login(MemberLoginRequest request) {
+    public MemberLoginResult login(MemberLoginRequest request) {
         Member member = memberRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.INVALID_LOGIN_CREDENTIALS
@@ -44,7 +45,11 @@ public class MemberLoginService {
                 member.getMemberId()
         );
 
-        return MemberLoginResponse.from(member, tokens);
+        return new MemberLoginResult(
+                MemberLoginResponse.from(member, tokens),
+                tokens.refreshToken(),
+                tokens.refreshTokenExpiresIn()
+        );
     }
 
     private void validateMemberStatus(Member member) {

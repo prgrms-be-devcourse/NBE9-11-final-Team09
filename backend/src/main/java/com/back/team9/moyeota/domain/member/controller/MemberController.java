@@ -1,26 +1,36 @@
 package com.back.team9.moyeota.domain.member.controller;
 
-import com.back.team9.moyeota.domain.member.dto.EmailVerificationConfirmRequest;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberSignupRequest;
+import com.back.team9.moyeota.domain.member.dto.*;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
 public class MemberController {
 
     private final MemberService memberService;
-
     private final MemberLoginService memberLoginService;
+    private final boolean cookieSecure;
+
+    public MemberController(
+            MemberService memberService,
+            MemberLoginService memberLoginService,
+            @Value("${jwt.cookie-secure}") boolean cookieSecure
+    ) {
+        this.memberService = memberService;
+        this.memberLoginService = memberLoginService;
+        this.cookieSecure = cookieSecure;
+    }
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> requestSignup(
@@ -51,12 +61,25 @@ public class MemberController {
     public ResponseEntity<ApiResponse<MemberLoginResponse>> login(
             @Valid @RequestBody MemberLoginRequest request
     ) {
-        MemberLoginResponse response = memberLoginService.login(request);
+        MemberLoginResult result = memberLoginService.login(request);
 
-        return ResponseEntity.ok(new ApiResponse<>(
-                "USR_LOGIN_SUCCESS",
-                "로그인 성공",
-                response
-        ));
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from("refreshToken", result.refreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofSeconds(
+                        result.refreshTokenExpiresIn()
+                ))
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(new ApiResponse<>(
+                        "USR_LOGIN_SUCCESS",
+                        "로그인 성공",
+                        result.response()
+                ));
     }
 }

@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.member.controller;
 
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,8 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MemberController.class)
 @Import({GlobalExceptionHandler.class})
@@ -125,10 +126,8 @@ class MemberControllerTest {
         // Given
         MemberLoginResponse response = new MemberLoginResponse(
                 "access-token",
-                "refresh-token",
                 "Bearer",
                 3600,
-                1209600,
                 new MemberLoginResponse.UserResponse(
                         1L,
                         "moyeota@example.com",
@@ -137,7 +136,13 @@ class MemberControllerTest {
                 )
         );
 
-        when(memberLoginService.login(any())).thenReturn(response);
+        MemberLoginResult result = new MemberLoginResult(
+                response,
+                "refresh-token",
+                1209600
+        );
+
+        when(memberLoginService.login(any())).thenReturn(result);
 
         String requestBody = """
             {
@@ -155,8 +160,20 @@ class MemberControllerTest {
                         .value("USR_LOGIN_SUCCESS"))
                 .andExpect(jsonPath("$.data.accessToken")
                         .value("access-token"))
-                .andExpect(jsonPath("$.data.refreshToken")
-                        .value("refresh-token"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken=refresh-token"
+                                ),
+                                org.hamcrest.Matchers.containsString("HttpOnly"),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                ),
+                                org.hamcrest.Matchers.not(
+                                                org.hamcrest.Matchers.containsString("Secure")
+                                        )                        )                ))
                 .andExpect(jsonPath("$.data.tokenType")
                         .value("Bearer"))
                 .andExpect(jsonPath("$.data.user.userId").value(1));

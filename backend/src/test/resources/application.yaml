@@ -19,3 +19,4 @@ jwt:
   secret: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
   access-token-expiration: 3600000
   refresh-token-expiration: 1209600000
+  cookie-secure: false

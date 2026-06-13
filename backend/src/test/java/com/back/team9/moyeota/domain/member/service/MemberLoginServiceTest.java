@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
+import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.entity.Provider;
@@ -65,14 +66,15 @@ class MemberLoginServiceTest {
                 .thenReturn(tokens);
 
         // When
-        MemberLoginResponse response = memberLoginService.login(request);
+        MemberLoginResult result = memberLoginService.login(request);
+        MemberLoginResponse response = result.response();
 
         // Then
         assertThat(response.accessToken()).isEqualTo("access-token");
-        assertThat(response.refreshToken()).isEqualTo("refresh-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.accessTokenExpiresIn()).isEqualTo(3600);
-        assertThat(response.refreshTokenExpiresIn()).isEqualTo(1209600);
+        assertThat(result.refreshTokenExpiresIn()).isEqualTo(1209600);
         assertThat(response.user().userId()).isEqualTo(member.getMemberId());
         assertThat(response.user().email()).isEqualTo(member.getEmail());
 

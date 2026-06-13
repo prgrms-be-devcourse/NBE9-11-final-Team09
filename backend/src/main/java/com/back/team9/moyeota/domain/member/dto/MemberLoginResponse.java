@@ -5,10 +5,8 @@ import com.back.team9.moyeota.global.jwt.JwtTokenResponse;
 
 public record MemberLoginResponse(
         String accessToken,
-        String refreshToken,
         String tokenType,
         long accessTokenExpiresIn,
-        long refreshTokenExpiresIn,
         UserResponse user
 ) {
 
@@ -18,10 +16,8 @@ public record MemberLoginResponse(
     ) {
         return new MemberLoginResponse(
                 tokens.accessToken(),
-                tokens.refreshToken(),
                 "Bearer",
                 tokens.accessTokenExpiresIn(),
-                tokens.refreshTokenExpiresIn(),
                 UserResponse.from(member)
         );
     }
