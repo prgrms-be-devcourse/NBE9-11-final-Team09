@@ -1,7 +1,8 @@
 package com.back.team9.moyeota.global.exception;
 
-import com.back.team9.moyeota.global.response.ErrorResponse;
 import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.response.ErrorResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,10 +22,14 @@ public class GlobalExceptionHandler{
 
     // 2. Request @Valid 유효성 검사 실패 예외
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e){
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldError() != null
+                ? e.getBindingResult().getFieldError().getDefaultMessage()
+                : "잘못된 입력값입니다.";
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
-                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE));
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, message)
+                );
     }
 
     // 3. 핸들링하지 못한 기타 모든 예외 (500 Error)
@@ -34,4 +39,16 @@ public class GlobalExceptionHandler{
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
     }
+
+    // DB 제약 위반 예외
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException e
+    ) {
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE));
+    }
+
+
 }

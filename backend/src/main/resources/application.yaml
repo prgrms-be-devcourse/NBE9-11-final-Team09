@@ -2,6 +2,29 @@ spring:
   application:
     name: moyeota
 
+  profiles:
+    active: dev
+
+  output:
+    ansi:
+      enabled: always
+
+  mvc:
+    problemdetails:
+      enabled: false
+
+
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -13,6 +36,10 @@ spring:
           auth: true
           starttls:
             enable: true
+
+springdoc:
+  api-docs:
+    enabled: true
 
 
 toss:

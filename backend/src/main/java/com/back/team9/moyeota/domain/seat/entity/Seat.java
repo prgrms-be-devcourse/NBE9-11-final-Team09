@@ -1,7 +1,7 @@
 package com.back.team9.moyeota.domain.seat.entity;
 
 import com.back.team9.moyeota.domain.participation.entity.Participation;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import jakarta.persistence.*;
@@ -26,7 +26,7 @@ public class Seat {
 
     @ManyToOne(fetch = FetchType.LAZY) // 여러 좌석이 하나의 노선에 속함
     @JoinColumn(name = "pathinfo_id", nullable = false) // pathinfo_id FK, 필수 연관관계
-    private PathInfo pathInfo; // pathinfo → pathInfo (camelCase 컨벤션)
+    private Pathinfo pathinfo; // pathinfo → pathinfo (camelCase 컨벤션)
 
     @Column(nullable = false) // 버스 좌석 번호 (예: 1A, 2B)
     private String seatNumber;
@@ -42,8 +42,8 @@ public class Seat {
 
     // ==================== 생성자 ====================
     @Builder // 펀딩 생성 시 좌석을 생성하기 위한 빌더
-    private Seat(PathInfo pathInfo, String seatNumber) {
-        this.pathInfo = pathInfo;
+    private Seat(Pathinfo pathinfo, String seatNumber) {
+        this.pathinfo = pathinfo;
         this.seatNumber = seatNumber;
         this.status = SeatStatus.AVAILABLE; // 생성 시 기본값은 항상 AVAILABLE
         this.createdAt = LocalDateTime.now();
