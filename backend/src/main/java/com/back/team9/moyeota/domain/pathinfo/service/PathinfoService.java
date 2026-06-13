@@ -32,7 +32,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        pathinfoValidator.validateCreateTripType(tripType, route);
+        pathinfoValidator.validateTripType(tripType, route);
 
         Pathinfo outbound = Pathinfo.create(
                 funding,
@@ -67,7 +67,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        pathinfoValidator.validateUpdateTripType(tripType, route);
+        pathinfoValidator.validateTripType(tripType, route);
 
         Pathinfo outbound = pathinfoRepository
                 .findByFunding_FundingIdAndDirection(

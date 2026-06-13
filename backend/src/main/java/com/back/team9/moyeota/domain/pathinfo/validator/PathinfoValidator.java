@@ -45,14 +45,7 @@ public class PathinfoValidator {
         }
     }
 
-    public void validateCreateTripType(
-            TripType tripType,
-            RouteRequest route
-    ) {
-        validateRoute(tripType, route);
-    }
-
-    public void validateUpdateTripType(
+    public void validateTripType(
             TripType tripType,
             RouteRequest route
     ) {
