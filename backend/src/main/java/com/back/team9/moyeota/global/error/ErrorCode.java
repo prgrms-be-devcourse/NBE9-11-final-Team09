@@ -28,6 +28,8 @@ public enum ErrorCode {
     INVALID_PHONE_NUMBER_FORMAT(HttpStatus.BAD_REQUEST, "USR009", "전화번호 형식이 올바르지 않습니다."),
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "USR010", "인증코드가 올바르지 않습니다."),
     VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "USR011", "인증코드가 만료되었습니다."),
+    INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "USR012", "이메일 또는 비밀번호가 올바르지 않습니다."),
+    USER_SUSPENDED(HttpStatus.FORBIDDEN, "USR013", "정지된 계정입니다."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
@@ -39,13 +41,20 @@ public enum ErrorCode {
     // [FND] 펀딩
     FUNDING_NOT_FOUND(HttpStatus.NOT_FOUND,"FND001", "존재하지 않는 펀딩입니다."),
     FUNDING_NOT_RECRUITING(HttpStatus.BAD_REQUEST,"FND002", "현재 모집 중인 펀딩이 아닙니다."),
-    FUNDING_MIN_MAX_INVALID(HttpStatus.BAD_REQUEST,"FND003", "최소 인원을 최대 인원보다 높게 설정할 수 없습니다."),
+    FUNDING_MIN_INVALID(HttpStatus.BAD_REQUEST,"FND003", "최소 인원을 좌석 수보다 높게 설정할 수 없습니다."),
     FUNDING_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST,"FND004", "이미 취소/삭제된 펀딩입니다."),
+    PATHINFO_REQUIRED(HttpStatus.BAD_REQUEST,"FND005", "최소 1개의 노선이 필요합니다."),
+    FUNDING_RESTRICTED_UPDATE(HttpStatus.BAD_REQUEST, "FND006", "참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."),
+    FUNDING_FORBIDDEN(HttpStatus.FORBIDDEN, "FND007", "해당 펀딩에 대한 권한이 없습니다."),
 
     // [PTH] 운행노선
     SAME_DEPARTURE_ARRIVAL(HttpStatus.BAD_REQUEST,"PTH001", "출발지와 도착지가 동일할 수 없습니다."),
     PATH_NOT_FOUND(HttpStatus.NOT_FOUND,"PTH002", "존재하지 않는 노선입니다."),
     PATH_INVALID_STATUS(HttpStatus.BAD_REQUEST,"PTH003", "운행이 마감되거나 취소된 노선입니다."),
+    INVALID_PATH_CONFIGURATION(HttpStatus.BAD_REQUEST, "PTH004", "노선과 왕복 여부가 일치하지 않습니다."),
+    DEPARTURE_DATE_TOO_SOON(HttpStatus.BAD_REQUEST, "PTH005", "출발일은 최소 14일 이후여야 합니다."),
+    RETURN_TIME_BEFORE_OUTBOUND(HttpStatus.BAD_REQUEST, "PTH006", "복귀 시간은 출발 시간보다 늦어야 합니다."),
+    RETURN_DATE_MUST_MATCH_OUTBOUND(HttpStatus.BAD_REQUEST, "PTH007", "왕복 노선은 같은 날짜만 가능합니다."),
 
     // [PTC] 참여
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND,"PTC001", "탑승 참여 내역을 찾을 수 없습니다."),

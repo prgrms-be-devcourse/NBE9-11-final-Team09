@@ -1,8 +1,8 @@
 package com.back.team9.moyeota.domain.seat.service;
 
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfo;
-import com.back.team9.moyeota.domain.pathinfo.entity.PathInfoStatus;
-import com.back.team9.moyeota.domain.pathinfo.repository.PathInfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
+import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.seat.dto.SeatLayoutResponse;
 import com.back.team9.moyeota.domain.seat.dto.SeatResponse;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
@@ -40,7 +40,7 @@ class SeatServiceTest {
     private SeatRedisService seatRedisService;
 
     @Mock
-    private PathInfoRepository pathInfoRepository;
+    private PathinfoRepository pathinfoRepository;
 
     @InjectMocks
     private SeatService seatService;
@@ -54,15 +54,15 @@ class SeatServiceTest {
         Long pathId = 1L;
         Long currentMemberId = 1L;
 
-        PathInfo pathInfo = mock(PathInfo.class);
+        Pathinfo pathinfo = mock(Pathinfo.class);
 
         Seat seat = mock(Seat.class);
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 홀딩 중인 좌석 없음
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Collections.emptyMap());
@@ -84,7 +84,7 @@ class SeatServiceTest {
         Long pathId = 999L;
         Long currentMemberId = 1L;
 
-        given(pathInfoRepository.findById(pathId)).willReturn(Optional.empty());
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> seatService.getSeatLayout(pathId, currentMemberId))
@@ -101,15 +101,15 @@ class SeatServiceTest {
         Long currentMemberId = 1L;
         Long holdMemberId = 2L; // 다른 유저가 선점 중
 
-        PathInfo pathInfo = mock(PathInfo.class);
+        Pathinfo pathinfo = mock(Pathinfo.class);
 
         Seat seat = mock(Seat.class);
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 2번 유저가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, holdMemberId));
@@ -129,15 +129,15 @@ class SeatServiceTest {
         Long pathId = 1L;
         Long currentMemberId = 1L;
 
-        PathInfo pathInfo = mock(PathInfo.class);
+        Pathinfo pathinfo = mock(Pathinfo.class);
 
         Seat seat = mock(Seat.class);
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
-        given(pathInfoRepository.findById(pathId)).willReturn(Optional.of(pathInfo));
-        given(seatRepository.findByPathInfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
+        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 내가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, currentMemberId));
@@ -159,14 +159,14 @@ class SeatServiceTest {
         Long seatId = 1L;
         Long currentMemberId = 1L;
 
-        PathInfo pathInfo = mock(PathInfo.class);
-        given(pathInfo.getStatus()).willReturn(PathInfoStatus.PENDING);
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getStatus()).willReturn(PathinfoStatus.PENDING);
 
         Seat seat = mock(Seat.class);
         given(seat.getSeatId()).willReturn(seatId);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
-        given(seat.getPathInfo()).willReturn(pathInfo);
+        given(seat.getPathinfo()).willReturn(pathinfo);
 
         given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
 
@@ -204,12 +204,12 @@ class SeatServiceTest {
         Long seatId = 1L;
         Long currentMemberId = 1L;
 
-        PathInfo pathInfo = mock(PathInfo.class);
-        given(pathInfo.getStatus()).willReturn(PathInfoStatus.PENDING);
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getStatus()).willReturn(PathinfoStatus.PENDING);
 
         Seat seat = mock(Seat.class);
         given(seat.getStatus()).willReturn(SeatStatus.BOOKED);
-        given(seat.getPathInfo()).willReturn(pathInfo);
+        given(seat.getPathinfo()).willReturn(pathinfo);
 
         given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
 
@@ -229,12 +229,12 @@ class SeatServiceTest {
         Long seatId = 1L;
         Long currentMemberId = 1L;
 
-        PathInfo pathInfo = mock(PathInfo.class);
-        given(pathInfo.getStatus()).willReturn(PathInfoStatus.COMPLETED);
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getStatus()).willReturn(PathinfoStatus.COMPLETED);
 
         Seat seat = mock(Seat.class);
         // seat.getStatus() 설정 제거 → 노선 상태 체크에서 이미 예외 발생하므로 불필요
-        given(seat.getPathInfo()).willReturn(pathInfo);
+        given(seat.getPathinfo()).willReturn(pathinfo);
 
         given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
 
@@ -247,7 +247,7 @@ class SeatServiceTest {
         verify(seatRedisService, never()).holdSeat(seatId, currentMemberId);
     }
 
-    // TODO: PathInfoStatus에 CANCELLED 추가 후 아래 테스트 주석 해제
+    // TODO: PathinfoStatus에 CANCELLED 추가 후 아래 테스트 주석 해제
 //    @Test
 //    @DisplayName("좌석 선점 - 취소된 노선 PATH_INVALID_STATUS 예외 발생")
 //    void holdSeat_취소된노선_PATH_INVALID_STATUS예외() {
@@ -255,11 +255,11 @@ class SeatServiceTest {
 //        Long seatId = 1L;
 //        Long currentMemberId = 1L;
 //
-//        PathInfo pathInfo = mock(PathInfo.class);
-//        given(pathInfo.getStatus()).willReturn(PathInfoStatus.CANCELLED);
+//        Pathinfo pathinfo = mock(Pathinfo.class);
+//        given(pathinfo.getStatus()).willReturn(PathinfoStatus.CANCELLED);
 //
 //        Seat seat = mock(Seat.class);
-//        given(seat.getPathInfo()).willReturn(pathInfo);
+//        given(seat.getPathinfo()).willReturn(pathinfo);
 //
 //        given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
 //
