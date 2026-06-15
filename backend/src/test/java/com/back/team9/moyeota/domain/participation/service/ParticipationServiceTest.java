@@ -104,7 +104,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When
         ParticipationResponse response = participationService.createParticipation(memberId, request);
@@ -174,8 +174,8 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
-        given(seatRepository.findById(returnSeatId)).willReturn(Optional.of(returnSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(returnSeatId)).willReturn(Optional.of(returnSeat));
 
         // When
         ParticipationResponse response = participationService.createParticipation(memberId, request);
@@ -215,7 +215,7 @@ class ParticipationServiceTest {
                         .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
 
         // 펀딩이 없으니 그 이후 로직(좌석 조회 등)은 호출되면 안 됨
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
     @Test
@@ -242,7 +242,7 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.USER_NOT_FOUND));
 
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
     @Test
@@ -272,7 +272,7 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_CANCELLED));
 
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
     @Test
@@ -302,7 +302,7 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_RECRUITMENT_CLOSED));
 
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
 
@@ -338,7 +338,7 @@ class ParticipationServiceTest {
                         .isEqualTo(ErrorCode.DUPLICATE_PARTICIPATION));
 
         // 중복이라 좌석 조회는 호출되면 안 됨
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
     @Test
@@ -375,7 +375,7 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_RECRUITMENT_CLOSED));
 
-        verify(seatRepository, never()).findById(any());
+        verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
 
@@ -407,7 +407,7 @@ class ParticipationServiceTest {
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
         // 좌석 조회 결과 없음
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.empty());
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -447,7 +447,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -495,7 +495,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -540,7 +540,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -586,7 +586,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -632,7 +632,7 @@ class ParticipationServiceTest {
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
                 .willReturn(0L);
-        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))

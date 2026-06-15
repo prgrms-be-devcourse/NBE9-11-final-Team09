@@ -142,7 +142,7 @@ public class ParticipationService {
     private Seat getValidatedSeat(Long seatId, Long fundingId, Direction expectedDirection) {
 
         //좌석 조회
-        Seat seat = seatRepository.findById(seatId)
+        Seat seat = seatRepository.findByIdWithPathinfoAndFunding(seatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
 
         //예약 가능한 좌석인지 확인 (이미 BOOKED면 SEA002)
