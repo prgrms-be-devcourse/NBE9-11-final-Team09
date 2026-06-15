@@ -277,6 +277,33 @@ class SettlementServiceTest {
     }
 
     @Test
+    @DisplayName("페이백 승인 - paybackHold=false인 정산 요청 시 SETTLEMENT_MANUAL_NOT_REQUIRED 예외")
+    void approve_paybackHoldFalse인정산_SETTLEMENT_MANUAL_NOT_REQUIRED예외() {
+        // Given
+        Settlement autoTarget = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(autoTarget));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.approve(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("페이백 승인 - 정상 요청 시 APPROVED 상태 응답, paybackPaidAt 설정, save() 미호출(dirty checking)")
     void approve_정상요청_APPROVED상태응답반환() {
         // Given
@@ -288,7 +315,7 @@ class SettlementServiceTest {
                 .platformFee(5000)
                 .hostPaybackAmount(95000)
                 .status(SettlementStatus.CALCULATED)
-                .paybackHold(false)
+                .paybackHold(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -328,7 +355,7 @@ class SettlementServiceTest {
                 .platformFee(5000)
                 .hostPaybackAmount(95000)
                 .status(SettlementStatus.APPROVED)
-                .paybackHold(false)
+                .paybackHold(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -339,6 +366,33 @@ class SettlementServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - paybackHold=false인 정산 요청 시 SETTLEMENT_MANUAL_NOT_REQUIRED 예외")
+    void reject_paybackHoldFalse인정산_SETTLEMENT_MANUAL_NOT_REQUIRED예외() {
+        // Given
+        Settlement autoTarget = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(autoTarget));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.reject(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED));
 
         verify(settlementRepository, never()).save(any());
     }
@@ -355,7 +409,7 @@ class SettlementServiceTest {
                 .platformFee(5000)
                 .hostPaybackAmount(95000)
                 .status(SettlementStatus.CALCULATED)
-                .paybackHold(false)
+                .paybackHold(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -395,7 +449,7 @@ class SettlementServiceTest {
                 .platformFee(5000)
                 .hostPaybackAmount(95000)
                 .status(SettlementStatus.REJECTED)
-                .paybackHold(false)
+                .paybackHold(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 

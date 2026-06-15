@@ -72,6 +72,16 @@ class AdminSettlementControllerTest {
     }
 
     @Test
+    @DisplayName("페이백 승인 - paybackHold=false인 정산 요청 시 400")
+    void approve_paybackHoldFalse인정산_400() throws Exception {
+        given(settlementService.approve(1L))
+                .willThrow(new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED));
+
+        mockMvc.perform(patch("/api/admin/settlements/1/approve"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("페이백 승인 - CALCULATED 아닌 상태에서 승인 요청 시 400")
     void approve_CALCULATED아닌상태_400() throws Exception {
         given(settlementService.approve(1L))
@@ -103,6 +113,16 @@ class AdminSettlementControllerTest {
 
         mockMvc.perform(patch("/api/admin/settlements/999/reject"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - paybackHold=false인 정산 요청 시 400")
+    void reject_paybackHoldFalse인정산_400() throws Exception {
+        given(settlementService.reject(1L))
+                .willThrow(new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED));
+
+        mockMvc.perform(patch("/api/admin/settlements/1/reject"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
