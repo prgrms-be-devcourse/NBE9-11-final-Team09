@@ -178,4 +178,34 @@ class JwtTokenProviderTest {
         assertThat(jwtTokenProvider.findMemberIdFromAccessToken(expiredToken))
                 .isEmpty();
     }
+
+    @Test
+    @DisplayName("유효한 Access Token 정보를 조회한다")
+    void findAccessTokenInfoReturnsTokenInfo() {
+        String accessToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.ACCESS,
+                ACCESS_EXPIRATION
+        );
+
+        assertThat(jwtTokenProvider.findAccessTokenInfo(accessToken))
+                .hasValueSatisfying(tokenInfo -> {
+                    assertThat(tokenInfo.memberId()).isEqualTo(1L);
+                    assertThat(tokenInfo.jti()).isNotBlank();
+                    assertThat(tokenInfo.remainingExpiration()).isPositive();
+                });
+    }
+
+    @Test
+    @DisplayName("Refresh Token에서는 Access Token 정보를 조회하지 않는다")
+    void findAccessTokenInfoWithRefreshTokenReturnsEmpty() {
+        String refreshToken = jwtTokenProvider.createToken(
+                1L,
+                TokenType.REFRESH,
+                REFRESH_EXPIRATION
+        );
+
+        assertThat(jwtTokenProvider.findAccessTokenInfo(refreshToken))
+                .isEmpty();
+    }
 }

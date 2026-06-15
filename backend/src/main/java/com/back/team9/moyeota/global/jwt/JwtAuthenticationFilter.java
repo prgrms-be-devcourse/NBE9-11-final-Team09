@@ -5,7 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,9 +19,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenResolver jwtTokenResolver;
+    private final JwtBlacklistService jwtBlacklistService;
 
     @Override
     protected void doFilterInternal(
@@ -30,33 +29,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String token = resolveToken(request);
-
-        if (token != null
-                && SecurityContextHolder.getContext()
-                .getAuthentication() == null) {
-            jwtTokenProvider.findMemberIdFromAccessToken(token)
-                    .ifPresent(memberId -> authenticate(request, memberId));
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            jwtTokenResolver.findToken(request)
+                    .ifPresent(token ->
+                            jwtTokenProvider.findMemberIdFromAccessToken(token)
+                                    .filter(memberId -> !jwtBlacklistService
+                                            .isBlacklisted(
+                                                    jwtTokenProvider.getJti(token)
+                                            ))
+                                    .ifPresent(memberId ->
+                                            authenticate(request, memberId)
+                                    )
+                    );
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private String resolveToken(HttpServletRequest request) {
-        String authorization = request.getHeader(
-                HttpHeaders.AUTHORIZATION
-        );
-
-        if (authorization == null
-                || !authorization.startsWith(BEARER_PREFIX)) {
-            return null;
-        }
-
-        String token = authorization.substring(
-                BEARER_PREFIX.length()
-        ).trim();
-
-        return token.isEmpty() ? null : token;
     }
 
     private void authenticate(

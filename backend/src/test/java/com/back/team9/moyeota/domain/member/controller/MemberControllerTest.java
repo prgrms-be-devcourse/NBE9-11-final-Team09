@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
+import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +43,9 @@ class MemberControllerTest {
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
 
+    @MockitoBean
+    private MemberLogoutService memberLogoutService;
+
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
     void requestSignupWithValidRequestReturnsCreated() throws Exception {
@@ -56,7 +61,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/signup")
+        mockMvc.perform(post("/api/members/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -84,7 +89,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/signup")
+        mockMvc.perform(post("/api/members/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -108,7 +113,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/email-verification/confirm")
+        mockMvc.perform(post("/api/members/email-verification/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -152,7 +157,7 @@ class MemberControllerTest {
             """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/login")
+        mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -193,12 +198,47 @@ class MemberControllerTest {
             """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/login")
+        mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COM001"));
 
         verifyNoInteractions(memberLoginService);
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공 시 Refresh Token 쿠키를 만료한다")
+    void logoutExpiresRefreshTokenCookie() throws Exception {
+        // Given
+        String authorization = "Bearer access-token";
+
+        // When / Then
+        mockMvc.perform(post("/api/members/logout")
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
+                        .with(user("member")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_LOGOUT_SUCCESS"))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken="
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "Max-Age=0"
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "HttpOnly"
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                )
+                        )
+                ));
+
+        verify(memberLogoutService).logout(authorization);
     }
 }
