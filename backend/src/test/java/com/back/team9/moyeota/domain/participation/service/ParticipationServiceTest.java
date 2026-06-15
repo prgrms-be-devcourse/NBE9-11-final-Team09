@@ -7,8 +7,10 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
+import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -27,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -745,5 +748,91 @@ class ParticipationServiceTest {
         verify(participation, never()).cancel();
     }
 
+
+    // ==================== getParticipations 테스트 ====================
+
+    @Test
+    @DisplayName("참여자 목록 조회 - 정상 조회 성공")
+    void getParticipations_정상조회_목록반환() {
+        // Given
+        Long memberId = 1L; // 방장 ID
+        Long fundingId = 10L;
+
+        Funding funding = mock(Funding.class);
+        Member hostMember = mock(Member.class);
+        given(hostMember.getMemberId()).willReturn(memberId);
+        given(funding.getMember()).willReturn(hostMember);
+
+        // 참여자 1명 Mock
+        Member participantMember = mock(Member.class);
+        given(participantMember.getNickname()).willReturn("모여타요");
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getSeatNumber()).willReturn("1A");
+
+        Participation participation = mock(Participation.class);
+        given(participation.getParticipationId()).willReturn(100L);
+        given(participation.getMember()).willReturn(participantMember);
+        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
+        given(participation.getPaymentStatus()).willReturn(ParticipationPaymentStatus.ACTIVE);
+        given(participation.getOutboundSeat()).willReturn(outboundSeat);
+        given(participation.getReturnSeat()).willReturn(null);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(participationRepository.findByFunding_FundingId(fundingId))
+                .willReturn(List.of(participation));
+
+        // When
+        List<ParticipationListResponse> response =
+                participationService.getParticipations(memberId, fundingId);
+
+        // Then
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).participationId()).isEqualTo(100L);
+        assertThat(response.get(0).memberNickname()).isEqualTo("모여타요");
+        assertThat(response.get(0).outboundSeatNumber()).isEqualTo("1A");
+        assertThat(response.get(0).returnSeatNumber()).isNull();
+    }
+
+    @Test
+    @DisplayName("참여자 목록 조회 - 존재하지 않는 펀딩 FUNDING_NOT_FOUND 예외 발생")
+    void getParticipations_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 999L;
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.getParticipations(memberId, fundingId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("참여자 목록 조회 - 방장이 아닌 경우 FUNDING_FORBIDDEN 예외 발생")
+    void getParticipations_방장아님_FUNDING_FORBIDDEN예외() {
+        // Given
+        Long requestMemberId = 2L;  // 요청자 (방장 아님)
+        Long hostMemberId = 1L;     // 실제 방장
+        Long fundingId = 10L;
+
+        Funding funding = mock(Funding.class);
+        Member hostMember = mock(Member.class);
+        given(hostMember.getMemberId()).willReturn(hostMemberId);
+        given(funding.getMember()).willReturn(hostMember);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.getParticipations(requestMemberId, fundingId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_FORBIDDEN));
+
+        // 권한 없으니 목록 조회는 호출되면 안 됨
+        verify(participationRepository, never()).findByFunding_FundingId(any());
+    }
 
 }
