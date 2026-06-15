@@ -3,12 +3,14 @@ package com.back.team9.moyeota.domain.funding.controller;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.service.FundingService;
 import com.back.team9.moyeota.global.response.ApiResponse;
+import com.back.team9.moyeota.global.response.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,7 +19,6 @@ public class FundingController {
 
     private final FundingService fundingService;
 
-    // 펀딩 생성
     @PostMapping
     public ResponseEntity<ApiResponse<FundingCreateResponse>> createFunding(
             @RequestBody @Valid FundingCreateRequest request
@@ -37,7 +38,6 @@ public class FundingController {
         );
     }
 
-    // 펀딩 상세 조회
     @GetMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<FundingDetailResponse>> getFunding(
             @PathVariable Long fundingId
@@ -54,11 +54,17 @@ public class FundingController {
         );
     }
 
-    // 펀딩 목록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FundingListResponse>>> getFundingList() {
-        List<FundingListResponse> response =
-                fundingService.getFundingList();
+    public ResponseEntity<ApiResponse<PageResponse<FundingListResponse>>> getFundingList(
+            @ModelAttribute FundingSearchCondition condition,
+            @PageableDefault( // 디폴트 페이징 설정 (페이지당 20개, 가까운 출발일순)
+                    size = 20,
+                    sort = "departureDate",
+                    direction = Sort.Direction.ASC
+            ) Pageable pageable
+    ) {
+        PageResponse<FundingListResponse> response =
+                fundingService.getFundingList(condition, pageable);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
@@ -69,7 +75,6 @@ public class FundingController {
         );
     }
 
-    // 펀딩 수정
     @PutMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<Void>> updateFunding(
             @PathVariable Long fundingId,
@@ -89,7 +94,6 @@ public class FundingController {
         );
     }
 
-    // 펀딩 취소
     @DeleteMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<Void>> cancelFunding(
             @PathVariable Long fundingId
@@ -107,4 +111,3 @@ public class FundingController {
         );
     }
 }
-

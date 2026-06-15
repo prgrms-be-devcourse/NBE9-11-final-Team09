@@ -13,7 +13,10 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,8 +87,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
 
-        List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponses(fundingId);
-
+        List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponsesForDetail(funding);
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
@@ -96,20 +98,25 @@ public class FundingService {
         );
     }
 
-    // 펀딩 목록 조회
+    // 펀딩 목록 조회(핕터링)
     @Transactional(readOnly = true)
-    public List<FundingListResponse> getFundingList() {
+    public PageResponse<FundingListResponse> getFundingList(
+            FundingSearchCondition condition,
+            Pageable pageable
+    ) {
 
-        List<Funding> fundings = fundingRepository.findAllWithMember();
+        Page<Funding> fundings =
+                fundingRepository.findPageByCondition(condition, pageable);
 
         List<Long> fundingIds =
-                fundings.stream()
+                fundings.getContent().stream()
                         .map(Funding::getFundingId)
                         .toList();
 
         List<Pathinfo> pathinfos =
-                pathinfoService
-                        .findByFunding_FundingIdInAndDirection(
+                fundingIds.isEmpty()
+                        ? List.of()
+                        : pathinfoService.findByFundingIdsAndDirection(
                                 fundingIds,
                                 Direction.OUTBOUND
                         );
@@ -125,8 +132,8 @@ public class FundingService {
                                 )
                         );
 
-        return fundings.stream()
-                .map(funding ->
+        Page<FundingListResponse> response =
+                fundings.map(funding ->
                         FundingListResponse.from(
                                 funding,
                                 pathinfoMap.get(
@@ -134,11 +141,12 @@ public class FundingService {
                                 ),
                                 0
                         )
-                )
-                .toList();
+                );
+
+        return PageResponse.from(response);
     }
 
-    // 펀딩 취소
+    // 펀딩 취소(연결된 노선 취소 처리)
     // TODO: 방장일 경우
     @Transactional
     public void cancelFunding(Long memberId, Long fundingId) {
@@ -151,6 +159,8 @@ public class FundingService {
         pathinfoService.cancelPathinfos(fundingId);
     }
 
+    // 펀딩 수정
+    // 참가자 여부에 따라 수정 가능 범위 상이
     @Transactional
     public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
 
@@ -173,6 +183,7 @@ public class FundingService {
 
     }
 
+    // 참가자 있을경우 제목/내용만 수정 허용
     private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
 
         boolean changed =
@@ -195,6 +206,7 @@ public class FundingService {
         funding.updateTitleAndContent(request.title(), request.content());
     }
 
+    // 참가자 없을경우 전체 수정 허용
     private void updateFundingWithoutParticipants(
             Funding funding,
             FundingUpdateRequest request
@@ -226,7 +238,7 @@ public class FundingService {
 
     }
 
-
+    // 펀딩 조회 공통 메서드
     private Funding findFundingById(Long fundingId) {
         return fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
