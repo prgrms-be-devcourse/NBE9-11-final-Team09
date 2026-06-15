@@ -52,8 +52,6 @@ class ParticipationServiceTest {
     @InjectMocks
     private ParticipationService participationService;
 
-    // ==================== createParticipation 테스트 ====================
-
     @Test
     @DisplayName("참여 신청 - 편도 펀딩 정상 신청 성공")
     void createParticipation_편도정상신청_성공() {
@@ -113,4 +111,78 @@ class ParticipationServiceTest {
         verify(seatRedisService).releaseSeat(outboundSeatId, memberId);
         verify(participationRepository).save(any());
     }
+
+
+    @Test
+    @DisplayName("참여 신청 - 왕복 펀딩 정상 신청 성공")
+    void createParticipation_왕복정상신청_성공() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 100L;
+        Long returnSeatId = 200L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                returnSeatId
+        );
+
+        // Funding Mock - 왕복(ROUND), 모집중(RECRUITING), 정원 10명
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+        given(funding.getTripType()).willReturn(TripType.ROUND);
+
+        // Member Mock
+        Member member = mock(Member.class);
+
+        // outboundSeat - OUTBOUND 노선
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getFunding()).willReturn(funding);
+        given(outboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getSeatId()).willReturn(outboundSeatId);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        // returnSeat - RETURN 노선
+        Pathinfo returnPathinfo = mock(Pathinfo.class);
+        given(returnPathinfo.getFunding()).willReturn(funding);
+        given(returnPathinfo.getDirection()).willReturn(Direction.RETURN);
+
+        Seat returnSeat = mock(Seat.class);
+        given(returnSeat.getSeatId()).willReturn(returnSeatId);
+        given(returnSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(returnSeat.getPathinfo()).willReturn(returnPathinfo);
+
+        // Repository Mock 동작 정의
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+        given(seatRepository.findById(returnSeatId)).willReturn(Optional.of(returnSeat));
+
+        // When
+        ParticipationResponse response = participationService.createParticipation(memberId, request);
+
+        // Then
+        assertThat(response.status()).isEqualTo(ParticipationStatus.ACTIVE);
+        assertThat(response.outboundSeatId()).isEqualTo(outboundSeatId);
+        assertThat(response.returnSeatId()).isEqualTo(returnSeatId);
+
+        // 가는편/오는편 좌석 모두 BOOKED 확정, Redis HOLD 모두 해제
+        verify(outboundSeat).book(any());
+        verify(returnSeat).book(any());
+        verify(seatRedisService).releaseSeat(outboundSeatId, memberId);
+        verify(seatRedisService).releaseSeat(returnSeatId, memberId);
+        verify(participationRepository).save(any());
+    }
+
+
 }
