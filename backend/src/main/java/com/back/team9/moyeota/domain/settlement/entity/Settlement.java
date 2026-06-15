@@ -48,4 +48,14 @@ public class Settlement {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public void approve(){
+        this.status = SettlementStatus.APPROVED;
+        this.paybackPaidAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    public void reject(){
+        this.status = SettlementStatus.REJECTED;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

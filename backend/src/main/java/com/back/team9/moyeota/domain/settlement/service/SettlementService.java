@@ -63,4 +63,36 @@ public class SettlementService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
         return SettlementResponse.from(settlement);
     }
+
+    @Transactional
+    public SettlementResponse approve(Long settlementId) {
+
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+
+        if(settlement.getStatus()!= SettlementStatus.CALCULATED){
+            throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
+        }
+
+        settlement.approve();
+        return SettlementResponse.from(settlement);
+
+    }
+
+    @Transactional
+    public SettlementResponse reject(Long settlementId) {
+
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+
+        if(settlement.getStatus()!= SettlementStatus.CALCULATED){
+            throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
+        }
+
+        settlement.reject();
+        return SettlementResponse.from(settlement);
+
+    }
+
+
 }
