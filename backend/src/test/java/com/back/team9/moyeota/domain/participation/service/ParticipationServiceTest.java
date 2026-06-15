@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -25,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -634,6 +636,113 @@ class ParticipationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED));
+    }
+
+    // ==================== cancelParticipation 테스트 ====================
+
+    @Test
+    @DisplayName("참여 취소 - 정상 취소 성공")
+    void cancelParticipation_정상취소_성공() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 100L;
+
+        // 출발 시각: 지금으로부터 3일 후 (24시간보다 여유 있음 → 취소 가능)
+        LocalDateTime departureTime = LocalDateTime.now().plusDays(3);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getDepartureTime()).willReturn(departureTime);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Participation participation = mock(Participation.class);
+        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
+        given(participation.getOutboundSeat()).willReturn(outboundSeat);
+        given(participation.getReturnSeat()).willReturn(null);
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.of(participation));
+
+        // When
+        participationService.cancelParticipation(memberId, participationId);
+
+        // Then
+        // 참여 상태 변경, 좌석 해제가 호출됐는지 확인
+        verify(participation).cancel();
+        verify(outboundSeat).release();
+    }
+
+    @Test
+    @DisplayName("참여 취소 - 본인 참여 내역 없음 PARTICIPATION_NOT_FOUND 예외 발생")
+    void cancelParticipation_본인참여내역없음_PARTICIPATION_NOT_FOUND예외() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 999L;
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.cancelParticipation(memberId, participationId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PARTICIPATION_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("참여 취소 - 이미 취소된 참여 ALREADY_CANCELED_PARTICIPATION 예외 발생")
+    void cancelParticipation_이미취소된참여_ALREADY_CANCELED_PARTICIPATION예외() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 100L;
+
+        Participation participation = mock(Participation.class);
+        given(participation.getStatus()).willReturn(ParticipationStatus.CANCELED);
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.of(participation));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.cancelParticipation(memberId, participationId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ALREADY_CANCELED_PARTICIPATION));
+
+        // 이미 취소된 상태라 cancel()이 또 호출되면 안 됨
+        verify(participation, never()).cancel();
+    }
+
+    @Test
+    @DisplayName("참여 취소 - 출발 24시간 이내 PARTICIPATION_CANCEL_NOT_ALLOWED 예외 발생")
+    void cancelParticipation_출발24시간이내_PARTICIPATION_CANCEL_NOT_ALLOWED예외() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 100L;
+
+        // 출발 시각: 지금으로부터 12시간 후 (24시간보다 적게 남음 → 취소 불가)
+        LocalDateTime departureTime = LocalDateTime.now().plusHours(12);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getDepartureTime()).willReturn(departureTime);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Participation participation = mock(Participation.class);
+        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
+        given(participation.getOutboundSeat()).willReturn(outboundSeat);
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.of(participation));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.cancelParticipation(memberId, participationId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED));
+
+        verify(participation, never()).cancel();
     }
 
 
