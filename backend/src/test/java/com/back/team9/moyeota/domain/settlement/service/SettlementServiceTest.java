@@ -327,7 +327,7 @@ class SettlementServiceTest {
         // Then
         assertThat(response.status()).isEqualTo(SettlementStatus.APPROVED);
         assertThat(response.paybackPaidAt()).isNotNull();
-        verify(settlementRepository, never()).save(any()); // dirty checking — save() 호출 없어야 함
+        verify(settlementRepository, never()).save(any()); // 서비스 코드에 save() 호출 없음
     }
 
     @Test
@@ -421,7 +421,7 @@ class SettlementServiceTest {
         // Then
         assertThat(response.status()).isEqualTo(SettlementStatus.REJECTED);
         assertThat(response.paybackPaidAt()).isNull(); // reject는 paybackPaidAt 변경 없음
-        verify(settlementRepository, never()).save(any()); // dirty checking
+        verify(settlementRepository, never()).save(any()); // 서비스 코드에 save() 호출 없음
     }
 
     @Test
@@ -462,5 +462,55 @@ class SettlementServiceTest {
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
 
         verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("페이백 승인 - REJECTED 상태에서 승인 시도 시 SETTLEMENT_NOT_AVAILABLE 예외 (역방향 전환 방지)")
+    void approve_REJECTED상태에서승인시도_SETTLEMENT_NOT_AVAILABLE예외() {
+        // Given
+        Settlement rejectedSettlement = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.REJECTED)
+                .paybackHold(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(rejectedSettlement));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.approve(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - APPROVED 상태에서 거절 시도 시 SETTLEMENT_NOT_AVAILABLE 예외 (역방향 전환 방지)")
+    void reject_APPROVED상태에서거절시도_SETTLEMENT_NOT_AVAILABLE예외() {
+        // Given
+        Settlement approvedSettlement = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.APPROVED)
+                .paybackHold(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(approvedSettlement));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.reject(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
     }
 }
