@@ -79,6 +79,8 @@ public enum ErrorCode {
     SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"STL004", "정산 내역이 존재하지 않습니다."),
     SETTLEMENT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST,"STL005", "정산 가능한 상태가 아닙니다."),
     SETTLEMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "STL006", "이미 정산 내역이 존재하는 펀딩입니다."),
+    SETTLEMENT_MANUAL_NOT_REQUIRED(HttpStatus.BAD_REQUEST, "STL007", "수동 페이백 처리 대상이 아닙니다."),
+
 
 
     // [NTF] 알림

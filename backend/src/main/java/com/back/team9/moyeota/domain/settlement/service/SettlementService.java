@@ -70,6 +70,9 @@ public class SettlementService {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
+        if (!settlement.getPaybackHold()) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED);
+        }
         if(settlement.getStatus()!= SettlementStatus.CALCULATED){
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
         }
@@ -85,6 +88,9 @@ public class SettlementService {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
+        if (!settlement.getPaybackHold()) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED);
+        }
         if(settlement.getStatus()!= SettlementStatus.CALCULATED){
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
         }
