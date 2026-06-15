@@ -75,7 +75,7 @@ public class FundingController {
         );
     }
 
-    @PutMapping("/{fundingId}")
+    @PatchMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<Void>> updateFunding(
             @PathVariable Long fundingId,
             @RequestBody @Valid FundingUpdateRequest request

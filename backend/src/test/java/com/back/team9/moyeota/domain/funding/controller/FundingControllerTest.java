@@ -1,12 +1,6 @@
 package com.back.team9.moyeota.domain.funding.controller;
 
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateRequest;
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingDetailResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingListResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingSearchCondition;
-import com.back.team9.moyeota.domain.funding.dto.FundingUpdateRequest;
-import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
+import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
@@ -18,6 +12,7 @@ import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.global.response.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,18 +26,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +54,7 @@ class FundingControllerTest {
                     .build();
 
     @Test
+    @DisplayName("펀딩 생성 요청 성공")
     void createFunding_withValidRequest_returnsOk() throws Exception {
         given(
                 fundingService.createFunding(
@@ -99,6 +88,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 빈 제목 400 반환")
     void createFunding_whenTitleIsBlank_returnsBadRequest() throws Exception {
         FundingCreateRequest request =
                 new FundingCreateRequest(
@@ -115,6 +105,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 총금액 0원 400 반환")
     void createFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -128,6 +119,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 최소인원 0명 400 반환")
     void createFunding_whenMinParticipantsIsZero_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -141,6 +133,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 버스타입 미입력 400 반환")
     void createFunding_whenBusTypeIsNull_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 null,
@@ -154,6 +147,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 왕복여부 미입력 400 반환")
     void createFunding_whenTripTypeIsNull_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -167,6 +161,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 노선 미입력 400 반환")
     void createFunding_whenRouteIsNull_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -180,6 +175,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 출발시간 미입력 400 반환")
     void createFunding_whenRouteDepartureTimeIsNull_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -200,6 +196,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 출발지 미입력 400 반환")
     void createFunding_whenRouteDepartureAddressIsBlank_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -220,6 +217,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성 도착구역 미입력 400 반환")
     void createFunding_whenRouteArrivalRegionIsNull_returnsBadRequest() throws Exception {
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -240,9 +238,10 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 요청 성공")
     void updateFunding_withValidRequest_returnsOk() throws Exception {
         mockMvc.perform(
-                        put("/api/fundings/{id}", 1L)
+                        patch("/api/fundings/{id}", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(oneWayUpdateRequest()))
                 )
@@ -259,6 +258,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 참가자 존재 400 반환")
     void updateFunding_whenServiceThrowsRestrictedUpdate_returnsFnd006() throws Exception {
         willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
                 .given(fundingService)
@@ -269,7 +269,7 @@ class FundingControllerTest {
                 );
 
         mockMvc.perform(
-                        put("/api/fundings/{id}", 1L)
+                        patch("/api/fundings/{id}", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(oneWayUpdateRequest()))
                 )
@@ -279,6 +279,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 제목 미입력 400 반환")
     void updateFunding_whenTitleIsBlank_returnsBadRequest() throws Exception {
         FundingUpdateRequest request =
                 new FundingUpdateRequest(
@@ -295,6 +296,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 총금액 0원 400 반환")
     void updateFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
         FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
@@ -308,6 +310,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 노선 미입력 400 반환")
     void updateFunding_whenRouteIsNull_returnsBadRequest() throws Exception {
         FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
@@ -321,6 +324,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 수정 도착지 미입력 400 반환")
     void updateFunding_whenRouteArrivalAddressIsBlank_returnsBadRequest() throws Exception {
         FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
@@ -341,6 +345,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 취소 요청 성공")
     void cancelFunding_withValidRequest_returnsOk() throws Exception {
         mockMvc.perform(delete("/api/fundings/{id}", 1L))
                 .andExpect(status().isOk())
@@ -351,6 +356,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 취소 이미 취소된 펀딩 400 반환")
     void cancelFunding_whenServiceThrowsAlreadyCancelled_returnsFnd004() throws Exception {
         willThrow(new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED))
                 .given(fundingService)
@@ -363,6 +369,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 상세 조회 성공")
     void getFunding_withExistingFunding_returnsOk() throws Exception {
         given(fundingService.getFunding(1L))
                 .willReturn(mock(FundingDetailResponse.class));
@@ -376,6 +383,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 상세 조회 존재하지 않는 펀딩 404 반환")
     void getFunding_whenServiceThrowsFundingNotFound_returnsFnd001() throws Exception {
         given(fundingService.getFunding(999L))
                 .willThrow(new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
@@ -387,6 +395,7 @@ class FundingControllerTest {
     }
 
     @Test
+    @DisplayName("펀딩 목록 조회 필터링 성공")
     void getFundingList_withFilters_returnsPageResponse() throws Exception {
         given(
                 fundingService.getFundingList(
@@ -435,7 +444,7 @@ class FundingControllerTest {
 
     private void performUpdateBadRequest(FundingUpdateRequest request) throws Exception {
         mockMvc.perform(
-                        put("/api/fundings/{id}", 1L)
+                        patch("/api/fundings/{id}", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                 )

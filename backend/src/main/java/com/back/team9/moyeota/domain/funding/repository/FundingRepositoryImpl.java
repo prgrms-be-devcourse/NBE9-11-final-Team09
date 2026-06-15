@@ -32,13 +32,7 @@ public class FundingRepositoryImpl implements FundingRepositoryCustom {
                 .selectFrom(funding)
                 .join(pathinfo).on(pathinfo.funding.eq(funding)) // 펀딩 노선 연결
                 .join(funding.member).fetchJoin()
-                .where(
-                        pathinfo.direction.eq(Direction.OUTBOUND), // 가는 노선만(중복방지)
-                        funding.status.in(condition.effectiveStatuses()), // 상태 필터
-                        departureDateEq(condition.departureDate()),
-                        departureRegionEq(condition.departureRegion()),
-                        arrivalRegionEq(condition.arrivalRegion())
-                )
+                .where(whereConditions(condition))
                 .offset(pageable.getOffset()) // 몇번부터 보여줄지
                 .limit(pageable.getPageSize()) // 페이지 사이즈
                 .orderBy(funding.departureDate.asc()) // 출발일 가까운순 정렬
@@ -49,16 +43,22 @@ public class FundingRepositoryImpl implements FundingRepositoryCustom {
                 .select(funding.count())
                 .from(funding)
                 .join(pathinfo).on(pathinfo.funding.eq(funding))
-                .where(
-                        pathinfo.direction.eq(Direction.OUTBOUND),
-                        funding.status.in(condition.effectiveStatuses()),
-                        departureDateEq(condition.departureDate()),
-                        departureRegionEq(condition.departureRegion()),
-                        arrivalRegionEq(condition.arrivalRegion())
-                )
+                .where(whereConditions(condition))
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0 : total);
+    }
+
+    private BooleanExpression[] whereConditions(
+            FundingSearchCondition condition
+    ) {
+        return new BooleanExpression[]{
+                pathinfo.direction.eq(Direction.OUTBOUND), // 가는 노선만
+                funding.status.in(condition.effectiveStatuses()), // 상태 필터
+                departureDateEq(condition.departureDate()), // 출발일 필터
+                departureRegionEq(condition.departureRegion()), // 출발지 필터
+                arrivalRegionEq(condition.arrivalRegion()) // 도착지 필터
+        };
     }
 
     private BooleanExpression departureDateEq(LocalDate departureDate) {
