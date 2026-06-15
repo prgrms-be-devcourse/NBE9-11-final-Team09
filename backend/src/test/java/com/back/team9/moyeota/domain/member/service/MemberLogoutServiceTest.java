@@ -2,10 +2,7 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
-import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
-import com.back.team9.moyeota.global.jwt.TokenType;
+import com.back.team9.moyeota.global.jwt.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,14 +38,12 @@ class MemberLogoutServiceTest {
         // Given
         when(jwtTokenResolver.findToken("Bearer access-token"))
                 .thenReturn(Optional.of("access-token"));
-        when(jwtTokenProvider.validateToken("access-token"))
-                .thenReturn(true);
-        when(jwtTokenProvider.getTokenType("access-token"))
-                .thenReturn(TokenType.ACCESS);
-        when(jwtTokenProvider.getJti("access-token"))
-                .thenReturn("access-jti");
-        when(jwtTokenProvider.getRemainingExpiration("access-token"))
-                .thenReturn(3000L);
+        when(jwtTokenProvider.findAccessTokenInfo("access-token"))
+                .thenReturn(Optional.of(new JwtAccessTokenInfo(
+                        1L,
+                        "access-jti",
+                        3000L
+                )));
 
         // When
         memberLogoutService.logout("Bearer access-token");
@@ -78,8 +73,8 @@ class MemberLogoutServiceTest {
         // Given
         when(jwtTokenResolver.findToken("Bearer invalid-token"))
                 .thenReturn(Optional.of("invalid-token"));
-        when(jwtTokenProvider.validateToken("invalid-token"))
-                .thenReturn(false);
+        when(jwtTokenProvider.findAccessTokenInfo("invalid-token"))
+                .thenReturn(Optional.empty());
 
         // When / Then
         assertTokenInvalidException(
@@ -97,10 +92,8 @@ class MemberLogoutServiceTest {
         // Given
         when(jwtTokenResolver.findToken("Bearer refresh-token"))
                 .thenReturn(Optional.of("refresh-token"));
-        when(jwtTokenProvider.validateToken("refresh-token"))
-                .thenReturn(true);
-        when(jwtTokenProvider.getTokenType("refresh-token"))
-                .thenReturn(TokenType.REFRESH);
+        when(jwtTokenProvider.findAccessTokenInfo("refresh-token"))
+                .thenReturn(Optional.empty());
 
         // When / Then
         assertTokenInvalidException(
