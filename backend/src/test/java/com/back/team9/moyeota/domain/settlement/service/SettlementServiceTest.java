@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -63,7 +64,7 @@ class SettlementServiceTest {
                 .fundingId(1L)
                 .member(hostMember)
                 .title("서울 → 부산 버스 대절")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.COMPLETED)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
@@ -128,7 +129,7 @@ class SettlementServiceTest {
                 .fundingId(2L)
                 .member(hostMember)
                 .title("홀드 펀딩")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.COMPLETED)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
@@ -192,7 +193,7 @@ class SettlementServiceTest {
                 .fundingId(1L)
                 .member(hostMember)
                 .title("모집 중 펀딩")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.RECRUITING)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
