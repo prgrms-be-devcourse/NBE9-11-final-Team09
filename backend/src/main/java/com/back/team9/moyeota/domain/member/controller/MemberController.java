@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/members")
 public class MemberController {
 
     private final MemberService memberService;

@@ -61,7 +61,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/signup")
+        mockMvc.perform(post("/api/members/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -89,7 +89,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/signup")
+        mockMvc.perform(post("/api/members/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -113,7 +113,7 @@ class MemberControllerTest {
                 """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/email-verification/confirm")
+        mockMvc.perform(post("/api/members/email-verification/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -157,7 +157,7 @@ class MemberControllerTest {
             """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/login")
+        mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -198,7 +198,7 @@ class MemberControllerTest {
             """;
 
         // When / Then
-        mockMvc.perform(post("/api/users/login")
+        mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -214,7 +214,7 @@ class MemberControllerTest {
         String authorization = "Bearer access-token";
 
         // When / Then
-        mockMvc.perform(post("/api/users/logout")
+        mockMvc.perform(post("/api/members/logout")
                         .header(HttpHeaders.AUTHORIZATION, authorization)
                         .with(user("member")))
                 .andExpect(status().isOk())
