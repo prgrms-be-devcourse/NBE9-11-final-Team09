@@ -16,13 +16,14 @@ import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.Mockito.any;
 
 import java.util.Optional;
 
@@ -30,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
@@ -182,6 +186,118 @@ class ParticipationServiceTest {
         verify(seatRedisService).releaseSeat(outboundSeatId, memberId);
         verify(seatRedisService).releaseSeat(returnSeatId, memberId);
         verify(participationRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 존재하지 않는 펀딩 FUNDING_NOT_FOUND 예외 발생")
+    void createParticipation_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 999L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
+
+        // 펀딩이 없으니 그 이후 로직(좌석 조회 등)은 호출되면 안 됨
+        verify(seatRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 존재하지 않는 회원 USER_NOT_FOUND 예외 발생")
+    void createParticipation_존재하지않는회원_USER_NOT_FOUND예외() {
+        // Given
+        Long memberId = 999L;
+        Long fundingId = 10L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.USER_NOT_FOUND));
+
+        verify(seatRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 취소된 펀딩 FUNDING_CANCELLED 예외 발생")
+    void createParticipation_취소된펀딩_FUNDING_CANCELLED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getStatus()).willReturn(FundingStatus.CANCELLED);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_CANCELLED));
+
+        verify(seatRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 모집 종료된 펀딩(COMPLETED) FUNDING_RECRUITMENT_CLOSED 예외 발생")
+    void createParticipation_모집종료된펀딩_FUNDING_RECRUITMENT_CLOSED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getStatus()).willReturn(FundingStatus.COMPLETED);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_RECRUITMENT_CLOSED));
+
+        verify(seatRepository, never()).findById(any());
     }
 
 
