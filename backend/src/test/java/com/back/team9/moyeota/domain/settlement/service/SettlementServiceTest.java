@@ -275,4 +275,138 @@ class SettlementServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_FOUND));
     }
+
+    @Test
+    @DisplayName("페이백 승인 - 정상 요청 시 APPROVED 상태 응답, paybackPaidAt 설정, save() 미호출(dirty checking)")
+    void approve_정상요청_APPROVED상태응답반환() {
+        // Given
+        Settlement settlement = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(settlement));
+
+        // When
+        SettlementResponse response = settlementService.approve(1L);
+
+        // Then
+        assertThat(response.status()).isEqualTo(SettlementStatus.APPROVED);
+        assertThat(response.paybackPaidAt()).isNotNull();
+        verify(settlementRepository, never()).save(any()); // dirty checking — save() 호출 없어야 함
+    }
+
+    @Test
+    @DisplayName("페이백 승인 - 존재하지 않는 settlementId 요청 시 SETTLEMENT_NOT_FOUND 예외")
+    void approve_존재하지않는settlementId_SETTLEMENT_NOT_FOUND예외() {
+        // Given
+        given(settlementRepository.findById(999L)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.approve(999L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("페이백 승인 - CALCULATED 아닌 상태(APPROVED)에서 재승인 요청 시 SETTLEMENT_NOT_AVAILABLE 예외")
+    void approve_CALCULATED아닌상태_SETTLEMENT_NOT_AVAILABLE예외() {
+        // Given
+        Settlement alreadyApproved = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.APPROVED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(alreadyApproved));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.approve(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - 정상 요청 시 REJECTED 상태 응답, paybackPaidAt null 유지, save() 미호출(dirty checking)")
+    void reject_정상요청_REJECTED상태응답반환() {
+        // Given
+        Settlement settlement = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(settlement));
+
+        // When
+        SettlementResponse response = settlementService.reject(1L);
+
+        // Then
+        assertThat(response.status()).isEqualTo(SettlementStatus.REJECTED);
+        assertThat(response.paybackPaidAt()).isNull(); // reject는 paybackPaidAt 변경 없음
+        verify(settlementRepository, never()).save(any()); // dirty checking
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - 존재하지 않는 settlementId 요청 시 SETTLEMENT_NOT_FOUND 예외")
+    void reject_존재하지않는settlementId_SETTLEMENT_NOT_FOUND예외() {
+        // Given
+        given(settlementRepository.findById(999L)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.reject(999L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - CALCULATED 아닌 상태(REJECTED)에서 재거절 요청 시 SETTLEMENT_NOT_AVAILABLE 예외")
+    void reject_CALCULATED아닌상태_SETTLEMENT_NOT_AVAILABLE예외() {
+        // Given
+        Settlement alreadyRejected = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.REJECTED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(settlementRepository.findById(1L)).willReturn(Optional.of(alreadyRejected));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.reject(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+
+        verify(settlementRepository, never()).save(any());
+    }
 }
