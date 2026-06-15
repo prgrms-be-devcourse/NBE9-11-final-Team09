@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
+import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -100,7 +102,7 @@ public class ParticipationService {
 
         //좌석 예약 확정
         // Seat 상태를 BOOKED로 변경 (최종 동시성 방어선)
-        //  이미 BOOKED 상태면 Seat.book() 내부에서 SEAT_ALREADY_OCCUPIED(SEA002) 예외 발생
+        // 이미 BOOKED 상태면 Seat.book() 내부에서 SEAT_ALREADY_OCCUPIED(SEA002) 예외 발생
         outboundSeat.book(participation);
         if (returnSeat != null) {
             returnSeat.book(participation);
@@ -189,8 +191,6 @@ public class ParticipationService {
                 );
 
         // 이미 취소된 참여인지 확인 - 중복 취소 방지
-        //가는편(OUTBOUND) 좌석의 노선 출발 시각을 기준으로 판단
-        // 출발 24시간 전까지만 취소 가능, 이후엔 취소 불가 (PTC006)
         if (participation.getStatus() == ParticipationStatus.CANCELED) {
             throw new BusinessException(
                     ErrorCode.ALREADY_CANCELED_PARTICIPATION
@@ -198,6 +198,8 @@ public class ParticipationService {
         }
 
         // 취소 가능 시점인지 확인
+        //가는편(OUTBOUND) 좌석의 노선 출발 시각을 기준으로 판단
+        //출발 24시간 전까지만 취소 가능, 이후엔 취소 불가 (PTC006)
         LocalDateTime departureTime = participation.getOutboundSeat()
                 .getPathinfo()
                 .getDepartureTime();
@@ -226,5 +228,34 @@ public class ParticipationService {
         //   - PaymentRepository.findByParticipation_ParticipationId(participationId)로 조회 필요
         //   - 출발 -10일 자정 이전인 경우에만 보증금 환불 (refund() 호출)
         //   - 출발 -10일 이후 ~ -24h 이전 취소는 환불 없이 처리
+    }
+
+    // ============================== 3. 참여자 목록 조회 ==============================
+    // 참여자 목록 조회 (방장용)
+    @Transactional(readOnly = true)
+    public List<ParticipationListResponse> getParticipations(
+            Long memberId, //요청자(방장) ID
+            Long fundingId //조회할 펀딩 ID
+    ) {
+
+        // 펀딩 조회 - 존재하지 않으면 FND001
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.FUNDING_NOT_FOUND)
+                );
+
+        // 방장 여부 확인 - 방장이 아니면 FND007
+        if (!funding.getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.FUNDING_FORBIDDEN);
+        }
+
+        // 참여자 목록 조회
+        List<Participation> participations =
+                participationRepository.findByFunding_FundingId(fundingId);
+
+        // DTO 변환 후 반환
+        return participations.stream()
+                .map(ParticipationListResponse::from)
+                .toList();
     }
 }
