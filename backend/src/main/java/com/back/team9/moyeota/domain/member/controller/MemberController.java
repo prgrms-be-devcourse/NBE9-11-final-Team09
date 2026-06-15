@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.member.controller;
 import com.back.team9.moyeota.domain.member.dto.*;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
+import com.back.team9.moyeota.domain.member.service.MemberProfileService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -23,16 +25,19 @@ public class MemberController {
     private final MemberLoginService memberLoginService;
     private final boolean cookieSecure;
     private final MemberLogoutService memberLogoutService;
+    private final MemberProfileService memberProfileService;
 
     public MemberController(
             MemberService memberService,
             MemberLoginService memberLoginService,
             MemberLogoutService memberLogoutService,
+            MemberProfileService memberProfileService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
         this.memberLoginService = memberLoginService;
         this.memberLogoutService = memberLogoutService;
+        this.memberProfileService = memberProfileService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -111,5 +116,28 @@ public class MemberController {
                         "USR_LOGOUT_SUCCESS",
                         "로그아웃 되었습니다."
                 ));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MemberInfoResponse>> getMyInfo(
+            @AuthenticationPrincipal Long memberId
+    ) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_GET_MY_INFO_SUCCESS",
+                "내 정보 조회 성공",
+                memberProfileService.getMyInfo(memberId)
+        ));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<MemberUpdateResponse>> updateMyInfo(
+            @AuthenticationPrincipal Long memberId,
+            @Valid @RequestBody MemberUpdateRequest request
+    ) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_UPDATE_MY_INFO_SUCCESS",
+                "내 정보 수정 성공",
+                memberProfileService.updateMyInfo(memberId, request)
+        ));
     }
 }
