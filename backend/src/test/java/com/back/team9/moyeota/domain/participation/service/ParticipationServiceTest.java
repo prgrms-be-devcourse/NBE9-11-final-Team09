@@ -374,4 +374,267 @@ class ParticipationServiceTest {
     }
 
 
+    @Test
+    @DisplayName("참여 신청 - 존재하지 않는 좌석 SEAT_NOT_FOUND 예외 발생")
+    void createParticipation_존재하지않는좌석_SEAT_NOT_FOUND예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 999L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        // 좌석 조회 결과 없음
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 이미 BOOKED된 좌석 SEAT_ALREADY_OCCUPIED 예외 발생")
+    void createParticipation_이미BOOKED된좌석_SEAT_ALREADY_OCCUPIED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 100L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+
+        Member member = mock(Member.class);
+
+        // 좌석이 이미 BOOKED 상태
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.BOOKED);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_ALREADY_OCCUPIED));
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 다른 펀딩의 좌석 SEAT_NOT_IN_PATH 예외 발생")
+    void createParticipation_다른펀딩좌석_SEAT_NOT_IN_PATH예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long otherFundingId = 20L; // 좌석이 속한 다른 펀딩
+        Long outboundSeatId = 100L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+
+        // 좌석이 연결된 노선은 "다른 펀딩(20번)" 소속
+        Funding otherFunding = mock(Funding.class);
+        given(otherFunding.getFundingId()).willReturn(otherFundingId);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getFunding()).willReturn(otherFunding);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_NOT_IN_PATH));
+    }
+
+    @Test
+    @DisplayName("참여 신청 - outbound 자리에 RETURN 노선 좌석 선택 SEAT_NOT_IN_PATH 예외 발생")
+    void createParticipation_방향불일치좌석_SEAT_NOT_IN_PATH예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 100L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+
+        // 같은 펀딩 소속이지만, 노선 방향이 RETURN (오는편)
+        Pathinfo wrongDirectionPathinfo = mock(Pathinfo.class);
+        given(wrongDirectionPathinfo.getFunding()).willReturn(funding);
+        given(wrongDirectionPathinfo.getDirection()).willReturn(Direction.RETURN);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(outboundSeat.getPathinfo()).willReturn(wrongDirectionPathinfo);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_NOT_IN_PATH));
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 왕복인데 returnSeatId 없음 ROUND_TRIP_SEAT_REQUIRED 예외 발생")
+    void createParticipation_왕복인데오는편좌석없음_ROUND_TRIP_SEAT_REQUIRED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 100L;
+
+        // returnSeatId = null인데, 펀딩은 ROUND(왕복)
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+        given(funding.getTripType()).willReturn(TripType.ROUND);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getFunding()).willReturn(funding);
+        given(outboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ROUND_TRIP_SEAT_REQUIRED));
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 편도인데 returnSeatId 있음 ONE_WAY_RETURN_SEAT_NOT_ALLOWED 예외 발생")
+    void createParticipation_편도인데오는편좌석있음_ONE_WAY_RETURN_SEAT_NOT_ALLOWED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long outboundSeatId = 100L;
+        Long returnSeatId = 200L; // 편도인데 returnSeatId를 보냄
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                outboundSeatId,
+                returnSeatId
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+        given(funding.getTripType()).willReturn(TripType.ONE_WAY);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getFunding()).willReturn(funding);
+        given(outboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(0L);
+        given(seatRepository.findById(outboundSeatId)).willReturn(Optional.of(outboundSeat));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED));
+    }
+
+
 }
