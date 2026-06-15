@@ -20,13 +20,16 @@ import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ParticipationService {
@@ -108,16 +111,27 @@ public class ParticipationService {
             returnSeat.book(participation);
         }
 
-        // 10. Redis HOLD 해제 - 더 이상 임시 선점 상태가 아니므로 Redis 키 삭제
-        seatRedisService.releaseSeat(
-                outboundSeat.getSeatId(),
-                memberId
-        );
-
-        if (returnSeat != null) {
+        // Redis HOLD 해제 - 더 이상 임시 선점 상태가 아니므로 Redis 키 삭제
+        // Redis 장애가 DB 트랜잭션(예약 성공)에 영향을 주지 않도록 예외를 흡수
+        // HOLD 키는 5분 TTL이 설정되어 있어, 삭제 실패해도 자동 만료됨
+        try {
             seatRedisService.releaseSeat(
-                    returnSeat.getSeatId(),
+                    outboundSeat.getSeatId(),
                     memberId
+            );
+
+            if (returnSeat != null) {
+                seatRedisService.releaseSeat(
+                        returnSeat.getSeatId(),
+                        memberId
+                );
+            }
+        } catch (Exception e) {
+            log.warn(
+                    "좌석 HOLD 해제 실패 (TTL로 자동 만료됨) - outboundSeatId: {}, memberId: {}",
+                    outboundSeat.getSeatId(),
+                    memberId,
+                    e
             );
         }
 
