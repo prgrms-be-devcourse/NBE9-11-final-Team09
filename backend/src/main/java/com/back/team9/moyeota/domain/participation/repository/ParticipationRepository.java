@@ -14,6 +14,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     boolean existsByFunding_FundingIdAndMember_MemberId(Long fundingId, Long memberId);
 
     // (참여 ID와 회원 ID로) 본인 참여 내역 조회
+    //N+1 방지를 위해 연관 데이터를 함께 조회
+    @EntityGraph(attributePaths = {"outboundSeat", "outboundSeat.pathinfo", "returnSeat"})
     Optional<Participation> findByParticipationIdAndMember_MemberId(Long participationId, Long memberId);
 
     //특정 펀딩의 전체 참여자 목록 조회
