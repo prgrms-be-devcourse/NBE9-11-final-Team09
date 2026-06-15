@@ -11,9 +11,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -171,6 +173,43 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isNull();
 
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("이미 인증된 요청은 기존 인증 정보를 유지한다")
+    void alreadyAuthenticatedRequestKeepsExistingAuthentication()
+            throws Exception {
+        // Given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        Authentication existingAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        "existing-user",
+                        null,
+                        List.of()
+                );
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(existingAuthentication);
+
+        // When
+        jwtAuthenticationFilter.doFilter(
+                request,
+                response,
+                filterChain
+        );
+
+        // Then
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isSameAs(existingAuthentication);
+
+        verifyNoInteractions(
+                jwtTokenResolver,
+                jwtTokenProvider,
+                jwtBlacklistService
+        );
         verify(filterChain).doFilter(request, response);
     }
 }

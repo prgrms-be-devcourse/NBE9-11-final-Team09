@@ -29,17 +29,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        jwtTokenResolver.findToken(request)
-                .ifPresent(token ->
-                        jwtTokenProvider.findMemberIdFromAccessToken(token)
-                                .filter(memberId -> !jwtBlacklistService
-                                        .isBlacklisted(
-                                                jwtTokenProvider.getJti(token)
-                                        ))
-                                .ifPresent(memberId ->
-                                        authenticate(request, memberId)
-                                )
-                );
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            jwtTokenResolver.findToken(request)
+                    .ifPresent(token ->
+                            jwtTokenProvider.findMemberIdFromAccessToken(token)
+                                    .filter(memberId -> !jwtBlacklistService
+                                            .isBlacklisted(
+                                                    jwtTokenProvider.getJti(token)
+                                            ))
+                                    .ifPresent(memberId ->
+                                            authenticate(request, memberId)
+                                    )
+                    );
+        }
 
         filterChain.doFilter(request, response);
     }
