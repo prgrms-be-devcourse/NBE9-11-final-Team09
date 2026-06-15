@@ -50,12 +50,13 @@ public class Settlement {
     private LocalDateTime updatedAt;
 
     public void approve(){
+        LocalDateTime now = LocalDateTime.now();
         this.status = SettlementStatus.APPROVED;
-        this.paybackPaidAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.paybackPaidAt = now;
+        this.updatedAt = now;
     }
     public void reject(){
+        LocalDateTime now = LocalDateTime.now();
         this.status = SettlementStatus.REJECTED;
-        this.updatedAt = LocalDateTime.now();
-    }
+        this.updatedAt = now;    }
 }
