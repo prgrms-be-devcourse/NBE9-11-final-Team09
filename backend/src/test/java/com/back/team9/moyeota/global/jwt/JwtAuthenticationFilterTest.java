@@ -29,6 +29,12 @@ class JwtAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private JwtTokenResolver jwtTokenResolver;
+
+    @Mock
+    private JwtBlacklistService jwtBlacklistService;
+
     @InjectMocks
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -53,6 +59,14 @@ class JwtAuthenticationFilterTest {
 
         when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
                 .thenReturn(Optional.of(1L));
+        when(jwtTokenResolver.findToken(request))
+                .thenReturn(Optional.of("access-token"));
+        when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
+                .thenReturn(Optional.of(1L));
+        when(jwtTokenProvider.getJti("access-token"))
+                .thenReturn("access-jti");
+        when(jwtBlacklistService.isBlacklisted("access-jti"))
+                .thenReturn(false);
 
         // When
         jwtAuthenticationFilter.doFilter(
@@ -81,6 +95,9 @@ class JwtAuthenticationFilterTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
+        when(jwtTokenResolver.findToken(request))
+                .thenReturn(Optional.empty());
+
         // When
         jwtAuthenticationFilter.doFilter(
                 request,
@@ -92,7 +109,7 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isNull();
 
-        verifyNoInteractions(jwtTokenProvider);
+        verifyNoInteractions(jwtTokenProvider, jwtBlacklistService);
         verify(filterChain).doFilter(request, response);
     }
 
@@ -107,6 +124,41 @@ class JwtAuthenticationFilterTest {
 
         when(jwtTokenProvider.findMemberIdFromAccessToken("invalid-token"))
                 .thenReturn(Optional.empty());
+        when(jwtTokenResolver.findToken(request))
+                .thenReturn(Optional.of("invalid-token"));
+
+        // When
+        jwtAuthenticationFilter.doFilter(
+                request,
+                response,
+                filterChain
+        );
+
+        // Then
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isNull();
+
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("블랙리스트에 등록된 Access Token은 인증하지 않는다")
+    void blacklistedAccessTokenDoesNotSetAuthentication()
+            throws Exception {
+        // Given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        request.addHeader("Authorization", "Bearer access-token");
+
+        when(jwtTokenResolver.findToken(request))
+                .thenReturn(Optional.of("access-token"));
+        when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
+                .thenReturn(Optional.of(1L));
+        when(jwtTokenProvider.getJti("access-token"))
+                .thenReturn("access-jti");
+        when(jwtBlacklistService.isBlacklisted("access-jti"))
+                .thenReturn(true);
 
         // When
         jwtAuthenticationFilter.doFilter(
