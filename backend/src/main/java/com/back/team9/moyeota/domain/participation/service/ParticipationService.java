@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class ParticipationService {
@@ -32,7 +35,7 @@ public class ParticipationService {
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
 
-    // ======================== 1. 참여 신청========================
+    // ============================== 1. 참여 신청 ==============================
     @Transactional
     public ParticipationResponse createParticipation(Long memberId, ParticipationCreateRequest request) {
 
@@ -168,5 +171,60 @@ public class ParticipationService {
         if (tripType == TripType.ONE_WAY && returnSeatId != null) {
             throw new BusinessException(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED);
         }
+    }
+
+
+    // ============================== 2. 참여 취소 ==============================
+    @Transactional
+    public void cancelParticipation(Long memberId, Long participationId) {
+
+        // 본인 참여 내역 조회 - 없거나 본인 것이 아니면 PTC001
+        Participation participation = participationRepository
+                .findByParticipationIdAndMember_MemberId(
+                        participationId,
+                        memberId
+                )
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND)
+                );
+
+        // 이미 취소된 참여인지 확인 - 중복 취소 방지
+        //가는편(OUTBOUND) 좌석의 노선 출발 시각을 기준으로 판단
+        // 출발 24시간 전까지만 취소 가능, 이후엔 취소 불가 (PTC006)
+        if (participation.getStatus() == ParticipationStatus.CANCELED) {
+            throw new BusinessException(
+                    ErrorCode.ALREADY_CANCELED_PARTICIPATION
+            );
+        }
+
+        // 취소 가능 시점인지 확인
+        LocalDateTime departureTime = participation.getOutboundSeat()
+                .getPathinfo()
+                .getDepartureTime();
+
+        LocalDateTime cancelDeadline = departureTime.minusHours(24);
+
+        if (LocalDateTime.now().isAfter(cancelDeadline)) {
+            throw new BusinessException(
+                    ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED
+            );
+        }
+
+        // 참여 상태 변경 - status, paymentStatus를 CANCELED로 변경
+        participation.cancel();
+
+        //좌석 해제 - DB status를 AVAILABLE로 변경 (다른 사람이 다시 선택 가능해짐)
+        // 가는편 좌석 해제
+        participation.getOutboundSeat().release();
+
+        // 오는편 좌석 해제
+        if (participation.getReturnSeat() != null) {
+            participation.getReturnSeat().release();
+        }
+
+        // TODO: Payment 환불 처리
+        //   - PaymentRepository.findByParticipation_ParticipationId(participationId)로 조회 필요
+        //   - 출발 -10일 자정 이전인 경우에만 보증금 환불 (refund() 호출)
+        //   - 출발 -10일 이후 ~ -24h 이전 취소는 환불 없이 처리
     }
 }
