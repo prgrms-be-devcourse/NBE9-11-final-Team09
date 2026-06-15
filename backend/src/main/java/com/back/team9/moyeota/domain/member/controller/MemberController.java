@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.*;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
+import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -15,20 +16,23 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/members")
 public class MemberController {
 
     private final MemberService memberService;
     private final MemberLoginService memberLoginService;
     private final boolean cookieSecure;
+    private final MemberLogoutService memberLogoutService;
 
     public MemberController(
             MemberService memberService,
             MemberLoginService memberLoginService,
+            MemberLogoutService memberLogoutService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
         this.memberLoginService = memberLoginService;
+        this.memberLogoutService = memberLogoutService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -80,6 +84,32 @@ public class MemberController {
                         "USR_LOGIN_SUCCESS",
                         "로그인 성공",
                         result.response()
+                ));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    ) {
+        memberLogoutService.logout(authorization);
+
+        ResponseCookie expiredRefreshTokenCookie = ResponseCookie
+                .from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        expiredRefreshTokenCookie.toString()
+                )
+                .body(new ApiResponse<>(
+                        "USR_LOGOUT_SUCCESS",
+                        "로그아웃 되었습니다."
                 ));
     }
 }

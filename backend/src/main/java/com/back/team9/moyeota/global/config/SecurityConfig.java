@@ -27,9 +27,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/users/signup",
-                                "/api/users/email-verification/confirm",
-                                "/api/users/login",
+                                "/api/members/signup",
+                                "/api/members/email-verification/confirm",
+                                "/api/members/login",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
 //                                "/api/settlements/**"

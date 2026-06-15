@@ -119,6 +119,30 @@ public class JwtTokenProvider {
         }
     }
 
+    public Optional<JwtAccessTokenInfo> findAccessTokenInfo(String token) {
+        try {
+            Claims claims = getClaims(token);
+            String tokenType = claims.get("tokenType", String.class);
+
+            if (!TokenType.ACCESS.name().equals(tokenType)) {
+                return Optional.empty();
+            }
+
+            long remainingExpiration = Math.max(
+                    claims.getExpiration().getTime() - System.currentTimeMillis(),
+                    0
+            );
+
+            return Optional.of(new JwtAccessTokenInfo(
+                    Long.valueOf(claims.getSubject()),
+                    claims.getId(),
+                    remainingExpiration
+            ));
+        } catch (JwtException | IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+
     public boolean validateToken(String token) {
         try {
             getClaims(token);
