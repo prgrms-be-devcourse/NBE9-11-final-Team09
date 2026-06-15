@@ -301,4 +301,77 @@ class ParticipationServiceTest {
     }
 
 
+    @Test
+    @DisplayName("참여 신청 - 이미 참여 중인 펀딩 DUPLICATE_PARTICIPATION 예외 발생")
+    void createParticipation_이미참여중_DUPLICATE_PARTICIPATION예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        // 이미 참여 중 → true
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.DUPLICATE_PARTICIPATION));
+
+        // 중복이라 좌석 조회는 호출되면 안 됨
+        verify(seatRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 정원 초과 FUNDING_RECRUITMENT_CLOSED 예외 발생")
+    void createParticipation_정원초과_FUNDING_RECRUITMENT_CLOSED예외() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId,
+                100L,
+                null
+        );
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+
+        Member member = mock(Member.class);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(false);
+        // 현재 인원(10) >= 정원(10) → 정원 초과
+        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+                .willReturn(10L);
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_RECRUITMENT_CLOSED));
+
+        verify(seatRepository, never()).findById(any());
+    }
+
+
 }
