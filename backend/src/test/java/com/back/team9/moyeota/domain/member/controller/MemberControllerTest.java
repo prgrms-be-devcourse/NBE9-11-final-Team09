@@ -10,6 +10,8 @@ import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import com.back.team9.moyeota.domain.member.dto.MemberInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.MemberUpdateResponse;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -55,6 +57,12 @@ class MemberControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
 
     @MockitoBean
     private MemberLogoutService memberLogoutService;
@@ -273,7 +281,7 @@ class MemberControllerTest {
                 LocalDateTime.of(2026, 6, 1, 10, 0)
         );
 
-        when(memberProfileService.getMyInfo(1L))
+        when(memberProfileService.getMyInfo(any()))
                 .thenReturn(response);
 
         // When / Then
@@ -288,7 +296,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.nickname").value("모여타요"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
 
-        verify(memberProfileService).getMyInfo(1L);
+        verify(memberProfileService).getMyInfo(any());
     }
 
     @Test
@@ -304,7 +312,7 @@ class MemberControllerTest {
                 LocalDateTime.of(2026, 6, 15, 10, 0)
         );
 
-        when(memberProfileService.updateMyInfo(eq(1L), any()))
+        when(memberProfileService.updateMyInfo(any(), any()))
                 .thenReturn(response);
 
         String requestBody = """
@@ -327,7 +335,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.phoneNumber")
                         .value("010-9999-8888"));
 
-        verify(memberProfileService).updateMyInfo(eq(1L), any());
+        verify(memberProfileService).updateMyInfo(any(), any());
     }
 
     @Test
