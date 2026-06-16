@@ -9,14 +9,11 @@ import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
-import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
-import com.back.team9.moyeota.domain.payment.entity.Payment;
-import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
-import com.back.team9.moyeota.domain.payment.service.PaymentService;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
@@ -25,6 +22,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 
@@ -45,8 +43,7 @@ public class ParticipationService {
     private final MemberRepository memberRepository;
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
-    private final PaymentRepository paymentRepository;
-    private final PaymentService paymentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ============================== 1. 참여 신청 ==============================
     @Transactional
@@ -237,30 +234,14 @@ public class ParticipationService {
                 .minusDays(10)
                 .atStartOfDay();
 
-        // 보증금 환불 처리
-        // participationId로 Payment 조회 후 환불 가능 상태면 refund() 호출
-        Payment payment = paymentRepository
-                .findByParticipation_ParticipationId(participationId)
-                .orElseThrow(() ->
-                        new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
+        // 환불 대상(10일 전 이전 취소)일 때만 이벤트 발행
         if (LocalDateTime.now().isBefore(refundDeadline)) {
-
-            // 출발 10일 이전 취소 → 보증금 환불
-            paymentService.refund(
-                    payment.getPaymentId(),
-                    new PaymentRefundRequest(
-                            "참여 취소로 인한 보증금 환불"
-                    )
+            eventPublisher.publishEvent(
+                    new ParticipationCancelledEvent(participationId)
             );
         }
 
-        // 출발 10일 ~ 7일 사이 취소 → 환불 없이 취소만 처리
-
-        // 참여 상태 변경 - status, paymentStatus를 CANCELED로 변경
         participation.cancel();
-
-        // 좌석 해제 - DB status를 AVAILABLE로 변경
         participation.getOutboundSeat().release();
 
         if (participation.getReturnSeat() != null) {
