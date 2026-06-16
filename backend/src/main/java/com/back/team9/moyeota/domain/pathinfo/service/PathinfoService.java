@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.pathinfo.service;
 import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -26,6 +27,7 @@ public class PathinfoService {
     private final PathinfoRepository pathinfoRepository;
     private final PathinfoValidator pathinfoValidator;
 
+    // 펀딩 생성 시 노선 생성
     @Transactional
     public void createPathinfos(
             Funding funding,
@@ -61,6 +63,9 @@ public class PathinfoService {
         }
     }
 
+    // 펀딩 수정 시 노선 수정
+    // 편도->왕복: RETURN 생성 or 수정
+    // 왕복->편도: RETURN CANCELLED처리
     @Transactional
     public void updatePathinfos(
             Funding funding,
@@ -95,6 +100,7 @@ public class PathinfoService {
                 .orElse(null);
 
         if (tripType == TripType.ROUND) {
+            // 왕복으로 수정 -> 오는 노선 아예 없으면 추가
             if (returned == null) {
                 Pathinfo newReturn = Pathinfo.create(
                         funding,
@@ -110,6 +116,7 @@ public class PathinfoService {
                 return;
             }
 
+            // 왕복으로 수정 -> 오는 노선 있으면 수정
             returned.update(
                     route.returnTime(),
                     route.arrivalAddress(),
@@ -127,6 +134,8 @@ public class PathinfoService {
         }
     }
 
+    // 상세 조회용 노선 응답 조회
+    // 취소 노선 제외하고 유효한 노선만 반환
     @Transactional(readOnly = true)
     public List<PathinfoResponse> getPathinfoResponses(Long fundingId) {
         return pathinfoRepository
@@ -137,6 +146,30 @@ public class PathinfoService {
                 .stream()
                 .map(PathinfoResponse::from)
                 .toList();
+    }
+
+    // 취소/실패 펀딩 조회시 왕복/편도 조건에 따라 가져올 노선
+    @Transactional(readOnly = true)
+    public List<PathinfoResponse> getPathinfoResponsesForDetail(Funding funding) {
+        if (funding.getStatus() == FundingStatus.CANCELLED
+                || funding.getStatus() == FundingStatus.FAILED) {
+            return getPathinfoResponsesByTripType(funding);
+        }
+
+        return getPathinfoResponses(funding.getFundingId());
+    }
+
+    // 여러 펀딩의 특정 방향 노선 일괄 조회
+    // 펀딩 목록 조회에서 노선정보 가져오는데 사용
+    @Transactional(readOnly = true)
+    public List<Pathinfo> findByFundingIdsAndDirection(
+            List<Long> fundingIds,
+            Direction direction
+    ) {
+        return pathinfoRepository.findByFunding_FundingIdInAndDirection(
+                fundingIds,
+                direction
+        );
     }
 
     @Transactional(readOnly = true)
@@ -158,6 +191,7 @@ public class PathinfoService {
         );
     }
 
+    // 노선 취소 공통
     @Transactional
     public void cancelPathinfos(Long fundingId) {
 
@@ -166,24 +200,14 @@ public class PathinfoService {
         pathinfos.forEach(Pathinfo::cancel);
     }
 
+    // 노선의 버스타입 펀도의 버스타입으로 가져옴
     @Transactional
     public void syncBusType(Long fundingId, BusType busType) {
         pathinfoRepository.findByFunding_FundingId(fundingId).forEach(path -> path.changeBusType(busType));
     }
 
-    @Transactional(readOnly = true)
-    public List<Pathinfo> findByFunding_FundingIdInAndDirection(
-            List<Long> fundingIds,
-            Direction direction
-    ) {
-        return pathinfoRepository
-                .findByFunding_FundingIdInAndDirectionAndStatusNot(
-                        fundingIds,
-                        direction,
-                        PathinfoStatus.CANCELLED
-                );
-    }
-
+    // 노선 정보가 달라졌는지 검사
+    // 참가자가 있는 펀딩 수정 시 노선 변경을 막기 위한 검증에 사용
     @Transactional(readOnly = true)
     public boolean isRouteChanged(
             Long fundingId,
@@ -237,5 +261,24 @@ public class PathinfoService {
                 returned.getDepartureTime(),
                 route.returnTime()
         );
+    }
+
+    // 편도면 가는 노선만, 왕복이면 오는 노선도 조회
+    private List<PathinfoResponse> getPathinfoResponsesByTripType(Funding funding) {
+        List<Pathinfo> pathinfos = pathinfoRepository.findByFunding_FundingId(
+                funding.getFundingId()
+        );
+
+        return pathinfos.stream()
+                .filter(pathinfo -> {
+                    if (funding.getTripType() == TripType.ONE_WAY) {
+                        return pathinfo.getDirection() == Direction.OUTBOUND;
+                    }
+
+                    return pathinfo.getDirection() == Direction.OUTBOUND
+                            || pathinfo.getDirection() == Direction.RETURN;
+                })
+                .map(PathinfoResponse::from)
+                .toList();
     }
 }

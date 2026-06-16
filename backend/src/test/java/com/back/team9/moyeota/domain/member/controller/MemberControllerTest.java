@@ -11,6 +11,7 @@ import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -179,11 +180,11 @@ class MemberControllerTest {
         when(memberLoginService.login(any())).thenReturn(result);
 
         String requestBody = """
-            {
-              "email": "moyeota@example.com",
-              "password": "Password123!"
-            }
-            """;
+                {
+                  "email": "moyeota@example.com",
+                  "password": "Password123!"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(post("/api/members/login")
@@ -206,8 +207,8 @@ class MemberControllerTest {
                                         "SameSite=Strict"
                                 ),
                                 org.hamcrest.Matchers.not(
-                                                org.hamcrest.Matchers.containsString("Secure")
-                                        )                        )                ))
+                                        org.hamcrest.Matchers.containsString("Secure")
+                                ))))
                 .andExpect(jsonPath("$.data.tokenType")
                         .value("Bearer"))
                 .andExpect(jsonPath("$.data.user.userId").value(1));
@@ -220,11 +221,11 @@ class MemberControllerTest {
     void loginWithMissingRequiredFieldsReturnsBadRequest() throws Exception {
         // Given
         String requestBody = """
-            {
-              "email": "",
-              "password": ""
-            }
-            """;
+                {
+                  "email": "",
+                  "password": ""
+                }
+                """;
 
         // When / Then
         mockMvc.perform(post("/api/members/login")
@@ -321,11 +322,11 @@ class MemberControllerTest {
                 .thenReturn(response);
 
         String requestBody = """
-            {
-              "nickname": "변경닉네임",
-              "phoneNumber": "010-9999-8888"
-            }
-            """;
+                {
+                  "nickname": "변경닉네임",
+                  "phoneNumber": "010-9999-8888"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(patch("/api/members/me")
@@ -349,10 +350,10 @@ class MemberControllerTest {
             throws Exception {
         // Given
         String requestBody = """
-            {
-              "phoneNumber": "01012345678"
-            }
-            """;
+                {
+                  "phoneNumber": "01012345678"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(patch("/api/members/me")
@@ -393,13 +394,12 @@ class MemberControllerTest {
         PageResponse<MemberParticipationResponse> response =
                 new PageResponse<>(
                         List.of(participationResponse),
-                        new PageInfoResponse(
-                                0,
-                                1,
-                                1,
-                                10,
-                                true
-                        )
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
                 );
 
         when(memberHistoryService.getMyParticipations(any(), eq(0), eq(10)))
@@ -425,11 +425,17 @@ class MemberControllerTest {
                         .value("ACTIVE"))
                 .andExpect(jsonPath("$.data.content[0].paymentStatus")
                         .value("ACTIVE"))
-                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                .andExpect(jsonPath("$.data.page")
                         .value(0))
-                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                .andExpect(jsonPath("$.data.size")
+                        .value(10))
+                .andExpect(jsonPath("$.data.totalElements")
                         .value(1))
-                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
                         .value(true));
 
         verify(memberHistoryService)
@@ -454,13 +460,12 @@ class MemberControllerTest {
         PageResponse<MemberFundingResponse> response =
                 new PageResponse<>(
                         List.of(fundingResponse),
-                        new PageInfoResponse(
-                                0,
-                                1,
-                                1,
-                                10,
-                                true
-                        )
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
                 );
 
         when(memberHistoryService.getMyFundings(any(), eq(0), eq(10)))
@@ -486,11 +491,17 @@ class MemberControllerTest {
                         .value(45))
                 .andExpect(jsonPath("$.data.content[0].status")
                         .value("RECRUITING"))
-                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                .andExpect(jsonPath("$.data.page")
                         .value(0))
-                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                .andExpect(jsonPath("$.data.size")
+                        .value(10))
+                .andExpect(jsonPath("$.data.totalElements")
                         .value(1))
-                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
                         .value(true));
 
         verify(memberHistoryService)
@@ -514,13 +525,12 @@ class MemberControllerTest {
         PageResponse<MemberPaymentResponse> response =
                 new PageResponse<>(
                         List.of(paymentResponse),
-                        new PageInfoResponse(
-                                0,
-                                1,
-                                1,
-                                10,
-                                true
-                        )
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
                 );
 
         when(memberHistoryService.getMyPayments(any(), eq(0), eq(10)))
@@ -544,11 +554,16 @@ class MemberControllerTest {
                         .value(10000))
                 .andExpect(jsonPath("$.data.content[0].status")
                         .value("PAID"))
-                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                .andExpect(jsonPath("$.data.page")
                         .value(0))
-                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.totalElements")
                         .value(1))
-                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
                         .value(true));
 
         verify(memberHistoryService)

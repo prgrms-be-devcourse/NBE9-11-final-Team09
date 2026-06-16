@@ -83,11 +83,12 @@ class MemberHistoryServiceTest {
         assertThat(content.paymentStatus())
                 .isEqualTo(ParticipationPaymentStatus.ACTIVE);
 
-        assertThat(response.pageInfo().currentPage()).isZero();
-        assertThat(response.pageInfo().totalPages()).isEqualTo(1);
-        assertThat(response.pageInfo().totalElements()).isEqualTo(1);
-        assertThat(response.pageInfo().size()).isEqualTo(10);
-        assertThat(response.pageInfo().isLast()).isTrue();
+        assertThat(response.page()).isZero();
+        assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(10);
+        assertThat(response.first()).isTrue();
+        assertThat(response.last()).isTrue();
     }
 
     @Test
@@ -218,11 +219,12 @@ class MemberHistoryServiceTest {
         assertThat(content.maxParticipants()).isEqualTo(45);
         assertThat(content.status()).isEqualTo(FundingStatus.RECRUITING);
 
-        assertThat(response.pageInfo().currentPage()).isZero();
-        assertThat(response.pageInfo().totalPages()).isEqualTo(1);
-        assertThat(response.pageInfo().totalElements()).isEqualTo(1);
-        assertThat(response.pageInfo().size()).isEqualTo(10);
-        assertThat(response.pageInfo().isLast()).isTrue();
+        assertThat(response.page()).isZero();
+        assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(10);
+        assertThat(response.first()).isTrue();
+        assertThat(response.last()).isTrue();
     }
 
     @Test
@@ -293,11 +295,12 @@ class MemberHistoryServiceTest {
         assertThat(content.createdAt())
                 .isEqualTo(LocalDateTime.of(2026, 6, 1, 9, 0));
 
-        assertThat(response.pageInfo().currentPage()).isZero();
-        assertThat(response.pageInfo().totalPages()).isEqualTo(1);
-        assertThat(response.pageInfo().totalElements()).isEqualTo(1);
-        assertThat(response.pageInfo().size()).isEqualTo(10);
-        assertThat(response.pageInfo().isLast()).isTrue();
+        assertThat(response.page()).isZero();
+        assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(10);
+        assertThat(response.first()).isTrue();
+        assertThat(response.last()).isTrue();
     }
 
     @Test
