@@ -2,11 +2,18 @@ package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
+import com.back.team9.moyeota.domain.member.service.MemberProfileService;
 import com.back.team9.moyeota.domain.member.service.MemberService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
+import com.back.team9.moyeota.domain.member.dto.MemberInfoResponse;
+import com.back.team9.moyeota.domain.member.dto.MemberUpdateResponse;
+import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import static org.mockito.Mockito.when;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
@@ -16,13 +23,19 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -45,6 +58,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberLogoutService memberLogoutService;
+
+    @MockitoBean
+    private MemberProfileService memberProfileService;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -240,5 +256,109 @@ class MemberControllerTest {
                 ));
 
         verify(memberLogoutService).logout(authorization);
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 내 정보를 조회한다")
+    void getMyInfoReturnsMemberInfo() throws Exception {
+        // Given
+        MemberInfoResponse response = new MemberInfoResponse(
+                1L,
+                "member@example.com",
+                "홍길동",
+                "모여타요",
+                "010-1234-5678",
+                null,
+                MemberStatus.ACTIVE,
+                LocalDateTime.of(2026, 6, 1, 10, 0)
+        );
+
+        when(memberProfileService.getMyInfo(1L))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_INFO_SUCCESS"))
+                .andExpect(jsonPath("$.data.memberId").value(1))
+                .andExpect(jsonPath("$.data.email")
+                        .value("member@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("모여타요"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+
+        verify(memberProfileService).getMyInfo(1L);
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 닉네임과 전화번호를 수정한다")
+    void updateMyInfoReturnsUpdatedMemberInfo() throws Exception {
+        // Given
+        MemberUpdateResponse response = new MemberUpdateResponse(
+                1L,
+                "member@example.com",
+                "홍길동",
+                "변경닉네임",
+                "010-9999-8888",
+                LocalDateTime.of(2026, 6, 15, 10, 0)
+        );
+
+        when(memberProfileService.updateMyInfo(eq(1L), any()))
+                .thenReturn(response);
+
+        String requestBody = """
+            {
+              "nickname": "변경닉네임",
+              "phoneNumber": "010-9999-8888"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/members/me")
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_UPDATE_MY_INFO_SUCCESS"))
+                .andExpect(jsonPath("$.data.nickname")
+                        .value("변경닉네임"))
+                .andExpect(jsonPath("$.data.phoneNumber")
+                        .value("010-9999-8888"));
+
+        verify(memberProfileService).updateMyInfo(eq(1L), any());
+    }
+
+    @Test
+    @DisplayName("전화번호 형식이 잘못되면 내 정보 수정에 실패한다")
+    void updateMyInfoWithInvalidPhoneNumberReturnsBadRequest()
+            throws Exception {
+        // Given
+        String requestBody = """
+            {
+              "phoneNumber": "01012345678"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/members/me")
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberProfileService);
+    }
+
+    private RequestPostProcessor memberAuthentication() {
+        return authentication(
+                new UsernamePasswordAuthenticationToken(
+                        1L,
+                        null,
+                        List.of()
+                )
+        );
     }
 }
