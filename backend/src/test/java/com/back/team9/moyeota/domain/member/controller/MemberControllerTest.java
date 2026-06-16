@@ -402,7 +402,7 @@ class MemberControllerTest {
                         true
                 );
 
-        when(memberHistoryService.getMyParticipations(any(), eq(0), eq(10)))
+        when(memberHistoryService.getMyParticipations(any(), any()))
                 .thenReturn(response);
 
         // When / Then
@@ -439,7 +439,7 @@ class MemberControllerTest {
                         .value(true));
 
         verify(memberHistoryService)
-                .getMyParticipations(any(), eq(0), eq(10));
+                .getMyParticipations(any(), any());
     }
 
     @Test
@@ -468,7 +468,7 @@ class MemberControllerTest {
                         true
                 );
 
-        when(memberHistoryService.getMyFundings(any(), eq(0), eq(10)))
+        when(memberHistoryService.getMyFundings(any(), any()))
                 .thenReturn(response);
 
         // When / Then
@@ -505,7 +505,7 @@ class MemberControllerTest {
                         .value(true));
 
         verify(memberHistoryService)
-                .getMyFundings(any(), eq(0), eq(10));
+                .getMyFundings(any(), any());
     }
 
     @Test
@@ -533,7 +533,7 @@ class MemberControllerTest {
                         true
                 );
 
-        when(memberHistoryService.getMyPayments(any(), eq(0), eq(10)))
+        when(memberHistoryService.getMyPayments(any(), any()))
                 .thenReturn(response);
 
         // When / Then
@@ -567,6 +567,6 @@ class MemberControllerTest {
                         .value(true));
 
         verify(memberHistoryService)
-                .getMyPayments(any(), eq(0), eq(10));
+                .getMyPayments(any(), any());
     }
 }

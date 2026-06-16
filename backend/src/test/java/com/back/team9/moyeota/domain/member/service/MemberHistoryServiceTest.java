@@ -68,7 +68,10 @@ class MemberHistoryServiceTest {
 
         // When
         PageResponse<MemberParticipationResponse> response =
-                memberHistoryService.getMyParticipations(1L, 0, 10);
+                memberHistoryService.getMyParticipations(
+                        1L,
+                        PageRequest.of(0, 10)
+                );
 
         // Then
         assertThat(response.content()).hasSize(1);
@@ -105,7 +108,10 @@ class MemberHistoryServiceTest {
         ));
 
         // When
-        memberHistoryService.getMyParticipations(1L, 0, 10);
+        memberHistoryService.getMyParticipations(
+                1L,
+                PageRequest.of(0, 10)
+        );
 
         // Then
         ArgumentCaptor<PageRequest> pageRequestCaptor =
@@ -205,7 +211,10 @@ class MemberHistoryServiceTest {
 
         // When
         PageResponse<MemberFundingResponse> response =
-                memberHistoryService.getMyFundings(1L, 0, 10);
+                memberHistoryService.getMyFundings(
+                        1L,
+                        PageRequest.of(0, 10)
+                );
 
         // Then
         assertThat(response.content()).hasSize(1);
@@ -242,7 +251,10 @@ class MemberHistoryServiceTest {
         ));
 
         // When
-        memberHistoryService.getMyFundings(1L, 0, 10);
+        memberHistoryService.getMyFundings(
+                1L,
+                PageRequest.of(0, 10)
+        );
 
         // Then
         ArgumentCaptor<PageRequest> pageRequestCaptor =
@@ -281,7 +293,10 @@ class MemberHistoryServiceTest {
 
         // When
         PageResponse<MemberPaymentResponse> response =
-                memberHistoryService.getMyPayments(1L, 0, 10);
+                memberHistoryService.getMyPayments(
+                        1L,
+                        PageRequest.of(0, 10)
+                );
 
         // Then
         assertThat(response.content()).hasSize(1);
@@ -317,7 +332,10 @@ class MemberHistoryServiceTest {
         ));
 
         // When
-        memberHistoryService.getMyPayments(1L, 0, 10);
+        memberHistoryService.getMyPayments(
+                1L,
+                PageRequest.of(0, 10)
+        );
 
         // Then
         ArgumentCaptor<PageRequest> pageRequestCaptor =

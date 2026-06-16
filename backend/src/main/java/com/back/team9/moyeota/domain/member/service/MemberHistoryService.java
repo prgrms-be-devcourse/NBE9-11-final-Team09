@@ -6,13 +6,11 @@ import com.back.team9.moyeota.domain.member.dto.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberPaymentQueryRepository;
-import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,19 +25,12 @@ public class MemberHistoryService {
     @Transactional(readOnly = true)
     public PageResponse<MemberParticipationResponse> getMyParticipations(
             Long memberId,
-            int page,
-            int size
+            Pageable pageable
     ) {
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
         Page<MemberParticipationResponse> participations =
                 participationQueryRepository.findByMember_MemberId(
                         memberId,
-                        pageRequest
+                        pageable
                 ).map(MemberParticipationResponse::from);
 
         return PageResponse.from(participations);
@@ -48,20 +39,13 @@ public class MemberHistoryService {
     @Transactional(readOnly = true)
     public PageResponse<MemberFundingResponse> getMyFundings(
             Long memberId,
-            int page,
-            int size
+            Pageable pageable
     ) {
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
         return PageResponse.from(
                 fundingQueryRepository.findMyFundings(
                         memberId,
                         ParticipationStatus.CANCELED,
-                        pageRequest
+                        pageable
                 )
         );
     }
@@ -69,19 +53,12 @@ public class MemberHistoryService {
     @Transactional(readOnly = true)
     public PageResponse<MemberPaymentResponse> getMyPayments(
             Long memberId,
-            int page,
-            int size
+            Pageable pageable
     ) {
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
         Page<MemberPaymentResponse> payments =
                 paymentQueryRepository.findByParticipation_Member_MemberId(
                         memberId,
-                        pageRequest
+                        pageable
                 ).map(MemberPaymentResponse::from);
 
         return PageResponse.from(payments);
