@@ -154,4 +154,17 @@ public class MemberController {
                 memberHistoryService.getMyParticipations(memberId, page, size)
         ));
     }
+
+    @GetMapping("/me/fundings")
+    public ResponseEntity<ApiResponse<PageResponse<MemberFundingResponse>>> getMyFundings(
+            @AuthenticationPrincipal Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_GET_MY_FUNDINGS_SUCCESS",
+                "내 모집 내역 조회 성공",
+                memberHistoryService.getMyFundings(memberId, page, size)
+        ));
+    }
 }

@@ -1,8 +1,11 @@
 package com.back.team9.moyeota.domain.member.service;
 
+import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
 import com.back.team9.moyeota.domain.member.dto.MemberParticipationResponse;
+import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberHistoryService {
 
     private final MemberParticipationQueryRepository participationQueryRepository;
+    private final MemberFundingQueryRepository fundingQueryRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<MemberParticipationResponse> getMyParticipations(
@@ -36,5 +40,26 @@ public class MemberHistoryService {
                 ).map(MemberParticipationResponse::from);
 
         return PageResponse.from(participations);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MemberFundingResponse> getMyFundings(
+            Long memberId,
+            int page,
+            int size
+    ) {
+        PageRequest pageRequest = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        return PageResponse.from(
+                fundingQueryRepository.findMyFundings(
+                        memberId,
+                        ParticipationStatus.CANCELED,
+                        pageRequest
+                )
+        );
     }
 }
