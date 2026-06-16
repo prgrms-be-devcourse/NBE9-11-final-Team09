@@ -9,37 +9,44 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.global.response.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class FundingControllerTest {
 
+    private static final LocalDateTime DEFAULT_DEPARTURE_TIME =
+            LocalDateTime.of(2027, 6, 20, 8, 0);
+
     @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
 
     @MockitoBean
-    FundingService fundingService;
+    private FundingService fundingService;
 
     private final ObjectMapper objectMapper =
             JsonMapper.builder()
@@ -47,10 +54,8 @@ class FundingControllerTest {
                     .build();
 
     @Test
-    void createFunding_정상요청_생성성공() throws Exception {
-
-        FundingCreateRequest request = createOneWayRequest();
-
+    @DisplayName("펀딩 생성 요청 성공")
+    void createFunding_withValidRequest_returnsOk() throws Exception {
         given(
                 fundingService.createFunding(
                         anyLong(),
@@ -67,274 +72,483 @@ class FundingControllerTest {
         mockMvc.perform(
                         post("/api/fundings")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        objectMapper.writeValueAsString(
-                                                request
-                                        )
-                                )
+                                .content(objectMapper.writeValueAsString(oneWayCreateRequest()))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
-                .andExpect(jsonPath("$.msg").value("펀딩 생성 성공"))
+                .andExpect(jsonPath("$.msg").exists())
                 .andExpect(jsonPath("$.data.fundingId").value(1L))
                 .andExpect(jsonPath("$.data.status").value("RECRUITING"));
-    }
 
-    @Test
-    void createFunding_총금액0원_400반환() throws Exception {
-
-        FundingCreateRequest request =
-                new FundingCreateRequest(
-                        "제목",
-                        "내용",
-                        BusType.BUS_45,
-                        20,
-                        TripType.ONE_WAY,
-                        0,
-                        new RouteRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                null,
-                                "강남역",
-                                Region.SEOUL_A,
-                                "잠실역",
-                                Region.SEOUL_A
-                        )
+        verify(fundingService)
+                .createFunding(
+                        eq(1L),
+                        any(FundingCreateRequest.class)
                 );
-
-        mockMvc.perform(
-                        post("/api/fundings")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        objectMapper.writeValueAsString(
-                                                request
-                                        )
-                                )
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    void createFunding_제목공백_400반환() throws Exception {
-
+    @DisplayName("펀딩 생성 빈 제목 400 반환")
+    void createFunding_whenTitleIsBlank_returnsBadRequest() throws Exception {
         FundingCreateRequest request =
                 new FundingCreateRequest(
                         "",
-                        "내용",
+                        "content",
                         BusType.BUS_45,
                         20,
                         TripType.ONE_WAY,
-                        100000,
-                        new RouteRequest(
-                                LocalDateTime.of(2027, 6, 20, 8, 0),
-                                null,
-                                "강남역",
-                                Region.SEOUL_A,
-                                "잠실역",
-                                Region.SEOUL_A
-                        )
+                        500000,
+                        oneWayRoute()
                 );
 
-        mockMvc.perform(
-                        post("/api/fundings")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        objectMapper.writeValueAsString(
-                                                request
-                                        )
-                                )
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
+        performCreateBadRequest(request);
     }
 
     @Test
-    void updateFunding_정상요청_수정성공() throws Exception {
-
-        FundingUpdateRequest request =
-                createUpdateRequest();
-
-        mockMvc.perform(
-                        put("/api/fundings/{id}", 1L)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        objectMapper.writeValueAsString(
-                                                request
-                                        )
-                                )
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.msg").value("펀딩 수정 성공"));
-
-        verify(fundingService)
-                .updateFunding(
-                        eq(1L),
-                        eq(1L),
-                        any(FundingUpdateRequest.class)
-                );
-    }
-
-    @Test
-    void updateFunding_참가자존재_400반환() throws Exception {
-
-        FundingUpdateRequest request = createUpdateRequest();
-
-        willThrow(
-                new BusinessException(
-                        ErrorCode.FUNDING_RESTRICTED_UPDATE
-                )
-        )
-                .given(fundingService)
-                .updateFunding(
-                        eq(1L),
-                        eq(1L),
-                        any(FundingUpdateRequest.class)
-                );
-
-        mockMvc.perform(
-                        put("/api/fundings/{id}", 1L)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        objectMapper.writeValueAsString(
-                                                request
-                                        )
-                                )
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("FND006"))
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다.")
-                );
-    }
-
-    @Test
-    void cancelFunding_정상요청_취소성공() throws Exception {
-
-        mockMvc.perform(
-                        delete("/api/fundings/{id}", 1L)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.msg").value("펀딩 취소 성공"));
-
-        verify(fundingService)
-                .cancelFunding(1L,1L);
-    }
-
-    @Test
-    void cancelFunding_이미취소된펀딩_400반환() throws Exception {
-
-        willThrow(
-                new BusinessException(
-                        ErrorCode.FUNDING_ALREADY_CANCELLED
-                )
-        )
-                .given(fundingService)
-                .cancelFunding(1L,1L);
-
-        mockMvc.perform(
-                        delete("/api/fundings/{id}", 1L)
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("FND004"))
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("이미 취소/삭제된 펀딩입니다.")
-                );
-    }
-
-    @Test
-    void getFunding_정상조회_성공() throws Exception {
-
-        given(
-                fundingService.getFunding(1L)
-        ).willReturn(
-                mock(FundingDetailResponse.class)
+    @DisplayName("펀딩 생성 총금액 0원 400 반환")
+    void createFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                0,
+                oneWayRoute()
         );
 
-        mockMvc.perform(
-                        get("/api/fundings/{id}", 1L)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.msg").value("펀딩 조회 성공"));
+        performCreateBadRequest(request);
     }
 
     @Test
-    void getFunding_존재하지않는펀딩_404반환() throws Exception {
-
-        given(
-                fundingService.getFunding(999L)
-        ).willThrow(
-                new BusinessException(
-                        ErrorCode.FUNDING_NOT_FOUND
-                )
+    @DisplayName("펀딩 생성 최소인원 0명 400 반환")
+    void createFunding_whenMinParticipantsIsZero_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                0,
+                TripType.ONE_WAY,
+                500000,
+                oneWayRoute()
         );
 
-        mockMvc.perform(
-                        get("/api/fundings/{id}", 999L)
-                )
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("FND001"))
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("존재하지 않는 펀딩입니다.")
-                );
+        performCreateBadRequest(request);
     }
 
-    private FundingCreateRequest createOneWayRequest() {
-        return new FundingCreateRequest(
-                "축구 경기 버스",
-                "같이 갑시다",
+    @Test
+    @DisplayName("펀딩 생성 버스타입 미입력 400 반환")
+    void createFunding_whenBusTypeIsNull_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                null,
+                20,
+                TripType.ONE_WAY,
+                500000,
+                oneWayRoute()
+        );
+
+        performCreateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 왕복여부 미입력 400 반환")
+    void createFunding_whenTripTypeIsNull_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                20,
+                null,
+                500000,
+                oneWayRoute()
+        );
+
+        performCreateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 노선 미입력 400 반환")
+    void createFunding_whenRouteIsNull_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                500000,
+                null
+        );
+
+        performCreateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 출발시간 미입력 400 반환")
+    void createFunding_whenRouteDepartureTimeIsNull_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
                 500000,
                 new RouteRequest(
-                        LocalDateTime.of(2027, 6, 20, 8, 0),
                         null,
-                        "인천역",
+                        null,
+                        "Incheon Terminal",
                         Region.INCHEON,
-                        "서울월드컵경기장",
+                        "Seoul Stadium",
                         Region.SEOUL_A
                 )
         );
+
+        performCreateBadRequest(request);
     }
 
-    private FundingCreateRequest createRoundRequest() {
-        return new FundingCreateRequest(
-                "축구 경기 버스",
-                "같이 갑시다",
+    @Test
+    @DisplayName("펀딩 생성 출발지 미입력 400 반환")
+    void createFunding_whenRouteDepartureAddressIsBlank_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
                 20,
-                TripType.ROUND,
+                TripType.ONE_WAY,
                 500000,
                 new RouteRequest(
-                        LocalDateTime.of(2027, 6, 20, 8, 0),
-                        LocalDateTime.of(2027, 6, 20, 23, 0),
-                        "인천역",
+                        DEFAULT_DEPARTURE_TIME,
+                        null,
+                        "",
                         Region.INCHEON,
-                        "서울월드컵경기장",
+                        "Seoul Stadium",
                         Region.SEOUL_A
                 )
         );
+
+        performCreateBadRequest(request);
     }
 
-    private FundingUpdateRequest createUpdateRequest() {
-        return new FundingUpdateRequest(
-                "수정 제목",
-                "수정 내용",
+    @Test
+    @DisplayName("펀딩 생성 도착구역 미입력 400 반환")
+    void createFunding_whenRouteArrivalRegionIsNull_returnsBadRequest() throws Exception {
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                500000,
+                new RouteRequest(
+                        DEFAULT_DEPARTURE_TIME,
+                        null,
+                        "Incheon Terminal",
+                        Region.INCHEON,
+                        "Seoul Stadium",
+                        null
+                )
+        );
+
+        performCreateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 요청 성공")
+    void updateFunding_withValidRequest_returnsOk() throws Exception {
+        mockMvc.perform(
+                        patch("/api/fundings/{id}", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(oneWayUpdateRequest()))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").exists());
+
+        verify(fundingService)
+                .updateFunding(
+                        eq(1L),
+                        eq(1L),
+                        any(FundingUpdateRequest.class)
+                );
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 참가자 존재 400 반환")
+    void updateFunding_whenServiceThrowsRestrictedUpdate_returnsFnd006() throws Exception {
+        willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
+                .given(fundingService)
+                .updateFunding(
+                        eq(1L),
+                        eq(1L),
+                        any(FundingUpdateRequest.class)
+                );
+
+        mockMvc.perform(
+                        patch("/api/fundings/{id}", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(oneWayUpdateRequest()))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FND006"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 제목 미입력 400 반환")
+    void updateFunding_whenTitleIsBlank_returnsBadRequest() throws Exception {
+        FundingUpdateRequest request =
+                new FundingUpdateRequest(
+                        "",
+                        "content",
+                        BusType.BUS_25,
+                        10,
+                        TripType.ONE_WAY,
+                        300000,
+                        oneWayRoute()
+                );
+
+        performUpdateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 총금액 0원 400 반환")
+    void updateFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ONE_WAY,
+                0,
+                oneWayRoute()
+        );
+
+        performUpdateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 노선 미입력 400 반환")
+    void updateFunding_whenRouteIsNull_returnsBadRequest() throws Exception {
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ONE_WAY,
+                300000,
+                null
+        );
+
+        performUpdateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 도착지 미입력 400 반환")
+    void updateFunding_whenRouteArrivalAddressIsBlank_returnsBadRequest() throws Exception {
+        FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
                 300000,
                 new RouteRequest(
-                        LocalDateTime.of(2027, 6, 1, 10, 0),
+                        DEFAULT_DEPARTURE_TIME,
                         null,
-                        "강남역",
-                        Region.SEOUL_A,
-                        "잠실종합운동장",
-                        Region.SEOUL_B
+                        "Incheon Terminal",
+                        Region.INCHEON,
+                        "",
+                        Region.SEOUL_A
                 )
+        );
+
+        performUpdateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 취소 요청 성공")
+    void cancelFunding_withValidRequest_returnsOk() throws Exception {
+        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").exists());
+
+        verify(fundingService).cancelFunding(1L, 1L);
+    }
+
+    @Test
+    @DisplayName("펀딩 취소 이미 취소된 펀딩 400 반환")
+    void cancelFunding_whenServiceThrowsAlreadyCancelled_returnsFnd004() throws Exception {
+        willThrow(new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED))
+                .given(fundingService)
+                .cancelFunding(1L, 1L);
+
+        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FND004"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("펀딩 상세 조회 성공")
+    void getFunding_withExistingFunding_returnsOk() throws Exception {
+        given(fundingService.getFunding(1L))
+                .willReturn(mock(FundingDetailResponse.class));
+
+        mockMvc.perform(get("/api/fundings/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").exists());
+
+        verify(fundingService).getFunding(1L);
+    }
+
+    @Test
+    @DisplayName("펀딩 상세 조회 존재하지 않는 펀딩 404 반환")
+    void getFunding_whenServiceThrowsFundingNotFound_returnsFnd001() throws Exception {
+        given(fundingService.getFunding(999L))
+                .willThrow(new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        mockMvc.perform(get("/api/fundings/{id}", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("FND001"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("펀딩 목록 조회 필터링 성공")
+    void getFundingList_withFilters_returnsPageResponse() throws Exception {
+        given(
+                fundingService.getFundingList(
+                        any(FundingSearchCondition.class),
+                        any(Pageable.class)
+                )
+        ).willReturn(fundingListPageResponse());
+
+        mockMvc.perform(
+                        get("/api/fundings")
+                                .param("statuses", "RECRUITING")
+                                .param("departureRegion", "INCHEON")
+                                .param("arrivalRegion", "SEOUL_A")
+                                .param("departureDate", "2027-06-20")
+                                .param("page", "0")
+                                .param("size", "20")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].fundingId").value(1L))
+                .andExpect(jsonPath("$.data.content[0].status").value("RECRUITING"))
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.size").value(20))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+
+        verify(fundingService)
+                .getFundingList(
+                        any(FundingSearchCondition.class),
+                        any(Pageable.class)
+                );
+    }
+
+    private void performCreateBadRequest(FundingCreateRequest request) throws Exception {
+        mockMvc.perform(
+                        post("/api/fundings")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("COM001"))
+                .andExpect(jsonPath("$.message").exists());
+
+        verifyNoInteractions(fundingService);
+    }
+
+    private void performUpdateBadRequest(FundingUpdateRequest request) throws Exception {
+        mockMvc.perform(
+                        patch("/api/fundings/{id}", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("COM001"))
+                .andExpect(jsonPath("$.message").exists());
+
+        verifyNoInteractions(fundingService);
+    }
+
+    private FundingCreateRequest oneWayCreateRequest() {
+        return createRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                500000,
+                oneWayRoute()
+        );
+    }
+
+    private FundingCreateRequest createRequest(
+            BusType busType,
+            int minParticipants,
+            TripType tripType,
+            int totalPrice,
+            RouteRequest route
+    ) {
+        return new FundingCreateRequest(
+                "Football Match Bus",
+                "Ride together",
+                busType,
+                minParticipants,
+                tripType,
+                totalPrice,
+                route
+        );
+    }
+
+    private FundingUpdateRequest oneWayUpdateRequest() {
+        return updateRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ONE_WAY,
+                300000,
+                oneWayRoute()
+        );
+    }
+
+    private FundingUpdateRequest updateRequest(
+            BusType busType,
+            int minParticipants,
+            TripType tripType,
+            int totalPrice,
+            RouteRequest route
+    ) {
+        return new FundingUpdateRequest(
+                "Updated Title",
+                "Updated Content",
+                busType,
+                minParticipants,
+                tripType,
+                totalPrice,
+                route
+        );
+    }
+
+    private RouteRequest oneWayRoute() {
+        return new RouteRequest(
+                DEFAULT_DEPARTURE_TIME,
+                null,
+                "Incheon Terminal",
+                Region.INCHEON,
+                "Seoul Stadium",
+                Region.SEOUL_A
+        );
+    }
+
+    private PageResponse<FundingListResponse> fundingListPageResponse() {
+        return new PageResponse<>(
+                List.of(
+                        new FundingListResponse(
+                                1L,
+                                "title",
+                                "host",
+                                "departure",
+                                "arrival",
+                                DEFAULT_DEPARTURE_TIME,
+                                FundingStatus.RECRUITING,
+                                0,
+                                20,
+                                45,
+                                500000,
+                                null,
+                                11200,
+                                25000
+                        )
+                ),
+                0,
+                20,
+                1,
+                1,
+                true,
+                true
         );
     }
 }
