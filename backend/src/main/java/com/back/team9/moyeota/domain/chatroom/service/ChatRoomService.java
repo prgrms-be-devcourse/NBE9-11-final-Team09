@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.chatroom.service;
 
+import com.back.team9.moyeota.domain.chatroom.dto.ChatMessageRequest;
 import com.back.team9.moyeota.domain.chatroom.dto.ChatRoomResponse;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoomStatus;
