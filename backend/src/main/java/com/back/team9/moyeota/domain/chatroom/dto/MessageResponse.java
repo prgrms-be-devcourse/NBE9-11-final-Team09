@@ -12,18 +12,18 @@ public class MessageResponse {
 
     private Long messageId;
     private Long chatRoomId;
-    private Long senderId;
-    private String senderName;
+    private boolean host;
     private String content;
     private LocalDateTime createdAt;
 
-    //TODO:추후 익명으로 만들 예정
-    public static MessageResponse from(Message message) {
+    public static MessageResponse from(
+            Message message,
+            Long hostId
+    ) {
         return MessageResponse.builder()
                 .messageId(message.getMessageId())
                 .chatRoomId(message.getChatRoom().getChatroomId())
-                .senderId(message.getMember().getMemberId())
-                .senderName(message.getMember().getNickname())
+                .host(message.getMember().getMemberId().equals(hostId))
                 .content(message.getContent())
                 .createdAt(message.getCreatedAt())
                 .build();

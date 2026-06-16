@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.chatroom.service;
 
 import com.back.team9.moyeota.domain.chatroom.dto.ChatMessageRequest;
+import com.back.team9.moyeota.domain.chatroom.dto.MessageResponse;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.entity.Message;
 import com.back.team9.moyeota.domain.chatroom.repository.MessageRepository;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
@@ -131,5 +133,126 @@ public class ChatMessageServiceTest {
                 .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
 
         verify(messageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("메시지 조회 성공")
+    void getMessages_채팅방존재_메시지목록반환() {
+        // given
+        Long chatRoomId = 1L;
+        Long hostId = 10L;
+
+        Member member = mock(Member.class);
+        ChatRoom chatRoom = mock(ChatRoom.class);
+
+        Message message1 = Message.builder()
+                .messageId(1L)
+                .chatRoom(chatRoom)
+                .member(member)
+                .content("안녕하세요")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Message message2 = Message.builder()
+                .messageId(2L)
+                .chatRoom(chatRoom)
+                .member(member)
+                .content("반갑습니다")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        List<Message> messages = List.of(message1, message2);
+
+        given(messageRepository.findByChatRoom_ChatroomIdOrderByCreatedAtAsc(chatRoomId))
+                .willReturn(messages);
+
+        given(chatRoomService.getHostId(chatRoomId))
+                .willReturn(hostId);
+
+        // when
+        List<MessageResponse> result = chatMessageService.getMessages(chatRoomId);
+
+        // then
+        assertThat(result).hasSize(2);
+
+        assertThat(result.get(0).getContent()).isEqualTo("안녕하세요");
+        assertThat(result.get(1).getContent()).isEqualTo("반갑습니다");
+
+        assertThat(result.get(0).isHost()).isEqualTo(false);
+        assertThat(result.get(1).isHost()).isEqualTo(false);
+
+        verify(messageRepository)
+                .findByChatRoom_ChatroomIdOrderByCreatedAtAsc(chatRoomId);
+
+        verify(chatRoomService).getHostId(chatRoomId);
+    }
+
+    @Test
+    @DisplayName("메시지 조회 성공 - 호스트 포함")
+    void getMessages_호스트포함_호스트플래그정상동작() {
+        // given
+        Long chatRoomId = 1L;
+        Long hostId = 10L;
+
+        ChatRoom chatRoom = mock(ChatRoom.class);
+        Member hostMember = mock(Member.class);
+        Member normalMember = mock(Member.class);
+
+        // host message
+        Message hostMessage = Message.builder()
+                .messageId(1L)
+                .chatRoom(chatRoom)
+                .member(hostMember)
+                .content("호스트 메시지")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // normal message
+        Message normalMessage = Message.builder()
+                .messageId(2L)
+                .chatRoom(chatRoom)
+                .member(normalMember)
+                .content("일반 메시지")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        given(messageRepository.findByChatRoom_ChatroomIdOrderByCreatedAtAsc(chatRoomId))
+                .willReturn(List.of(hostMessage, normalMessage));
+
+        given(chatRoomService.getHostId(chatRoomId))
+                .willReturn(hostId);
+
+        // hostMember id 설정
+        given(hostMember.getMemberId()).willReturn(hostId);
+        given(normalMember.getMemberId()).willReturn(99L);
+
+        // when
+        List<MessageResponse> result = chatMessageService.getMessages(chatRoomId);
+
+        // then
+        assertThat(result.get(0).isHost()).isTrue();
+        assertThat(result.get(1).isHost()).isFalse();
+    }
+
+    @Test
+    @DisplayName("메시지 조회 성공 - 메시지 없음")
+    void getMessages_메시지없음_빈리스트반환() {
+        // given
+        Long chatRoomId = 1L;
+        Long hostId = 10L;
+
+        given(messageRepository.findByChatRoom_ChatroomIdOrderByCreatedAtAsc(chatRoomId))
+                .willReturn(List.of());
+
+        given(chatRoomService.getHostId(chatRoomId))
+                .willReturn(hostId);
+
+        // when
+        List<MessageResponse> result = chatMessageService.getMessages(chatRoomId);
+
+        // then
+        assertThat(result).isEmpty();
+
+        verify(chatRoomService).getHostId(chatRoomId);
     }
 }

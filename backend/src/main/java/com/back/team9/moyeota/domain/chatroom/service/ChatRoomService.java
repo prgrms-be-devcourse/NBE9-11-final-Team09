@@ -7,6 +7,8 @@ import com.back.team9.moyeota.domain.chatroom.entity.ChatRoomStatus;
 import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final FundingRepository fundingRepository;
+    private final MemberRepository memberRepository;
 
     public ChatRoomResponse createRoom(Long fundingId){
         if(chatRoomRepository.existsByFundingFundingId(fundingId)){
@@ -44,5 +47,14 @@ public class ChatRoomService {
     public ChatRoom getRoom(Long fundingId){
         return chatRoomRepository.findByFundingFundingId(fundingId)
                 .orElseThrow(()-> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    public Long getHostId(Long chatRoomId) {
+
+        Long fundingId = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(()->new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND))
+                .getFunding().getFundingId();
+
+        return fundingRepository.findHostIdByFundingId(fundingId);
     }
 }

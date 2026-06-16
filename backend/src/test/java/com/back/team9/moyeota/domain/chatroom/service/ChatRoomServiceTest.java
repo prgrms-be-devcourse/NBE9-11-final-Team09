@@ -162,4 +162,54 @@ public class ChatRoomServiceTest {
         assertThat(exception.getErrorCode())
                 .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
     }
+    @Test
+    @DisplayName("호스트 조회 성공")
+    void getHostId_채팅방존재_호스트반환() {
+        // given
+        Long chatRoomId = 1L;
+        Long fundingId = 10L;
+        Long hostId = 99L;
+
+        ChatRoom chatRoom = mock(ChatRoom.class);
+        Funding funding = mock(Funding.class);
+
+        given(chatRoomRepository.findById(chatRoomId))
+                .willReturn(Optional.of(chatRoom));
+
+        given(chatRoom.getFunding()).willReturn(funding);
+        given(funding.getFundingId()).willReturn(fundingId);
+
+        given(fundingRepository.findHostIdByFundingId(fundingId))
+                .willReturn(hostId);
+
+        // when
+        Long result = chatRoomService.getHostId(chatRoomId);
+
+        // then
+        assertThat(result).isEqualTo(hostId);
+
+        verify(chatRoomRepository).findById(chatRoomId);
+        verify(fundingRepository).findHostIdByFundingId(fundingId);
+    }
+    @Test
+    @DisplayName("호스트 조회 실패 - 채팅방 없음")
+    void getHostId_채팅방없음_예외발생() {
+        // given
+        Long chatRoomId = 1L;
+
+        given(chatRoomRepository.findById(chatRoomId))
+                .willReturn(Optional.empty());
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> chatRoomService.getHostId(chatRoomId)
+        );
+
+        // then
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
+
+        verify(fundingRepository, never()).findHostIdByFundingId(any());
+    }
 }

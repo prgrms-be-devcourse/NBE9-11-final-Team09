@@ -23,10 +23,11 @@ public class ChatController {
 
         Message saved = chatMessageService.sendMessage(request);
 
+        Long hostId = chatRoomService.getHostId(request.getChatRoomId());
         // /sub/chatroom/{id} 로 브로드캐스트
         messagingTemplate.convertAndSend(
                 "/sub/chatroom/" + request.getChatRoomId(),
-                MessageResponse.from(saved)
+                MessageResponse.from(saved, hostId)
         );
     }
 }
