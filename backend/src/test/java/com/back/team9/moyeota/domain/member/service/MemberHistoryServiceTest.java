@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -110,7 +111,7 @@ class MemberHistoryServiceTest {
         // When
         memberHistoryService.getMyParticipations(
                 1L,
-                PageRequest.of(0, 10)
+                sortedPageRequest()
         );
 
         // Then
@@ -253,7 +254,7 @@ class MemberHistoryServiceTest {
         // When
         memberHistoryService.getMyFundings(
                 1L,
-                PageRequest.of(0, 10)
+                sortedPageRequest()
         );
 
         // Then
@@ -334,7 +335,7 @@ class MemberHistoryServiceTest {
         // When
         memberHistoryService.getMyPayments(
                 1L,
-                PageRequest.of(0, 10)
+                sortedPageRequest()
         );
 
         // Then
@@ -354,5 +355,13 @@ class MemberHistoryServiceTest {
                 .isNotNull();
         assertThat(pageRequest.getSort().getOrderFor("createdAt")
                 .isDescending()).isTrue();
+    }
+
+    private PageRequest sortedPageRequest() {
+        return PageRequest.of(
+                0,
+                10,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 }
