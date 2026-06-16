@@ -21,12 +21,15 @@ import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,6 +60,9 @@ class ParticipationServiceTest {
 
     @Mock
     private SeatRedisService seatRedisService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ParticipationService participationService;
@@ -644,39 +650,6 @@ class ParticipationServiceTest {
     // ==================== cancelParticipation 테스트 ====================
 
     @Test
-    @DisplayName("참여 취소 - 정상 취소 성공")
-    void cancelParticipation_정상취소_성공() {
-        // Given
-        Long memberId = 1L;
-        Long participationId = 100L;
-
-        // 출발 시각: 지금으로부터 3일 후 (24시간보다 여유 있음 → 취소 가능)
-        LocalDateTime departureTime = LocalDateTime.now().plusDays(3);
-
-        Pathinfo outboundPathinfo = mock(Pathinfo.class);
-        given(outboundPathinfo.getDepartureTime()).willReturn(departureTime);
-
-        Seat outboundSeat = mock(Seat.class);
-        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
-
-        Participation participation = mock(Participation.class);
-        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
-        given(participation.getOutboundSeat()).willReturn(outboundSeat);
-        given(participation.getReturnSeat()).willReturn(null);
-
-        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
-                .willReturn(Optional.of(participation));
-
-        // When
-        participationService.cancelParticipation(memberId, participationId);
-
-        // Then
-        // 참여 상태 변경, 좌석 해제가 호출됐는지 확인
-        verify(participation).cancel();
-        verify(outboundSeat).release();
-    }
-
-    @Test
     @DisplayName("참여 취소 - 본인 참여 내역 없음 PARTICIPATION_NOT_FOUND 예외 발생")
     void cancelParticipation_본인참여내역없음_PARTICIPATION_NOT_FOUND예외() {
         // Given
@@ -746,6 +719,81 @@ class ParticipationServiceTest {
                         .isEqualTo(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED));
 
         verify(participation, never()).cancel();
+    }
+
+    @Test
+    @DisplayName("참여 취소 - 환불 대상(10일 전 이전) 취소 성공, 이벤트 발행됨")
+    void cancelParticipation_환불대상취소_이벤트발행성공() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 100L;
+
+        // 출발 15일 후 → refundDeadline(출발-10일)도 미래, cancelDeadline(출발-7일)도 미래
+        // 즉 지금 취소하면 "환불 대상"에 해당함
+        LocalDateTime departureTime = LocalDateTime.now().plusDays(15);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getDepartureTime()).willReturn(departureTime);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Participation participation = mock(Participation.class);
+        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
+        given(participation.getOutboundSeat()).willReturn(outboundSeat);
+        given(participation.getReturnSeat()).willReturn(null);
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.of(participation));
+
+        // When
+        participationService.cancelParticipation(memberId, participationId);
+
+        // Then
+        verify(participation).cancel();
+        verify(outboundSeat).release();
+
+        // 이벤트가 정확한 participationId로 발행됐는지 확인
+        ArgumentCaptor<ParticipationCancelledEvent> captor =
+                ArgumentCaptor.forClass(ParticipationCancelledEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().participationId()).isEqualTo(participationId);
+    }
+
+    @Test
+    @DisplayName("참여 취소 - 10일~7일 사이 취소, 환불 없이 취소만 처리 (이벤트 미발행)")
+    void cancelParticipation_환불기간지남_이벤트미발행() {
+        // Given
+        Long memberId = 1L;
+        Long participationId = 100L;
+
+        // 출발 8일 후 → refundDeadline(출발-10일)은 이미 지남, cancelDeadline(출발-7일)은 아직 안 지남
+        // 즉 취소는 되지만 환불 대상은 아님
+        LocalDateTime departureTime = LocalDateTime.now().plusDays(8);
+
+        Pathinfo outboundPathinfo = mock(Pathinfo.class);
+        given(outboundPathinfo.getDepartureTime()).willReturn(departureTime);
+
+        Seat outboundSeat = mock(Seat.class);
+        given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
+
+        Participation participation = mock(Participation.class);
+        given(participation.getStatus()).willReturn(ParticipationStatus.ACTIVE);
+        given(participation.getOutboundSeat()).willReturn(outboundSeat);
+        given(participation.getReturnSeat()).willReturn(null);
+
+        given(participationRepository.findByParticipationIdAndMember_MemberId(participationId, memberId))
+                .willReturn(Optional.of(participation));
+
+        // When
+        participationService.cancelParticipation(memberId, participationId);
+
+        // Then
+        verify(participation).cancel();
+        verify(outboundSeat).release();
+
+        // 환불 대상이 아니므로 이벤트가 발행되면 안 됨
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
 
