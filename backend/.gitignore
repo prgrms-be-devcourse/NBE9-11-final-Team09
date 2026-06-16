@@ -8,6 +8,7 @@ build/
 *.iml
 *.iws
 out/
+src/main/generated/
 
 # macOS
 .DS_Store
@@ -15,6 +16,7 @@ out/
 # Spring Boot
 application-local.properties
 application-local.yml
+application-local.yaml
 application-secret.properties
 application-secret.yml
 
@@ -29,3 +31,4 @@ application-secret.yml
 
 *.mv.db
 *.trace.db
+db_dev.mv.db
