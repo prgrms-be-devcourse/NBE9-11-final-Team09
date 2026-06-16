@@ -5,6 +5,8 @@ import com.back.team9.moyeota.domain.member.dto.*;
 import com.back.team9.moyeota.domain.member.service.*;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
@@ -493,5 +495,63 @@ class MemberControllerTest {
 
         verify(memberHistoryService)
                 .getMyFundings(any(), eq(0), eq(10));
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 결제 내역을 페이징 조회한다")
+    void getMyPaymentsReturnsPagedPaymentHistory() throws Exception {
+        // Given
+        MemberPaymentResponse paymentResponse =
+                new MemberPaymentResponse(
+                        1L,
+                        "강남 → 부산 합승 모집",
+                        PaymentType.DEPOSIT,
+                        10000,
+                        PaymentStatus.PAID,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberPaymentResponse> response =
+                new PageResponse<>(
+                        List.of(paymentResponse),
+                        new PageInfoResponse(
+                                0,
+                                1,
+                                1,
+                                10,
+                                true
+                        )
+                );
+
+        when(memberHistoryService.getMyPayments(any(), eq(0), eq(10)))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/payments")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_PAYMENTS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].paymentId")
+                        .value(1))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].type")
+                        .value("DEPOSIT"))
+                .andExpect(jsonPath("$.data.content[0].amount")
+                        .value(10000))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("PAID"))
+                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                        .value(0))
+                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyPayments(any(), eq(0), eq(10));
     }
 }

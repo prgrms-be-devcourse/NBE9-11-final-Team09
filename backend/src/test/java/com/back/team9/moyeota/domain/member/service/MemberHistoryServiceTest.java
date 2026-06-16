@@ -4,13 +4,18 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
 import com.back.team9.moyeota.domain.member.dto.MemberParticipationResponse;
+import com.back.team9.moyeota.domain.member.dto.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
+import com.back.team9.moyeota.domain.member.repository.MemberPaymentQueryRepository;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.payment.entity.Payment;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +44,9 @@ class MemberHistoryServiceTest {
 
     @Mock
     private MemberFundingQueryRepository fundingQueryRepository;
+
+    @Mock
+    private MemberPaymentQueryRepository paymentQueryRepository;
 
     @InjectMocks
     private MemberHistoryService memberHistoryService;
@@ -125,6 +133,19 @@ class MemberHistoryServiceTest {
                 .paymentStatus(ParticipationPaymentStatus.ACTIVE)
                 .finalAmount(0)
                 .status(ParticipationStatus.ACTIVE)
+                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
+                .build();
+    }
+
+    private Payment createPayment() {
+        return Payment.builder()
+                .paymentId(1L)
+                .participation(createParticipation())
+                .paymentType(PaymentType.DEPOSIT)
+                .amount(10000)
+                .tossPaymentKey("toss-payment-key")
+                .orderId("order-id")
+                .status(PaymentStatus.PAID)
                 .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
@@ -228,6 +249,79 @@ class MemberHistoryServiceTest {
         verify(fundingQueryRepository).findMyFundings(
                 org.mockito.ArgumentMatchers.eq(1L),
                 org.mockito.ArgumentMatchers.eq(ParticipationStatus.CANCELED),
+                pageRequestCaptor.capture()
+        );
+
+        PageRequest pageRequest = pageRequestCaptor.getValue();
+
+        assertThat(pageRequest.getPageNumber()).isZero();
+        assertThat(pageRequest.getPageSize()).isEqualTo(10);
+        assertThat(pageRequest.getSort().getOrderFor("createdAt"))
+                .isNotNull();
+        assertThat(pageRequest.getSort().getOrderFor("createdAt")
+                .isDescending()).isTrue();
+    }
+
+    @Test
+    @DisplayName("내 결제 내역을 최신순 페이징으로 조회한다")
+    void getMyPaymentsReturnsPagedPaymentHistory() {
+        // Given
+        Payment payment = createPayment();
+
+        when(paymentQueryRepository.findByParticipation_Member_MemberId(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(PageRequest.class)
+        )).thenReturn(new PageImpl<>(
+                List.of(payment),
+                PageRequest.of(0, 10),
+                1
+        ));
+
+        // When
+        PageResponse<MemberPaymentResponse> response =
+                memberHistoryService.getMyPayments(1L, 0, 10);
+
+        // Then
+        assertThat(response.content()).hasSize(1);
+
+        MemberPaymentResponse content = response.content().getFirst();
+        assertThat(content.paymentId()).isEqualTo(1L);
+        assertThat(content.fundingTitle()).isEqualTo("강남 → 부산 합승 모집");
+        assertThat(content.type()).isEqualTo(PaymentType.DEPOSIT);
+        assertThat(content.amount()).isEqualTo(10000);
+        assertThat(content.status()).isEqualTo(PaymentStatus.PAID);
+        assertThat(content.createdAt())
+                .isEqualTo(LocalDateTime.of(2026, 6, 1, 9, 0));
+
+        assertThat(response.pageInfo().currentPage()).isZero();
+        assertThat(response.pageInfo().totalPages()).isEqualTo(1);
+        assertThat(response.pageInfo().totalElements()).isEqualTo(1);
+        assertThat(response.pageInfo().size()).isEqualTo(10);
+        assertThat(response.pageInfo().isLast()).isTrue();
+    }
+
+    @Test
+    @DisplayName("내 결제 내역 조회 시 생성일 기준 내림차순 정렬을 적용한다")
+    void getMyPaymentsUsesCreatedAtDescendingSort() {
+        // Given
+        when(paymentQueryRepository.findByParticipation_Member_MemberId(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(PageRequest.class)
+        )).thenReturn(new PageImpl<>(
+                List.of(),
+                PageRequest.of(0, 10),
+                0
+        ));
+
+        // When
+        memberHistoryService.getMyPayments(1L, 0, 10);
+
+        // Then
+        ArgumentCaptor<PageRequest> pageRequestCaptor =
+                ArgumentCaptor.forClass(PageRequest.class);
+
+        verify(paymentQueryRepository).findByParticipation_Member_MemberId(
+                org.mockito.ArgumentMatchers.eq(1L),
                 pageRequestCaptor.capture()
         );
 
