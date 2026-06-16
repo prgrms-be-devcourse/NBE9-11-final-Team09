@@ -167,4 +167,17 @@ public class MemberController {
                 memberHistoryService.getMyFundings(memberId, page, size)
         ));
     }
+
+    @GetMapping("/me/payments")
+    public ResponseEntity<ApiResponse<PageResponse<MemberPaymentResponse>>> getMyPayments(
+            @AuthenticationPrincipal Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_GET_MY_PAYMENTS_SUCCESS",
+                "내 결제 내역 조회 성공",
+                memberHistoryService.getMyPayments(memberId, page, size)
+        ));
+    }
 }
