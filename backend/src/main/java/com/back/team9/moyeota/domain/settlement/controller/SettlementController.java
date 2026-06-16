@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,9 +21,8 @@ public class SettlementController {
     @PostMapping
     public ResponseEntity<ApiResponse<SettlementResponse>> create(
             @RequestBody @Valid SettlementCreateRequest request) {
-        // TODO: JWT 연동 후 SecurityContextHolder에서 memberId 추출,
-        //       해당 funding의 방장(getMember())과 일치 여부 검증 필요 (STL003)
-        SettlementResponse response = settlementService.create(request);
+        Long memberId =  (Long)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SettlementResponse response = settlementService.create(request, memberId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("SUCCESS", "정산 내역이 생성되었습니다.", response));
     }
@@ -30,9 +30,8 @@ public class SettlementController {
     @GetMapping("/funding/{fundingId}")
     public ResponseEntity<ApiResponse<SettlementResponse>> getByFundingId(
             @PathVariable Long fundingId) {
-        // TODO: JWT 연동 후 SecurityContextHolder에서 memberId 추출,
-        //       settlement.getMember().getMemberId()와 일치 여부 검증 필요 (STL003)
-        SettlementResponse response = settlementService.getByFundingId(fundingId);
+        Long memberId =  (Long)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SettlementResponse response = settlementService.getByFundingId(fundingId, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", "정산 내역을 조회했습니다.", response));
     }
 

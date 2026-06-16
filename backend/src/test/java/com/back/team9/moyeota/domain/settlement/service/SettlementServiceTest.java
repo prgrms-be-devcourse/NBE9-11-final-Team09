@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -63,7 +64,7 @@ class SettlementServiceTest {
                 .fundingId(1L)
                 .member(hostMember)
                 .title("서울 → 부산 버스 대절")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.COMPLETED)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
@@ -94,12 +95,12 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
+        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
-        SettlementResponse response = settlementService.create(request);
+        SettlementResponse response = settlementService.create(request, 1L);
 
         // Then - 응답값 검증
         assertThat(response.settlementId()).isEqualTo(1L);
@@ -128,7 +129,7 @@ class SettlementServiceTest {
                 .fundingId(2L)
                 .member(hostMember)
                 .title("홀드 펀딩")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.COMPLETED)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
@@ -151,12 +152,12 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
+        given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
         given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
-        SettlementResponse response = settlementService.create(request);
+        SettlementResponse response = settlementService.create(request, 1L);
 
         // Then
         assertThat(response.paybackHold()).isTrue();
@@ -167,20 +168,38 @@ class SettlementServiceTest {
     }
 
     @Test
-    @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, 이후 로직 미실행")
+    @DisplayName("정산 생성 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외, save 미실행")
+    void create_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
+        // Given
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+        Long otherMemberId = 999L;
+
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.create(request, otherMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_ACCESS_DENIED));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, save 미실행")
     void create_이미정산내역존재_SETTLEMENT_ALREADY_EXISTS예외() {
         // Given
         SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
 
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_ALREADY_EXISTS));
 
-        verify(fundingRepository, never()).findById(any());
         verify(settlementRepository, never()).save(any());
     }
 
@@ -192,7 +211,7 @@ class SettlementServiceTest {
                 .fundingId(1L)
                 .member(hostMember)
                 .title("모집 중 펀딩")
-                .departureDate(LocalDateTime.now().plusDays(7))
+                .departureDate(LocalDate.now().plusDays(7))
                 .status(FundingStatus.RECRUITING)
                 .busType(BusType.BUS_45)
                 .minParticipants(10)
@@ -203,11 +222,10 @@ class SettlementServiceTest {
 
         SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
 
-        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(fundingRepository.findById(1L)).willReturn(Optional.of(recruitingFunding));
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
@@ -221,11 +239,10 @@ class SettlementServiceTest {
         // Given
         SettlementCreateRequest request = new SettlementCreateRequest(999L, 100000);
 
-        given(settlementRepository.existsByFunding_FundingId(999L)).willReturn(false);
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
@@ -252,7 +269,7 @@ class SettlementServiceTest {
         given(settlementRepository.findByFunding_FundingId(1L)).willReturn(Optional.of(settlement));
 
         // When
-        SettlementResponse response = settlementService.getByFundingId(1L);
+        SettlementResponse response = settlementService.getByFundingId(1L, 1L);
 
         // Then
         assertThat(response.settlementId()).isEqualTo(1L);
@@ -270,10 +287,36 @@ class SettlementServiceTest {
         given(settlementRepository.findByFunding_FundingId(999L)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.getByFundingId(999L))
+        assertThatThrownBy(() -> settlementService.getByFundingId(999L, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("정산 조회 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외")
+    void getByFundingId_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
+        // Given
+        Settlement settlement = Settlement.builder()
+                .settlementId(1L)
+                .member(hostMember)
+                .funding(funding)
+                .totalAmount(100000)
+                .platformFee(5000)
+                .hostPaybackAmount(95000)
+                .status(SettlementStatus.CALCULATED)
+                .paybackHold(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Long otherMemberId = 999L;
+        given(settlementRepository.findByFunding_FundingId(1L)).willReturn(Optional.of(settlement));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.getByFundingId(1L, otherMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_ACCESS_DENIED));
     }
 
     @Test
