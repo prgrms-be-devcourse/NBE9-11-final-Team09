@@ -1,23 +1,22 @@
 package com.back.team9.moyeota.domain.member.controller;
 
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
-import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
-import com.back.team9.moyeota.domain.member.service.MemberProfileService;
-import com.back.team9.moyeota.domain.member.service.MemberService;
+import com.back.team9.moyeota.domain.member.dto.*;
+import com.back.team9.moyeota.domain.member.service.*;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
-import com.back.team9.moyeota.domain.member.service.MemberLoginService;
-import com.back.team9.moyeota.domain.member.dto.MemberInfoResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberUpdateResponse;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.response.PageInfoResponse;
+import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +68,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberProfileService memberProfileService;
+
+    @MockitoBean
+    private MemberHistoryService memberHistoryService;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -368,5 +370,66 @@ class MemberControllerTest {
                         List.of()
                 )
         );
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 참여 내역을 페이징 조회한다")
+    void getMyParticipationsReturnsPagedParticipationHistory() throws Exception {
+        // Given
+        MemberParticipationResponse participationResponse =
+                new MemberParticipationResponse(
+                        1L,
+                        10L,
+                        "강남 → 부산 합승 모집",
+                        LocalDate.of(2026, 7, 10),
+                        ParticipationStatus.ACTIVE,
+                        ParticipationPaymentStatus.ACTIVE,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberParticipationResponse> response =
+                new PageResponse<>(
+                        List.of(participationResponse),
+                        new PageInfoResponse(
+                                0,
+                                1,
+                                1,
+                                10,
+                                true
+                        )
+                );
+
+        when(memberHistoryService.getMyParticipations(any(), eq(0), eq(10)))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/participations")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_PARTICIPATIONS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].participationId")
+                        .value(1))
+                .andExpect(jsonPath("$.data.content[0].fundingId")
+                        .value(10))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].departureDate")
+                        .value("2026-07-10"))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("ACTIVE"))
+                .andExpect(jsonPath("$.data.content[0].paymentStatus")
+                        .value("ACTIVE"))
+                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                        .value(0))
+                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyParticipations(any(), eq(0), eq(10));
     }
 }
