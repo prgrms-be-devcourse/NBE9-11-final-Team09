@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.member.controller;
 
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.member.dto.*;
 import com.back.team9.moyeota.domain.member.service.*;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
@@ -431,5 +432,66 @@ class MemberControllerTest {
 
         verify(memberHistoryService)
                 .getMyParticipations(any(), eq(0), eq(10));
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 모집 내역을 페이징 조회한다")
+    void getMyFundingsReturnsPagedFundingHistory() throws Exception {
+        // Given
+        MemberFundingResponse fundingResponse =
+                new MemberFundingResponse(
+                        10L,
+                        "강남 → 부산 합승 모집",
+                        LocalDate.of(2026, 7, 10),
+                        15L,
+                        45,
+                        FundingStatus.RECRUITING,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberFundingResponse> response =
+                new PageResponse<>(
+                        List.of(fundingResponse),
+                        new PageInfoResponse(
+                                0,
+                                1,
+                                1,
+                                10,
+                                true
+                        )
+                );
+
+        when(memberHistoryService.getMyFundings(any(), eq(0), eq(10)))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/fundings")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_FUNDINGS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].fundingId")
+                        .value(10))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].departureDate")
+                        .value("2026-07-10"))
+                .andExpect(jsonPath("$.data.content[0].currentParticipants")
+                        .value(15))
+                .andExpect(jsonPath("$.data.content[0].maxParticipants")
+                        .value(45))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("RECRUITING"))
+                .andExpect(jsonPath("$.data.pageInfo.currentPage")
+                        .value(0))
+                .andExpect(jsonPath("$.data.pageInfo.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.pageInfo.isLast")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyFundings(any(), eq(0), eq(10));
     }
 }

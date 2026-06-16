@@ -2,9 +2,11 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
 import com.back.team9.moyeota.domain.member.dto.MemberParticipationResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
@@ -34,6 +36,9 @@ class MemberHistoryServiceTest {
 
     @Mock
     private MemberParticipationQueryRepository participationQueryRepository;
+
+    @Mock
+    private MemberFundingQueryRepository fundingQueryRepository;
 
     @InjectMocks
     private MemberHistoryService memberHistoryService;
@@ -150,5 +155,89 @@ class MemberHistoryServiceTest {
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
+    }
+
+    @Test
+    @DisplayName("내 모집 내역을 최신순 페이징으로 조회한다")
+    void getMyFundingsReturnsPagedFundingHistory() {
+        // Given
+        MemberFundingResponse fundingResponse = new MemberFundingResponse(
+                10L,
+                "강남 → 부산 합승 모집",
+                LocalDate.of(2026, 7, 10),
+                15L,
+                45,
+                FundingStatus.RECRUITING,
+                LocalDateTime.of(2026, 6, 1, 9, 0)
+        );
+
+        when(fundingQueryRepository.findMyFundings(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(ParticipationStatus.CANCELED),
+                org.mockito.ArgumentMatchers.any(PageRequest.class)
+        )).thenReturn(new PageImpl<>(
+                List.of(fundingResponse),
+                PageRequest.of(0, 10),
+                1
+        ));
+
+        // When
+        PageResponse<MemberFundingResponse> response =
+                memberHistoryService.getMyFundings(1L, 0, 10);
+
+        // Then
+        assertThat(response.content()).hasSize(1);
+
+        MemberFundingResponse content = response.content().getFirst();
+        assertThat(content.fundingId()).isEqualTo(10L);
+        assertThat(content.fundingTitle()).isEqualTo("강남 → 부산 합승 모집");
+        assertThat(content.departureDate())
+                .isEqualTo(LocalDate.of(2026, 7, 10));
+        assertThat(content.currentParticipants()).isEqualTo(15L);
+        assertThat(content.maxParticipants()).isEqualTo(45);
+        assertThat(content.status()).isEqualTo(FundingStatus.RECRUITING);
+
+        assertThat(response.pageInfo().currentPage()).isZero();
+        assertThat(response.pageInfo().totalPages()).isEqualTo(1);
+        assertThat(response.pageInfo().totalElements()).isEqualTo(1);
+        assertThat(response.pageInfo().size()).isEqualTo(10);
+        assertThat(response.pageInfo().isLast()).isTrue();
+    }
+
+    @Test
+    @DisplayName("내 모집 내역 조회 시 생성일 기준 내림차순 정렬을 적용한다")
+    void getMyFundingsUsesCreatedAtDescendingSort() {
+        // Given
+        when(fundingQueryRepository.findMyFundings(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(ParticipationStatus.CANCELED),
+                org.mockito.ArgumentMatchers.any(PageRequest.class)
+        )).thenReturn(new PageImpl<>(
+                List.of(),
+                PageRequest.of(0, 10),
+                0
+        ));
+
+        // When
+        memberHistoryService.getMyFundings(1L, 0, 10);
+
+        // Then
+        ArgumentCaptor<PageRequest> pageRequestCaptor =
+                ArgumentCaptor.forClass(PageRequest.class);
+
+        verify(fundingQueryRepository).findMyFundings(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(ParticipationStatus.CANCELED),
+                pageRequestCaptor.capture()
+        );
+
+        PageRequest pageRequest = pageRequestCaptor.getValue();
+
+        assertThat(pageRequest.getPageNumber()).isZero();
+        assertThat(pageRequest.getPageSize()).isEqualTo(10);
+        assertThat(pageRequest.getSort().getOrderFor("createdAt"))
+                .isNotNull();
+        assertThat(pageRequest.getSort().getOrderFor("createdAt")
+                .isDescending()).isTrue();
     }
 }
