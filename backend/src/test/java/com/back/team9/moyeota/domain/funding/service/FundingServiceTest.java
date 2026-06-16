@@ -1,12 +1,6 @@
 package com.back.team9.moyeota.domain.funding.service;
 
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateRequest;
-import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingDetailResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingListResponse;
-import com.back.team9.moyeota.domain.funding.dto.FundingSearchCondition;
-import com.back.team9.moyeota.domain.funding.dto.FundingUpdateRequest;
-import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
+import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
@@ -29,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 class FundingServiceTest {
 
     private static final LocalDateTime DEFAULT_DEPARTURE_TIME =

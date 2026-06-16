@@ -100,6 +100,7 @@ public class PathinfoService {
                 .orElse(null);
 
         if (tripType == TripType.ROUND) {
+            // 왕복으로 수정 -> 오는 노선 아예 없으면 추가
             if (returned == null) {
                 Pathinfo newReturn = Pathinfo.create(
                         funding,
@@ -115,6 +116,7 @@ public class PathinfoService {
                 return;
             }
 
+            // 왕복으로 수정 -> 오는 노선 있으면 수정
             returned.update(
                     route.returnTime(),
                     route.arrivalAddress(),
