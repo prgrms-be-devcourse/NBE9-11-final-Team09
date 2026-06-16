@@ -1,11 +1,9 @@
 package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.*;
-import com.back.team9.moyeota.domain.member.service.MemberLoginService;
-import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
-import com.back.team9.moyeota.domain.member.service.MemberProfileService;
-import com.back.team9.moyeota.domain.member.service.MemberService;
+import com.back.team9.moyeota.domain.member.service.*;
 import com.back.team9.moyeota.global.response.ApiResponse;
+import com.back.team9.moyeota.global.response.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -26,18 +24,21 @@ public class MemberController {
     private final boolean cookieSecure;
     private final MemberLogoutService memberLogoutService;
     private final MemberProfileService memberProfileService;
+    private final MemberHistoryService memberHistoryService;
 
     public MemberController(
             MemberService memberService,
             MemberLoginService memberLoginService,
             MemberLogoutService memberLogoutService,
             MemberProfileService memberProfileService,
+            MemberHistoryService memberHistoryService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
         this.memberLoginService = memberLoginService;
         this.memberLogoutService = memberLogoutService;
         this.memberProfileService = memberProfileService;
+        this.memberHistoryService = memberHistoryService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -138,6 +139,19 @@ public class MemberController {
                 "USR_UPDATE_MY_INFO_SUCCESS",
                 "내 정보 수정 성공",
                 memberProfileService.updateMyInfo(memberId, request)
+        ));
+    }
+
+    @GetMapping("/me/participations")
+    public ResponseEntity<ApiResponse<PageResponse<MemberParticipationResponse>>> getMyParticipations(
+            @AuthenticationPrincipal Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_GET_MY_PARTICIPATIONS_SUCCESS",
+                "내 참여 내역 조회 성공",
+                memberHistoryService.getMyParticipations(memberId, page, size)
         ));
     }
 }
