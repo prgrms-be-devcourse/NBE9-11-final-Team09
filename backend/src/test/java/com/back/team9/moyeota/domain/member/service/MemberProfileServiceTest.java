@@ -198,6 +198,36 @@ class MemberProfileServiceTest {
         verifyNoInteractions(memberRepository);
     }
 
+    @Test
+    @DisplayName("회원 ID가 없으면 내 정보 조회에 실패한다")
+    void getMyInfoWithNullMemberIdThrowsException() {
+        // When / Then
+        assertBusinessException(
+                () -> memberProfileService.getMyInfo(null),
+                ErrorCode.USER_NOT_FOUND
+        );
+
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    @DisplayName("회원 ID가 없으면 내 정보 수정에 실패한다")
+    void updateMyInfoWithNullMemberIdThrowsException() {
+        // Given
+        MemberUpdateRequest request = new MemberUpdateRequest(
+                "변경닉네임",
+                "010-9999-8888"
+        );
+
+        // When / Then
+        assertBusinessException(
+                () -> memberProfileService.updateMyInfo(null, request),
+                ErrorCode.USER_NOT_FOUND
+        );
+
+        verifyNoInteractions(memberRepository);
+    }
+
     private Member createMember() {
         return Member.builder()
                 .memberId(1L)

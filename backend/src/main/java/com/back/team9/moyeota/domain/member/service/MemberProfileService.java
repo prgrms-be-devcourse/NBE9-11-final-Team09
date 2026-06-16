@@ -50,6 +50,10 @@ public class MemberProfileService {
     }
 
     private Member getMember(Long memberId) {
+        if (memberId == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.USER_NOT_FOUND
