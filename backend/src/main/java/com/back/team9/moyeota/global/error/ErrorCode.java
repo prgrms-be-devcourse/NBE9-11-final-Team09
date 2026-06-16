@@ -61,6 +61,8 @@ public enum ErrorCode {
     DUPLICATE_PARTICIPATION(HttpStatus.CONFLICT,"PTC002", "이미 해당 펀딩에 참여 중입니다."),
     FUNDING_RECRUITMENT_CLOSED(HttpStatus.BAD_REQUEST,"PTC003", "모집이 마감된 펀딩입니다."),
     FUNDING_CANCELLED(HttpStatus.BAD_REQUEST, "PTC004", "취소된 펀딩입니다."),
+    ALREADY_CANCELED_PARTICIPATION(HttpStatus.BAD_REQUEST, "PTC005", "이미 취소된 참여입니다."),
+    PARTICIPATION_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PTC006", "출발 24시간 전부터는 참여를 취소할 수 없습니다."),
 
 
     // [SEA] 좌석
