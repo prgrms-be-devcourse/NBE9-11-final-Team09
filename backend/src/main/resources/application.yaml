@@ -45,6 +45,8 @@ springdoc:
 toss:
   secret-key: ${TOSS_SECRET_KEY}
   base-url: https://api.tosspayments.com
+  connect-timeout-seconds: 3
+  read-timeout-seconds: 3
 
 jwt:
   secret: ${JWT_SECRET}
