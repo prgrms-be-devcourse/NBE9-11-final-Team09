@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service // 좌석 도메인 비즈니스 로직 담당
-@RequiredArgsConstructor // final 필드 생성자 자동 생성
+@RequiredArgsConstructor
 public class SeatService {
     private final SeatRepository seatRepository; // 좌석 DB 조회
     private final SeatRedisService seatRedisService; // 좌석 HOLD Redis 처리
@@ -33,7 +33,7 @@ public class SeatService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
 
         // 해당 노선의 전체 좌석 DB 조회
-        List<Seat> seats = seatRepository.findByPathinfoPathinfoId(pathId);
+        List<Seat> seats = seatRepository.findByPathinfo_PathinfoId(pathId);
 
         // 전체 좌석 ID 목록 추출
         List<Long> seatIds = seats.stream()
