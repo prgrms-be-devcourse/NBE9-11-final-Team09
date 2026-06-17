@@ -47,7 +47,7 @@ public class FundingTimelineService {
                 today.plusDays(CONFIRMATION_DAYS_BEFORE_DEPARTURE);
 
         List<Funding> fundings =
-                fundingRepository.findByStatusAndDepartureDate(
+                fundingRepository.findByStatusAndDepartureDateLessThanEqual(
                         FundingStatus.RECRUITING,
                         targetDepartureDate
                 );

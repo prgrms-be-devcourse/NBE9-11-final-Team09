@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface FundingRepository extends JpaRepository<Funding, Long>, FundingRepositoryCustom {
 
-    List<Funding> findByStatusAndDepartureDate(
+    List<Funding> findByStatusAndDepartureDateLessThanEqual(
             FundingStatus status,
             LocalDate departureDate
     );
