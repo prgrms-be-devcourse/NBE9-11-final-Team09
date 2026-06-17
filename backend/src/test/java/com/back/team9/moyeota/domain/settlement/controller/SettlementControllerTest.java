@@ -7,6 +7,9 @@ import com.back.team9.moyeota.domain.settlement.service.SettlementService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,15 @@ class SettlementControllerTest {
     @MockitoBean
     private SettlementService settlementService;
 
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private SettlementResponse sampleResponse() {
@@ -51,7 +63,7 @@ class SettlementControllerTest {
     @Test
     @DisplayName("정산 생성 - 정상 요청 201 Created, 수수료 및 상태 응답 검증")
     void create_정상요청_201Created() throws Exception {
-        given(settlementService.create(any(SettlementCreateRequest.class)))
+        given(settlementService.create(any(SettlementCreateRequest.class), any()))
                 .willReturn(sampleResponse());
 
         mockMvc.perform(post("/api/settlements")
@@ -66,6 +78,19 @@ class SettlementControllerTest {
                 .andExpect(jsonPath("$.data.platformFee").value(5000))
                 .andExpect(jsonPath("$.data.hostPaybackAmount").value(95000))
                 .andExpect(jsonPath("$.data.paybackPaidAt").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("정산 생성 - 방장이 아닌 멤버 요청 시 403")
+    void create_방장이아닌멤버_403() throws Exception {
+        given(settlementService.create(any(SettlementCreateRequest.class), any()))
+                .willThrow(new BusinessException(ErrorCode.SETTLEMENT_ACCESS_DENIED));
+
+        mockMvc.perform(post("/api/settlements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SettlementCreateRequest(1L, 100000))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -90,7 +115,7 @@ class SettlementControllerTest {
     @Test
     @DisplayName("정산 조회 - 존재하는 fundingId 요청 시 200 OK")
     void getByFundingId_정상요청_200OK() throws Exception {
-        given(settlementService.getByFundingId(eq(1L))).willReturn(sampleResponse());
+        given(settlementService.getByFundingId(eq(1L), any())).willReturn(sampleResponse());
 
         mockMvc.perform(get("/api/settlements/funding/1"))
                 .andExpect(status().isOk())
@@ -102,9 +127,19 @@ class SettlementControllerTest {
     }
 
     @Test
+    @DisplayName("정산 조회 - 방장이 아닌 멤버 요청 시 403")
+    void getByFundingId_방장이아닌멤버_403() throws Exception {
+        given(settlementService.getByFundingId(eq(1L), any()))
+                .willThrow(new BusinessException(ErrorCode.SETTLEMENT_ACCESS_DENIED));
+
+        mockMvc.perform(get("/api/settlements/funding/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("정산 조회 - 존재하지 않는 fundingId 요청 시 404")
     void getByFundingId_존재하지않는정산_404() throws Exception {
-        given(settlementService.getByFundingId(eq(999L)))
+        given(settlementService.getByFundingId(eq(999L), any()))
                 .willThrow(new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
         mockMvc.perform(get("/api/settlements/funding/999"))

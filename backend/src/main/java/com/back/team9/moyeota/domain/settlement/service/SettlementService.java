@@ -27,17 +27,19 @@ public class SettlementService {
     private static final double PLATFORM_FEE_RATE = 0.05;
 
     @Transactional
-    public SettlementResponse create(SettlementCreateRequest request){
-
-        if(settlementRepository.existsByFunding_FundingId(request.fundingId())){
-            throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
-        }
+    public SettlementResponse create(SettlementCreateRequest request, Long memberId) {
 
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
+        if (!funding.getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ACCESS_DENIED);
+        }
         if (funding.getStatus() != FundingStatus.COMPLETED) {
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
+        }
+        if (settlementRepository.existsByFunding_FundingId(request.fundingId())) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
         }
 
         int platformFee = (int) (request.totalAmount() * PLATFORM_FEE_RATE);
@@ -58,10 +60,17 @@ public class SettlementService {
         return SettlementResponse.from(saved);
     }
 
-    public SettlementResponse getByFundingId(Long fundingId) {
-        Settlement settlement = settlementRepository.findByFunding_FundingId(fundingId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
-        return SettlementResponse.from(settlement);
+    @Transactional(readOnly = true)
+    public SettlementResponse getByFundingId(Long fundingId, Long memberId) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+        if (!funding.getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ACCESS_DENIED);
+        }
+        return SettlementResponse.from(
+                settlementRepository.findByFunding_FundingId(fundingId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND))
+        );
     }
 
     @Transactional
@@ -73,7 +82,7 @@ public class SettlementService {
         if (!settlement.getPaybackHold()) {
             throw new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED);
         }
-        if(settlement.getStatus()!= SettlementStatus.CALCULATED){
+        if (settlement.getStatus() != SettlementStatus.CALCULATED) {
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
         }
 
@@ -91,7 +100,7 @@ public class SettlementService {
         if (!settlement.getPaybackHold()) {
             throw new BusinessException(ErrorCode.SETTLEMENT_MANUAL_NOT_REQUIRED);
         }
-        if(settlement.getStatus()!= SettlementStatus.CALCULATED){
+        if (settlement.getStatus() != SettlementStatus.CALCULATED) {
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
         }
 
