@@ -31,3 +31,4 @@ application-secret.yml
 
 *.mv.db
 *.trace.db
+db_dev.mv.db
