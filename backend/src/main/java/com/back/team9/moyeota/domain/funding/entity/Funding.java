@@ -16,6 +16,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@Table(indexes = {
+        @Index(
+                name = "idx_funding_status_departure_date",
+                columnList = "status, departure_date"
+        )
+})
 public class Funding {
 
     @Id
