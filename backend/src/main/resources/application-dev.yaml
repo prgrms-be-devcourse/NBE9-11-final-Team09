@@ -4,6 +4,11 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  sql:
+    init:
+      platform: dev
+      continue-on-error: true
+      mode: always
 
 springdoc:
   api-docs:
@@ -15,7 +20,7 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
-
+    org.springframework.security: DEBUG
 
 app:
   cookie:

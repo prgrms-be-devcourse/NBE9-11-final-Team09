@@ -95,12 +95,12 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
+        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
-        SettlementResponse response = settlementService.create(request);
+        SettlementResponse response = settlementService.create(request, 1L);
 
         // Then - 응답값 검증
         assertThat(response.settlementId()).isEqualTo(1L);
@@ -152,12 +152,12 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
+        given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
         given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
-        SettlementResponse response = settlementService.create(request);
+        SettlementResponse response = settlementService.create(request, 1L);
 
         // Then
         assertThat(response.paybackHold()).isTrue();
@@ -168,20 +168,38 @@ class SettlementServiceTest {
     }
 
     @Test
-    @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, 이후 로직 미실행")
+    @DisplayName("정산 생성 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외, save 미실행")
+    void create_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
+        // Given
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+        Long otherMemberId = 999L;
+
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.create(request, otherMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_ACCESS_DENIED));
+
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, save 미실행")
     void create_이미정산내역존재_SETTLEMENT_ALREADY_EXISTS예외() {
         // Given
         SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
 
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_ALREADY_EXISTS));
 
-        verify(fundingRepository, never()).findById(any());
         verify(settlementRepository, never()).save(any());
     }
 
@@ -204,11 +222,10 @@ class SettlementServiceTest {
 
         SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
 
-        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
         given(fundingRepository.findById(1L)).willReturn(Optional.of(recruitingFunding));
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
@@ -222,11 +239,10 @@ class SettlementServiceTest {
         // Given
         SettlementCreateRequest request = new SettlementCreateRequest(999L, 100000);
 
-        given(settlementRepository.existsByFunding_FundingId(999L)).willReturn(false);
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.create(request))
+        assertThatThrownBy(() -> settlementService.create(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
@@ -250,10 +266,11 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.findByFunding_FundingId(1L)).willReturn(Optional.of(settlement));
 
         // When
-        SettlementResponse response = settlementService.getByFundingId(1L);
+        SettlementResponse response = settlementService.getByFundingId(1L, 1L);
 
         // Then
         assertThat(response.settlementId()).isEqualTo(1L);
@@ -268,13 +285,28 @@ class SettlementServiceTest {
     @DisplayName("정산 조회 - 존재하지 않는 fundingId 요청 시 SETTLEMENT_NOT_FOUND 예외 발생")
     void getByFundingId_존재하지않는정산_SETTLEMENT_NOT_FOUND예외() {
         // Given
+        given(fundingRepository.findById(999L)).willReturn(Optional.of(funding));
         given(settlementRepository.findByFunding_FundingId(999L)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> settlementService.getByFundingId(999L))
+        assertThatThrownBy(() -> settlementService.getByFundingId(999L, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("정산 조회 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외")
+    void getByFundingId_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
+        // Given
+        Long otherMemberId = 999L;
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.getByFundingId(1L, otherMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SETTLEMENT_ACCESS_DENIED));
     }
 
     @Test
