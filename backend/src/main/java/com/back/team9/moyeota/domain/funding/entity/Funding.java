@@ -16,6 +16,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@Table(indexes = {
+        @Index(
+                name = "idx_funding_status_departure_date",
+                columnList = "status, departure_date"
+        )
+})
 public class Funding {
 
     @Id
@@ -92,6 +98,18 @@ public class Funding {
 
     public void cancel() {
         this.status = FundingStatus.CANCELLED;
+    }
+
+    public void confirm() {
+        this.status = FundingStatus.CONFIRMED;
+    }
+
+    public void fail() {
+        this.status = FundingStatus.FAILED;
+    }
+
+    public void complete() {
+        this.status = FundingStatus.COMPLETED;
     }
 
     public void update(

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,11 +22,12 @@ public class FundingController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<FundingCreateResponse>> createFunding(
+            @AuthenticationPrincipal Long memberId,
             @RequestBody @Valid FundingCreateRequest request
     ) {
         FundingCreateResponse response =
                 fundingService.createFunding(
-                        1L, // TODO JWT 연동
+                        memberId,
                         request
                 );
 
@@ -77,11 +79,12 @@ public class FundingController {
 
     @PatchMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<Void>> updateFunding(
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long fundingId,
             @RequestBody @Valid FundingUpdateRequest request
     ) {
         fundingService.updateFunding(
-                1L, // TODO JWT 연동
+                memberId,
                 fundingId,
                 request
         );
@@ -96,10 +99,11 @@ public class FundingController {
 
     @DeleteMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<Void>> cancelFunding(
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long fundingId
     ) {
         fundingService.cancelFunding(
-                1L, // TODO JWT 연동
+                memberId,
                 fundingId
         );
 
