@@ -57,11 +57,14 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 생성 - 편도면 가는 노선만 저장한다")
     void createPathinfos_whenOneWay_savesOutboundOnly() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         RouteRequest route = oneWayRoute();
 
+        // When
         pathinfoService.createPathinfos(funding, TripType.ONE_WAY, route);
 
+        // Then
         ArgumentCaptor<Pathinfo> captor = ArgumentCaptor.forClass(Pathinfo.class);
         verify(pathinfoValidator).validateTripType(TripType.ONE_WAY, route);
         verify(pathinfoRepository).save(captor.capture());
@@ -76,11 +79,14 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 생성 - 왕복이면 가는 노선과 오는 노선을 저장한다")
     void createPathinfos_whenRound_savesOutboundAndReturn() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         RouteRequest route = roundRoute();
 
+        // When
         pathinfoService.createPathinfos(funding, TripType.ROUND, route);
 
+        // Then
         ArgumentCaptor<Pathinfo> captor = ArgumentCaptor.forClass(Pathinfo.class);
         verify(pathinfoValidator).validateTripType(TripType.ROUND, route);
         verify(pathinfoRepository, org.mockito.Mockito.times(2))
@@ -98,6 +104,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 생성 - 검증 실패 시 저장하지 않는다")
     void createPathinfos_whenValidationFails_doesNotSave() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         RouteRequest route = oneWayRoute();
 
@@ -105,6 +112,7 @@ class PathinfoServiceUnitTest {
                 .given(pathinfoValidator)
                 .validateTripType(TripType.ONE_WAY, route);
 
+        // When / Then
         assertThatThrownBy(() ->
                 pathinfoService.createPathinfos(funding, TripType.ONE_WAY, route)
         )
@@ -118,6 +126,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 수정 - 가는 노선이 없으면 예외")
     void updatePathinfos_whenOutboundDoesNotExist_throwsException() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         RouteRequest route = oneWayRoute();
 
@@ -126,6 +135,7 @@ class PathinfoServiceUnitTest {
                 Direction.OUTBOUND
         )).willReturn(Optional.empty());
 
+        // When / Then
         assertThatThrownBy(() ->
                 pathinfoService.updatePathinfos(funding, TripType.ONE_WAY, route)
         )
@@ -139,6 +149,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 수정 - 검증 실패 시 조회하지 않는다")
     void updatePathinfos_whenValidationFails_doesNotFindPathinfos() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         RouteRequest route = roundRoute();
 
@@ -146,6 +157,7 @@ class PathinfoServiceUnitTest {
                 .given(pathinfoValidator)
                 .validateTripType(TripType.ROUND, route);
 
+        // When / Then
         assertThatThrownBy(() ->
                 pathinfoService.updatePathinfos(funding, TripType.ROUND, route)
         )
@@ -159,6 +171,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 수정 - 편도에서 왕복으로 바꾸면 오는 노선을 생성한다")
     void updatePathinfos_fromOneWayToRound_createsReturnPathinfo() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         RouteRequest route = roundRoute();
         Pathinfo outbound = outboundPathinfo(funding);
@@ -172,8 +185,10 @@ class PathinfoServiceUnitTest {
                 Direction.RETURN
         )).willReturn(Optional.empty());
 
+        // When
         pathinfoService.updatePathinfos(funding, TripType.ROUND, route);
 
+        // Then
         ArgumentCaptor<Pathinfo> captor = ArgumentCaptor.forClass(Pathinfo.class);
         verify(pathinfoRepository).save(captor.capture());
 
@@ -185,6 +200,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 수정 - 왕복에서 편도로 바꾸면 오는 노선을 취소한다")
     void updatePathinfos_fromRoundToOneWay_cancelsReturnPathinfo() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         RouteRequest route = oneWayRoute();
         Pathinfo outbound = outboundPathinfo(funding);
@@ -199,8 +215,10 @@ class PathinfoServiceUnitTest {
                 Direction.RETURN
         )).willReturn(Optional.of(returned));
 
+        // When
         pathinfoService.updatePathinfos(funding, TripType.ONE_WAY, route);
 
+        // Then
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
         verify(pathinfoRepository, never()).save(any());
     }
@@ -208,6 +226,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 취소 - 조회된 모든 노선을 취소한다")
     void cancelPathinfos_cancelsAllPathinfos() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         Pathinfo outbound = outboundPathinfo(funding);
         Pathinfo returned = returnPathinfo(funding);
@@ -215,8 +234,10 @@ class PathinfoServiceUnitTest {
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of(outbound, returned));
 
+        // When
         pathinfoService.cancelPathinfos(1L);
 
+        // Then
         assertThat(outbound.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
     }
@@ -224,6 +245,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("버스 타입 동기화 - 조회된 모든 노선의 버스 타입을 변경한다")
     void syncBusType_changesAllPathinfoBusTypes() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         Pathinfo outbound = outboundPathinfo(funding);
         Pathinfo returned = returnPathinfo(funding);
@@ -231,8 +253,10 @@ class PathinfoServiceUnitTest {
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of(outbound, returned));
 
+        // When
         pathinfoService.syncBusType(1L, BusType.BUS_25);
 
+        // Then
         assertThat(outbound.getBusType()).isEqualTo(BusType.BUS_25);
         assertThat(returned.getBusType()).isEqualTo(BusType.BUS_25);
     }
@@ -240,6 +264,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("상세 노선 응답 - 일반 상태면 취소 노선을 제외하고 조회한다")
     void getPathinfoResponsesForDetail_whenActiveFunding_excludesCancelledPathinfos() {
+        // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
         Pathinfo outbound = outboundPathinfo(funding);
 
@@ -248,8 +273,10 @@ class PathinfoServiceUnitTest {
                 PathinfoStatus.CANCELLED
         )).willReturn(List.of(outbound));
 
+        // When
         var responses = pathinfoService.getPathinfoResponsesForDetail(funding);
 
+        // Then
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).direction()).isEqualTo(Direction.OUTBOUND);
     }
@@ -257,6 +284,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("상세 노선 응답 - 취소된 편도 펀딩이면 가는 노선만 반환한다")
     void getPathinfoResponsesForDetail_whenCancelledOneWay_returnsOutboundOnly() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.CANCELLED);
         Pathinfo outbound = outboundPathinfo(funding);
         Pathinfo returned = returnPathinfo(funding);
@@ -264,8 +292,10 @@ class PathinfoServiceUnitTest {
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of(outbound, returned));
 
+        // When
         var responses = pathinfoService.getPathinfoResponsesForDetail(funding);
 
+        // Then
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).direction()).isEqualTo(Direction.OUTBOUND);
     }
@@ -273,6 +303,7 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 변경 확인 - 가는 노선이 바뀌면 true를 반환한다")
     void isRouteChanged_whenOutboundChanged_returnsTrue() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         Pathinfo outbound = outboundPathinfo(funding);
         RouteRequest changedRoute = new RouteRequest(
@@ -287,21 +318,25 @@ class PathinfoServiceUnitTest {
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of(outbound));
 
+        // When
         boolean result = pathinfoService.isRouteChanged(
                 1L,
                 TripType.ONE_WAY,
                 changedRoute
         );
 
+        // Then
         assertThat(result).isTrue();
     }
 
     @Test
     @DisplayName("노선 변경 확인 - 가는 노선이 없으면 예외")
     void isRouteChanged_whenOutboundDoesNotExist_throwsException() {
+        // Given
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of());
 
+        // When / Then
         assertThatThrownBy(() ->
                 pathinfoService.isRouteChanged(
                         1L,
@@ -317,18 +352,21 @@ class PathinfoServiceUnitTest {
     @Test
     @DisplayName("노선 변경 확인 - 편도 노선이 같으면 false를 반환한다")
     void isRouteChanged_whenOneWayRouteIsSame_returnsFalse() {
+        // Given
         Funding funding = funding(1L, TripType.ONE_WAY, FundingStatus.RECRUITING);
         Pathinfo outbound = outboundPathinfo(funding);
 
         given(pathinfoRepository.findByFunding_FundingId(1L))
                 .willReturn(List.of(outbound));
 
+        // When
         boolean result = pathinfoService.isRouteChanged(
                 1L,
                 TripType.ONE_WAY,
                 oneWayRoute()
         );
 
+        // Then
         assertThat(result).isFalse();
     }
 

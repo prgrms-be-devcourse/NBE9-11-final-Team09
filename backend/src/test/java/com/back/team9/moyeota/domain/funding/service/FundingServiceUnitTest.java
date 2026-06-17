@@ -14,6 +14,8 @@ import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
@@ -66,11 +68,15 @@ class FundingServiceUnitTest {
     private PathinfoService pathinfoService;
 
     @Mock
+    private ParticipationRepository participationRepository;
+
+    @Mock
     private FundingValidator fundingValidator;
 
     @Test
     @DisplayName("펀딩 생성 성공")
     void createFunding_success() {
+        // Given
         Member member = member(1L);
         FundingCreateRequest request = createRequest();
 
@@ -82,9 +88,11 @@ class FundingServiceUnitTest {
             return funding;
         });
 
+        // When
         FundingCreateResponse response =
                 fundingService.createFunding(1L, request);
 
+        // Then
         assertThat(response.fundingId()).isEqualTo(10L);
         assertThat(response.status()).isEqualTo(FundingStatus.RECRUITING);
 
@@ -109,8 +117,10 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 생성 - 회원이 없으면 예외")
     void createFunding_whenMemberDoesNotExist_throwsException() {
+        // Given
         given(memberRepository.findById(999L)).willReturn(Optional.empty());
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(999L, createRequest())
         )
@@ -124,6 +134,7 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 생성 - 검증 실패 시 저장하지 않는다")
     void createFunding_whenValidationFails_throwsException() {
+        // Given
         Member member = member(1L);
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -136,6 +147,7 @@ class FundingServiceUnitTest {
                 .given(fundingValidator)
                 .validateFundingRequest(70, BusType.BUS_45, 500000);
 
+        // When / Then
         assertThatThrownBy(() -> fundingService.createFunding(1L, request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -148,19 +160,26 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 상세 조회 성공")
     void getFunding_success() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         PathinfoResponse pathinfoResponse = pathinfoResponse();
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(3L);
         given(pathinfoService.getPathinfoResponsesForDetail(funding))
                 .willReturn(List.of(pathinfoResponse));
 
+        // When
         var response = fundingService.getFunding(10L);
 
+        // Then
         assertThat(response.fundingId()).isEqualTo(10L);
         assertThat(response.title()).isEqualTo("Football Match Bus");
         assertThat(response.pathinfos()).containsExactly(pathinfoResponse);
-        assertThat(response.currentParticipants()).isZero();
+        assertThat(response.currentParticipants()).isEqualTo(3);
         assertThat(response.isHost()).isFalse();
         assertThat(response.isJoined()).isFalse();
     }
@@ -168,8 +187,10 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 상세 조회 - 펀딩이 없으면 예외")
     void getFunding_whenFundingDoesNotExist_throwsException() {
+        // Given
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
+        // When / Then
         assertThatThrownBy(() -> fundingService.getFunding(999L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -181,13 +202,20 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 수정 성공")
     void updateFunding_success() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         FundingUpdateRequest request = updateRequest();
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(0L);
 
+        // When
         fundingService.updateFunding(1L, 10L, request);
 
+        // Then
         assertThat(funding.getTitle()).isEqualTo("Updated Title");
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
         assertThat(funding.getMinParticipants()).isEqualTo(10);
@@ -207,8 +235,10 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 수정 - 펀딩이 없으면 예외")
     void updateFunding_whenFundingDoesNotExist_throwsException() {
+        // Given
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(1L, 999L, updateRequest())
         )
@@ -222,12 +252,14 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 수정 - 방장이 아니면 예외")
     void updateFunding_whenMemberIsNotHost_throwsException() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
         willThrow(new BusinessException(ErrorCode.FUNDING_FORBIDDEN))
                 .given(fundingValidator)
                 .validateHost(funding, 2L);
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(2L, 10L, updateRequest())
         )
@@ -242,12 +274,14 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 수정 - 수정 불가 상태면 예외")
     void updateFunding_whenFundingIsNotUpdatable_throwsException() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.CONFIRMED);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
         willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
                 .given(fundingValidator)
                 .validateUpdatable(funding);
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(1L, 10L, updateRequest())
         )
@@ -263,11 +297,14 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 취소 성공")
     void cancelFunding_success() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
 
+        // When
         fundingService.cancelFunding(1L, 10L);
 
+        // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
         verify(fundingValidator).validateHost(funding, 1L);
         verify(fundingValidator).validateUpdatable(funding);
@@ -277,9 +314,11 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 취소 - 이미 취소된 펀딩이면 예외")
     void cancelFunding_whenAlreadyCancelled_throwsException() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.CANCELLED);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
 
+        // When / Then
         assertThatThrownBy(() -> fundingService.cancelFunding(1L, 10L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -293,12 +332,14 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 취소 - 방장이 아니면 예외")
     void cancelFunding_whenMemberIsNotHost_throwsException() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
         willThrow(new BusinessException(ErrorCode.FUNDING_FORBIDDEN))
                 .given(fundingValidator)
                 .validateHost(funding, 2L);
 
+        // When / Then
         assertThatThrownBy(() -> fundingService.cancelFunding(2L, 10L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -311,6 +352,7 @@ class FundingServiceUnitTest {
     @Test
     @DisplayName("펀딩 목록 조회 - 조회된 펀딩의 출발 경로를 붙여 응답")
     void getFundingList_success() {
+        // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         Pathinfo pathinfo = Pathinfo.create(
                 funding,
@@ -332,9 +374,11 @@ class FundingServiceUnitTest {
                 Direction.OUTBOUND
         )).willReturn(List.of(pathinfo));
 
+        // When
         PageResponse<?> response =
                 fundingService.getFundingList(condition, pageable);
 
+        // Then
         assertThat(response.content()).hasSize(1);
         assertThat(response.totalElements()).isEqualTo(1);
         verify(pathinfoService)
