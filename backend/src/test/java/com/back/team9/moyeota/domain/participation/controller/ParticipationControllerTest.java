@@ -9,7 +9,9 @@ import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,14 @@ class ParticipationControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
+
+
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
