@@ -155,6 +155,7 @@ public class FundingService {
         if (funding.getStatus() == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
+        fundingValidator.validateUpdatable(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
@@ -166,6 +167,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
+        fundingValidator.validateUpdatable(funding);
         int currentParticipants = 0; // TODO
 
         if (currentParticipants > 0) {

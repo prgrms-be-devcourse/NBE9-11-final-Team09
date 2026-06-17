@@ -94,6 +94,18 @@ public class Funding {
         this.status = FundingStatus.CANCELLED;
     }
 
+    public void confirm() {
+        this.status = FundingStatus.CONFIRMED;
+    }
+
+    public void fail() {
+        this.status = FundingStatus.FAILED;
+    }
+
+    public void complete() {
+        this.status = FundingStatus.COMPLETED;
+    }
+
     public void update(
             String title,
             String content,

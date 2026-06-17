@@ -1,0 +1,110 @@
+package com.back.team9.moyeota.domain.funding.service;
+
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
+import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.groupingBy;
+
+@Service
+@RequiredArgsConstructor
+public class FundingTimelineService {
+
+    // 펀딩 확정 기준 날짜 (현재 10일)
+    private static final int CONFIRMATION_DAYS_BEFORE_DEPARTURE = 10;
+
+    private final Clock clock;
+    private final FundingRepository fundingRepository;
+    private final PathinfoRepository pathinfoRepository;
+    private final ParticipationRepository participationRepository;
+
+    @Transactional
+    public void processDailyTimeline() {
+        LocalDate today = LocalDate.now(clock);
+        LocalDateTime now = LocalDateTime.now(clock);
+        confirmOrFailFundings(today);
+        completePathinfosAndFundings(now);
+    }
+
+    // 펀딩 성공 또는 실패 상태변경
+    private void confirmOrFailFundings(LocalDate today) {
+        LocalDate targetDepartureDate =
+                today.plusDays(CONFIRMATION_DAYS_BEFORE_DEPARTURE);
+
+        List<Funding> fundings =
+                fundingRepository.findByStatusAndDepartureDate(
+                        FundingStatus.RECRUITING,
+                        targetDepartureDate
+                );
+
+        for (Funding funding : fundings) {
+            long activeParticipants =
+                    participationRepository.countByFunding_FundingIdAndStatus(
+                            funding.getFundingId(),
+                            ParticipationStatus.ACTIVE
+                    );
+
+            // 최소인원 이상이면 confirmed 로 변경
+            if (activeParticipants >= funding.getMinParticipants()) {
+                funding.confirm();
+                continue;
+            }
+
+            // 최소인원 미만이면 failed 로 변경
+            funding.fail();
+        }
+    }
+
+    // 출발시간 지난 노선과 연결된 펀딩 완료
+    private void completePathinfosAndFundings(LocalDateTime now) {
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findPathinfosWithFunding(
+                        PathinfoStatus.PENDING,
+                        now,
+                        FundingStatus.CONFIRMED
+                );
+
+        pathinfos.forEach(Pathinfo::complete);
+
+        List<Long> fundingIds = pathinfos.stream()
+                .map(path -> path.getFunding().getFundingId())
+                .distinct()
+                .toList();
+
+        List<Pathinfo> allPathinfos =
+                pathinfoRepository.findByFunding_FundingIdInAndStatusNot(
+                        fundingIds,
+                        PathinfoStatus.CANCELLED
+                );
+
+        Map<Long, List<Pathinfo>> pathinfosByFundingId = allPathinfos.stream()
+                .collect(groupingBy(path -> path.getFunding().getFundingId()));
+
+        for (Pathinfo pathinfo : pathinfos) {
+            Funding funding = pathinfo.getFunding();
+
+            boolean allCompleted = pathinfosByFundingId
+                    .getOrDefault(funding.getFundingId(), List.of())
+                    .stream()
+                    .allMatch(path -> path.getStatus() == PathinfoStatus.COMPLETED);
+
+            if (allCompleted) {
+                funding.complete();
+            }
+        }
+    }
+}

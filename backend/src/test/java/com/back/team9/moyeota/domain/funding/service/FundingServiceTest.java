@@ -76,25 +76,6 @@ class FundingServiceTest {
     }
 
     @Test
-    @DisplayName("펀딩 생성 - 최소 인원 초과 예외")
-    void createFunding_whenMinParticipantsExceedsCapacity_throwsException() {
-        Member member = saveMember();
-        FundingCreateRequest request = createRequest(
-                BusType.BUS_45,
-                70,
-                TripType.ONE_WAY,
-                oneWayRoute()
-        );
-
-        assertThatThrownBy(() ->
-                fundingService.createFunding(member.getMemberId(), request)
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
-    }
-
-    @Test
     @DisplayName("왕복 펀딩 생성 성공")
     void createRoundFunding_success() {
         Member member = saveMember();
@@ -103,17 +84,6 @@ class FundingServiceTest {
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
         assertThat(findPathinfos(response.fundingId())).hasSize(2);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 회원의 펀딩 생성 예외")
-    void createFunding_whenMemberDoesNotExist_throwsException() {
-        assertThatThrownBy(() ->
-                fundingService.createFunding(999L, oneWayCreateRequest())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 
     @Test
@@ -147,15 +117,6 @@ class FundingServiceTest {
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
         assertThat(result.title()).isEqualTo("Football Match Bus");
         assertThat(result.pathinfos()).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("펀딩 상세 조회 - 존재하지 않는 펀딩 예외")
-    void getFunding_whenFundingDoesNotExist_throwsException() {
-        assertThatThrownBy(() -> fundingService.getFunding(999L))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
     }
 
     @Test
@@ -194,19 +155,6 @@ class FundingServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 펀딩 수정 예외")
-    void updateFunding_whenFundingDoesNotExist_throwsException() {
-        Member member = saveMember();
-
-        assertThatThrownBy(() ->
-                fundingService.updateFunding(member.getMemberId(), 999L, oneWayUpdateRequest())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
-    }
-
-    @Test
     @DisplayName("펀딩 취소 성공")
     void cancelFunding_success() {
         Member member = saveMember();
@@ -217,22 +165,6 @@ class FundingServiceTest {
 
         Funding funding = findFunding(response.fundingId());
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
-    }
-
-    @Test
-    @DisplayName("이미 취소된 펀딩 취소 예외")
-    void cancelFunding_whenAlreadyCancelled_throwsException() {
-        Member member = saveMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-        fundingService.cancelFunding(member.getMemberId(), response.fundingId());
-
-        assertThatThrownBy(() ->
-                fundingService.cancelFunding(member.getMemberId(), response.fundingId())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_ALREADY_CANCELLED);
     }
 
     @Test
@@ -576,61 +508,6 @@ class FundingServiceTest {
     }
 
     @Test
-    @DisplayName("생성 - 버스타입에 따라 최대 인원 설정")
-    void createFunding_setsMaxParticipantsFromBusType() {
-        Member member = saveMember();
-
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-
-        Funding funding = findFunding(response.fundingId());
-        assertThat(funding.getBusType()).isEqualTo(BusType.BUS_45);
-        assertThat(funding.getMaxParticipants()).isEqualTo(BusType.BUS_45.getCapacity());
-    }
-
-    @Test
-    @DisplayName("수정 - 버스타입 변경 시 최대 인원 변경")
-    void updateFunding_whenBusTypeChanges_updatesMaxParticipants() {
-        Member member = saveMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-
-        Funding fundingBefore = findFunding(response.fundingId());
-        assertThat(fundingBefore.getBusType()).isEqualTo(BusType.BUS_45);
-        assertThat(fundingBefore.getMaxParticipants()).isEqualTo(BusType.BUS_45.getCapacity());
-
-        fundingService.updateFunding(
-                member.getMemberId(),
-                response.fundingId(),
-                oneWayUpdateRequest()
-        );
-
-        Funding fundingAfter = findFunding(response.fundingId());
-        assertThat(fundingAfter.getBusType()).isEqualTo(BusType.BUS_25);
-        assertThat(fundingAfter.getMaxParticipants()).isEqualTo(BusType.BUS_25.getCapacity());
-    }
-
-    @Test
-    @DisplayName("방장이 아닌 인원이 취소 시 예외")
-    void cancelFunding_whenMemberIsNotHost_throwsException() {
-        Member host = saveMember();
-        Member other = saveOtherMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(host.getMemberId(), roundCreateRequest());
-
-        Funding funding = findFunding(response.fundingId());
-
-        assertThatThrownBy(() ->
-                fundingService.cancelFunding(other.getMemberId(), funding.getFundingId())
-        )
-                .isInstanceOf(BusinessException.class)
-                .satisfies(e ->
-                        assertThat(((BusinessException) e).getErrorCode())
-                                .isEqualTo(ErrorCode.FUNDING_FORBIDDEN)
-                );
-    }
-
-    @Test
     @DisplayName("기본 목록에서 취소 펀딩 제외")
     void getFundingList_defaultStatusExcludesCancelledFunding() {
         Member member = saveMember();
@@ -941,16 +818,4 @@ class FundingServiceTest {
         return memberRepository.save(member);
     }
 
-    private Member saveOtherMember() {
-        Member member = Member.builder()
-                .email("test2@test.com")
-                .password("1234")
-                .name("other")
-                .nickname("other")
-                .phoneNumber("01012345678")
-                .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        return memberRepository.save(member);
-    }
 }

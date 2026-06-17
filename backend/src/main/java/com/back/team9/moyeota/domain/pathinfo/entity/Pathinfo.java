@@ -113,4 +113,5 @@ public class Pathinfo {
     public void changeBusType(BusType busType) {
         this.busType = busType;
     }
+    public void complete() {this.status = PathinfoStatus.COMPLETED;}
 }
