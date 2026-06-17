@@ -42,4 +42,16 @@ public class Member {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public void updateProfile(String nickname, String phoneNumber) {
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+
+        if (phoneNumber != null) {
+            this.phoneNumber = phoneNumber;
+        }
+
+        this.updatedAt = LocalDateTime.now();
+    }
 }

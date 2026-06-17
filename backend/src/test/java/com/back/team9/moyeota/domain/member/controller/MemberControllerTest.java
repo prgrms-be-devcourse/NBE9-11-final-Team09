@@ -1,14 +1,26 @@
 package com.back.team9.moyeota.domain.member.controller;
 
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
-import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
-import com.back.team9.moyeota.domain.member.service.MemberService;
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.member.dto.*;
+import com.back.team9.moyeota.domain.member.service.*;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
-import com.back.team9.moyeota.domain.member.service.MemberLoginService;
+import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.response.PageInfoResponse;
+import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +28,19 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -44,7 +62,19 @@ class MemberControllerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
+
+    @MockitoBean
     private MemberLogoutService memberLogoutService;
+
+    @MockitoBean
+    private MemberProfileService memberProfileService;
+
+    @MockitoBean
+    private MemberHistoryService memberHistoryService;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -150,11 +180,11 @@ class MemberControllerTest {
         when(memberLoginService.login(any())).thenReturn(result);
 
         String requestBody = """
-            {
-              "email": "moyeota@example.com",
-              "password": "Password123!"
-            }
-            """;
+                {
+                  "email": "moyeota@example.com",
+                  "password": "Password123!"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(post("/api/members/login")
@@ -177,8 +207,8 @@ class MemberControllerTest {
                                         "SameSite=Strict"
                                 ),
                                 org.hamcrest.Matchers.not(
-                                                org.hamcrest.Matchers.containsString("Secure")
-                                        )                        )                ))
+                                        org.hamcrest.Matchers.containsString("Secure")
+                                ))))
                 .andExpect(jsonPath("$.data.tokenType")
                         .value("Bearer"))
                 .andExpect(jsonPath("$.data.user.userId").value(1));
@@ -191,11 +221,11 @@ class MemberControllerTest {
     void loginWithMissingRequiredFieldsReturnsBadRequest() throws Exception {
         // Given
         String requestBody = """
-            {
-              "email": "",
-              "password": ""
-            }
-            """;
+                {
+                  "email": "",
+                  "password": ""
+                }
+                """;
 
         // When / Then
         mockMvc.perform(post("/api/members/login")
@@ -240,5 +270,303 @@ class MemberControllerTest {
                 ));
 
         verify(memberLogoutService).logout(authorization);
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 내 정보를 조회한다")
+    void getMyInfoReturnsMemberInfo() throws Exception {
+        // Given
+        MemberInfoResponse response = new MemberInfoResponse(
+                1L,
+                "member@example.com",
+                "홍길동",
+                "모여타요",
+                "010-1234-5678",
+                null,
+                MemberStatus.ACTIVE,
+                LocalDateTime.of(2026, 6, 1, 10, 0)
+        );
+
+        when(memberProfileService.getMyInfo(any()))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_INFO_SUCCESS"))
+                .andExpect(jsonPath("$.data.memberId").value(1))
+                .andExpect(jsonPath("$.data.email")
+                        .value("member@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("모여타요"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+
+        verify(memberProfileService).getMyInfo(any());
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 닉네임과 전화번호를 수정한다")
+    void updateMyInfoReturnsUpdatedMemberInfo() throws Exception {
+        // Given
+        MemberUpdateResponse response = new MemberUpdateResponse(
+                1L,
+                "member@example.com",
+                "홍길동",
+                "변경닉네임",
+                "010-9999-8888",
+                LocalDateTime.of(2026, 6, 15, 10, 0)
+        );
+
+        when(memberProfileService.updateMyInfo(any(), any()))
+                .thenReturn(response);
+
+        String requestBody = """
+                {
+                  "nickname": "변경닉네임",
+                  "phoneNumber": "010-9999-8888"
+                }
+                """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/members/me")
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_UPDATE_MY_INFO_SUCCESS"))
+                .andExpect(jsonPath("$.data.nickname")
+                        .value("변경닉네임"))
+                .andExpect(jsonPath("$.data.phoneNumber")
+                        .value("010-9999-8888"));
+
+        verify(memberProfileService).updateMyInfo(any(), any());
+    }
+
+    @Test
+    @DisplayName("전화번호 형식이 잘못되면 내 정보 수정에 실패한다")
+    void updateMyInfoWithInvalidPhoneNumberReturnsBadRequest()
+            throws Exception {
+        // Given
+        String requestBody = """
+                {
+                  "phoneNumber": "01012345678"
+                }
+                """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/members/me")
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberProfileService);
+    }
+
+    private RequestPostProcessor memberAuthentication() {
+        return authentication(
+                new UsernamePasswordAuthenticationToken(
+                        1L,
+                        null,
+                        List.of()
+                )
+        );
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 참여 내역을 페이징 조회한다")
+    void getMyParticipationsReturnsPagedParticipationHistory() throws Exception {
+        // Given
+        MemberParticipationResponse participationResponse =
+                new MemberParticipationResponse(
+                        1L,
+                        10L,
+                        "강남 → 부산 합승 모집",
+                        LocalDate.of(2026, 7, 10),
+                        ParticipationStatus.ACTIVE,
+                        ParticipationPaymentStatus.ACTIVE,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberParticipationResponse> response =
+                new PageResponse<>(
+                        List.of(participationResponse),
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
+                );
+
+        when(memberHistoryService.getMyParticipations(any(), any()))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/participations")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_PARTICIPATIONS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].participationId")
+                        .value(1))
+                .andExpect(jsonPath("$.data.content[0].fundingId")
+                        .value(10))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].departureDate")
+                        .value("2026-07-10"))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("ACTIVE"))
+                .andExpect(jsonPath("$.data.content[0].paymentStatus")
+                        .value("ACTIVE"))
+                .andExpect(jsonPath("$.data.page")
+                        .value(0))
+                .andExpect(jsonPath("$.data.size")
+                        .value(10))
+                .andExpect(jsonPath("$.data.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyParticipations(any(), any());
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 모집 내역을 페이징 조회한다")
+    void getMyFundingsReturnsPagedFundingHistory() throws Exception {
+        // Given
+        MemberFundingResponse fundingResponse =
+                new MemberFundingResponse(
+                        10L,
+                        "강남 → 부산 합승 모집",
+                        LocalDate.of(2026, 7, 10),
+                        15L,
+                        45,
+                        FundingStatus.RECRUITING,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberFundingResponse> response =
+                new PageResponse<>(
+                        List.of(fundingResponse),
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
+                );
+
+        when(memberHistoryService.getMyFundings(any(), any()))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/fundings")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_FUNDINGS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].fundingId")
+                        .value(10))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].departureDate")
+                        .value("2026-07-10"))
+                .andExpect(jsonPath("$.data.content[0].currentParticipants")
+                        .value(15))
+                .andExpect(jsonPath("$.data.content[0].maxParticipants")
+                        .value(45))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("RECRUITING"))
+                .andExpect(jsonPath("$.data.page")
+                        .value(0))
+                .andExpect(jsonPath("$.data.size")
+                        .value(10))
+                .andExpect(jsonPath("$.data.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyFundings(any(), any());
+    }
+
+    @Test
+    @DisplayName("인증된 회원의 결제 내역을 페이징 조회한다")
+    void getMyPaymentsReturnsPagedPaymentHistory() throws Exception {
+        // Given
+        MemberPaymentResponse paymentResponse =
+                new MemberPaymentResponse(
+                        1L,
+                        "강남 → 부산 합승 모집",
+                        PaymentType.DEPOSIT,
+                        10000,
+                        PaymentStatus.PAID,
+                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                );
+
+        PageResponse<MemberPaymentResponse> response =
+                new PageResponse<>(
+                        List.of(paymentResponse),
+                        0,
+                        10,
+                        1,
+                        1,
+                        true,
+                        true
+                );
+
+        when(memberHistoryService.getMyPayments(any(), any()))
+                .thenReturn(response);
+
+        // When / Then
+        mockMvc.perform(get("/api/members/me/payments")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(memberAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_GET_MY_PAYMENTS_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].paymentId")
+                        .value(1))
+                .andExpect(jsonPath("$.data.content[0].fundingTitle")
+                        .value("강남 → 부산 합승 모집"))
+                .andExpect(jsonPath("$.data.content[0].type")
+                        .value("DEPOSIT"))
+                .andExpect(jsonPath("$.data.content[0].amount")
+                        .value(10000))
+                .andExpect(jsonPath("$.data.content[0].status")
+                        .value("PAID"))
+                .andExpect(jsonPath("$.data.page")
+                        .value(0))
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.totalElements")
+                        .value(1))
+                .andExpect(jsonPath("$.data.totalPages")
+                        .value(1))
+                .andExpect(jsonPath("$.data.first")
+                        .value(true))
+                .andExpect(jsonPath("$.data.last")
+                        .value(true));
+
+        verify(memberHistoryService)
+                .getMyPayments(any(), any());
     }
 }
