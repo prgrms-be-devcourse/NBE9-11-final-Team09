@@ -266,6 +266,7 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.findByFunding_FundingId(1L)).willReturn(Optional.of(settlement));
 
         // When
@@ -284,6 +285,7 @@ class SettlementServiceTest {
     @DisplayName("정산 조회 - 존재하지 않는 fundingId 요청 시 SETTLEMENT_NOT_FOUND 예외 발생")
     void getByFundingId_존재하지않는정산_SETTLEMENT_NOT_FOUND예외() {
         // Given
+        given(fundingRepository.findById(999L)).willReturn(Optional.of(funding));
         given(settlementRepository.findByFunding_FundingId(999L)).willReturn(Optional.empty());
 
         // When & Then
@@ -297,20 +299,8 @@ class SettlementServiceTest {
     @DisplayName("정산 조회 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외")
     void getByFundingId_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
         // Given
-        Settlement settlement = Settlement.builder()
-                .settlementId(1L)
-                .member(hostMember)
-                .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
-                .status(SettlementStatus.CALCULATED)
-                .paybackHold(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
         Long otherMemberId = 999L;
-        given(settlementRepository.findByFunding_FundingId(1L)).willReturn(Optional.of(settlement));
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
 
         // When & Then
         assertThatThrownBy(() -> settlementService.getByFundingId(1L, otherMemberId))

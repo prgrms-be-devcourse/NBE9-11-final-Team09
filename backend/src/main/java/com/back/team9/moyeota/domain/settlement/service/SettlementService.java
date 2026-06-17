@@ -29,7 +29,6 @@ public class SettlementService {
     @Transactional
     public SettlementResponse create(SettlementCreateRequest request, Long memberId) {
 
-
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
@@ -63,12 +62,15 @@ public class SettlementService {
 
     @Transactional(readOnly = true)
     public SettlementResponse getByFundingId(Long fundingId, Long memberId) {
-        Settlement settlement = settlementRepository.findByFunding_FundingId(fundingId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
-        if (!settlement.getMember().getMemberId().equals(memberId)) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+        if (!funding.getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.SETTLEMENT_ACCESS_DENIED);
         }
-        return SettlementResponse.from(settlement);
+        return SettlementResponse.from(
+                settlementRepository.findByFunding_FundingId(fundingId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND))
+        );
     }
 
     @Transactional

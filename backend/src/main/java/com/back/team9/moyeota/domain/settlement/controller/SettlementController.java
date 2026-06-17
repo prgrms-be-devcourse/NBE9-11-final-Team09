@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,8 +20,8 @@ public class SettlementController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<SettlementResponse>> create(
-            @RequestBody @Valid SettlementCreateRequest request) {
-        Long memberId =  (Long)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            @RequestBody @Valid SettlementCreateRequest request,
+            @AuthenticationPrincipal Long memberId) {
         SettlementResponse response = settlementService.create(request, memberId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("SUCCESS", "정산 내역이 생성되었습니다.", response));
@@ -29,8 +29,8 @@ public class SettlementController {
 
     @GetMapping("/funding/{fundingId}")
     public ResponseEntity<ApiResponse<SettlementResponse>> getByFundingId(
-            @PathVariable Long fundingId) {
-        Long memberId =  (Long)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            @PathVariable Long fundingId,
+            @AuthenticationPrincipal Long memberId) {
         SettlementResponse response = settlementService.getByFundingId(fundingId, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", "정산 내역을 조회했습니다.", response));
     }

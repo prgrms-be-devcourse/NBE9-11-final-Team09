@@ -8,7 +8,9 @@ import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.service.MemberLoginService;
 import static org.mockito.Mockito.when;
 
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,12 @@ class MemberControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
 
     @MockitoBean
     private MemberLogoutService memberLogoutService;
