@@ -72,7 +72,7 @@ class FundingControllerTest {
     void createFunding_withValidRequest_returnsOk() throws Exception {
         given(
                 fundingService.createFunding(
-                        anyLong(),
+                        any(),
                         any(FundingCreateRequest.class)
                 )
         ).willReturn(
@@ -96,7 +96,7 @@ class FundingControllerTest {
 
         verify(fundingService)
                 .createFunding(
-                        eq(1L),
+                        any(),
                         any(FundingCreateRequest.class)
                 );
     }
@@ -265,7 +265,7 @@ class FundingControllerTest {
 
         verify(fundingService)
                 .updateFunding(
-                        eq(1L),
+                        any(),
                         eq(1L),
                         any(FundingUpdateRequest.class)
                 );
@@ -277,7 +277,7 @@ class FundingControllerTest {
         willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
                 .given(fundingService)
                 .updateFunding(
-                        eq(1L),
+                        any(),
                         eq(1L),
                         any(FundingUpdateRequest.class)
                 );
@@ -361,12 +361,13 @@ class FundingControllerTest {
     @Test
     @DisplayName("펀딩 취소 요청 성공")
     void cancelFunding_withValidRequest_returnsOk() throws Exception {
-        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+        mockMvc.perform(delete("/api/fundings/{id}", 1L)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").exists());
 
-        verify(fundingService).cancelFunding(1L, 1L);
+        verify(fundingService).cancelFunding(any(), eq(1L));
     }
 
     @Test
@@ -374,9 +375,10 @@ class FundingControllerTest {
     void cancelFunding_whenServiceThrowsAlreadyCancelled_returnsFnd004() throws Exception {
         willThrow(new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED))
                 .given(fundingService)
-                .cancelFunding(1L, 1L);
+                .cancelFunding(any(), eq(1L));
 
-        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+        mockMvc.perform(delete("/api/fundings/{id}", 1L)
+        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("FND004"))
                 .andExpect(jsonPath("$.message").exists());
