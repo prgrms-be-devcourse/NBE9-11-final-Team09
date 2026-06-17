@@ -21,7 +21,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -50,6 +52,8 @@ class SettlementServiceTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(settlementService, "platformFeeRate", new BigDecimal("0.10"));
+
         hostMember = Member.builder()
                 .memberId(1L)
                 .email("host@test.com")
@@ -78,18 +82,15 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 정상 요청 시 CALCULATED 상태로 정산 내역 생성, 수수료 계산 정확")
     void create_정상요청_정산내역생성성공() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
-
-        int expectedPlatformFee = (int) (100000 * 0.05);   // 5000
-        int expectedHostPaybackAmount = 100000 - expectedPlatformFee; // 95000
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
 
         Settlement savedSettlement = Settlement.builder()
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(expectedPlatformFee)
-                .hostPaybackAmount(expectedHostPaybackAmount)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
                 .createdAt(LocalDateTime.now())
@@ -104,9 +105,9 @@ class SettlementServiceTest {
 
         // Then - 응답값 검증
         assertThat(response.settlementId()).isEqualTo(1L);
-        assertThat(response.totalAmount()).isEqualTo(100000);
-        assertThat(response.platformFee()).isEqualTo(5000);
-        assertThat(response.hostPaybackAmount()).isEqualTo(95000);
+        assertThat(response.totalAmount()).isEqualByComparingTo(new BigDecimal("100000"));
+        assertThat(response.platformFee()).isEqualByComparingTo(new BigDecimal("10000"));
+        assertThat(response.hostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
         assertThat(response.status()).isEqualTo(SettlementStatus.CALCULATED);
         assertThat(response.paybackHold()).isFalse();
         assertThat(response.paybackPaidAt()).isNull();
@@ -115,8 +116,8 @@ class SettlementServiceTest {
         ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
         verify(settlementRepository).save(captor.capture());
         Settlement captured = captor.getValue();
-        assertThat(captured.getPlatformFee()).isEqualTo(5000);
-        assertThat(captured.getHostPaybackAmount()).isEqualTo(95000);
+        assertThat(captured.getPlatformFee()).isEqualByComparingTo(new BigDecimal("10000"));
+        assertThat(captured.getHostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
         assertThat(captured.getStatus()).isEqualTo(SettlementStatus.CALCULATED);
         assertThat(captured.getMember()).isEqualTo(hostMember);
     }
@@ -138,15 +139,15 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        SettlementCreateRequest request = new SettlementCreateRequest(2L, 100000);
+        SettlementCreateRequest request = new SettlementCreateRequest(2L, new BigDecimal("100000"));
 
         Settlement savedSettlement = Settlement.builder()
                 .settlementId(2L)
                 .member(hostMember)
                 .funding(holdFunding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -171,7 +172,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외, save 미실행")
     void create_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
         Long otherMemberId = 999L;
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
@@ -189,7 +190,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, save 미실행")
     void create_이미정산내역존재_SETTLEMENT_ALREADY_EXISTS예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(true);
@@ -220,7 +221,7 @@ class SettlementServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, 100000);
+        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(recruitingFunding));
 
@@ -237,7 +238,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 존재하지 않는 펀딩 ID 요청 시 FUNDING_NOT_FOUND 예외, save 미실행")
     void create_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(999L, 100000);
+        SettlementCreateRequest request = new SettlementCreateRequest(999L, new BigDecimal("100000"));
 
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
@@ -258,9 +259,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
                 .createdAt(LocalDateTime.now())
@@ -274,9 +275,9 @@ class SettlementServiceTest {
 
         // Then
         assertThat(response.settlementId()).isEqualTo(1L);
-        assertThat(response.totalAmount()).isEqualTo(100000);
-        assertThat(response.platformFee()).isEqualTo(5000);
-        assertThat(response.hostPaybackAmount()).isEqualTo(95000);
+        assertThat(response.totalAmount()).isEqualByComparingTo(new BigDecimal("100000"));
+        assertThat(response.platformFee()).isEqualByComparingTo(new BigDecimal("10000"));
+        assertThat(response.hostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
         assertThat(response.status()).isEqualTo(SettlementStatus.CALCULATED);
         assertThat(response.paybackPaidAt()).isNull();
     }
@@ -317,9 +318,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
                 .createdAt(LocalDateTime.now())
@@ -344,9 +345,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -360,7 +361,7 @@ class SettlementServiceTest {
         // Then
         assertThat(response.status()).isEqualTo(SettlementStatus.APPROVED);
         assertThat(response.paybackPaidAt()).isNotNull();
-        verify(settlementRepository, never()).save(any()); // 서비스 코드에 save() 호출 없음
+        verify(settlementRepository, never()).save(any());
     }
 
     @Test
@@ -384,9 +385,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.APPROVED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -411,9 +412,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
                 .createdAt(LocalDateTime.now())
@@ -438,9 +439,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -453,8 +454,8 @@ class SettlementServiceTest {
 
         // Then
         assertThat(response.status()).isEqualTo(SettlementStatus.REJECTED);
-        assertThat(response.paybackPaidAt()).isNull(); // reject는 paybackPaidAt 변경 없음
-        verify(settlementRepository, never()).save(any()); // 서비스 코드에 save() 호출 없음
+        assertThat(response.paybackPaidAt()).isNull();
+        verify(settlementRepository, never()).save(any());
     }
 
     @Test
@@ -478,9 +479,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.REJECTED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -505,9 +506,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.REJECTED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())
@@ -530,9 +531,9 @@ class SettlementServiceTest {
                 .settlementId(1L)
                 .member(hostMember)
                 .funding(funding)
-                .totalAmount(100000)
-                .platformFee(5000)
-                .hostPaybackAmount(95000)
+                .totalAmount(new BigDecimal("100000"))
+                .platformFee(new BigDecimal("10000"))
+                .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.APPROVED)
                 .paybackHold(true)
                 .createdAt(LocalDateTime.now())

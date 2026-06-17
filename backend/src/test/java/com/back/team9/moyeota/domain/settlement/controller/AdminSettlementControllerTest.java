@@ -18,6 +18,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.mockito.BDDMockito.given;
@@ -47,14 +48,14 @@ class AdminSettlementControllerTest {
 
     private SettlementResponse approvedResponse() {
         return new SettlementResponse(
-                1L, 100000, 5000, 95000,
+                1L, new BigDecimal("100000"), new BigDecimal("10000"), new BigDecimal("90000"),
                 SettlementStatus.APPROVED, false, LocalDateTime.now(), LocalDateTime.now()
         );
     }
 
     private SettlementResponse rejectedResponse() {
         return new SettlementResponse(
-                1L, 100000, 5000, 95000,
+                1L, new BigDecimal("100000"), new BigDecimal("10000"), new BigDecimal("90000"),
                 SettlementStatus.REJECTED, false, null, LocalDateTime.now()
         );
     }

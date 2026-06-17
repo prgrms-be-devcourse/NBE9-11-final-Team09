@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -51,18 +52,18 @@ class PaymentServiceTest {
     void confirmDeposit_정상요청_결제성공() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         TossConfirmResponse tossResponse = new TossConfirmResponse(
-                "test_paymentKey", "test_orderId", "DONE", 50000
+                "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
         );
 
         Payment savedPayment = Payment.builder()
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.PAID)
@@ -70,7 +71,7 @@ class PaymentServiceTest {
                 .build();
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
-        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000)).willReturn(tossResponse);
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", new BigDecimal("50000"))).willReturn(tossResponse);
         given(paymentWriter.save(any(Payment.class))).willReturn(savedPayment);
 
         // When
@@ -79,7 +80,7 @@ class PaymentServiceTest {
         // Then
         assertThat(response.paymentId()).isEqualTo(1L);
         assertThat(response.paymentType()).isEqualTo(PaymentType.DEPOSIT);
-        assertThat(response.amount()).isEqualTo(50000);
+        assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("50000"));
         assertThat(response.tossPaymentKey()).isEqualTo("test_paymentKey");
         assertThat(response.orderId()).isEqualTo("test_orderId");
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
@@ -91,7 +92,7 @@ class PaymentServiceTest {
     void confirmDeposit_중복orderId_DUPLICATE_PAYMENT예외() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         given(paymentRepository.findByOrderId("test_orderId"))
@@ -118,23 +119,23 @@ class PaymentServiceTest {
 //    void confirmDeposit_금액일치_결제성공() {
 //        // Given
 //        PaymentConfirmRequest request = new PaymentConfirmRequest(
-//                "test_paymentKey", "test_orderId", 50000, 1L
+//                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
 //        );
 //
 //        Participation participation = Participation.builder()
 //                .participationId(1L)
-//                .finalAmount(50000)
+//                .finalAmount(new BigDecimal("50000"))
 //                .build();
 //
 //        TossConfirmResponse tossResponse = new TossConfirmResponse(
-//                "test_paymentKey", "test_orderId", "DONE", 50000
+//                "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
 //        );
 //
 //        Payment savedPayment = Payment.builder()
 //                .paymentId(1L)
 //                .participation(participation)
 //                .paymentType(PaymentType.DEPOSIT)
-//                .amount(50000)
+//                .amount(new BigDecimal("50000"))
 //                .tossPaymentKey("test_paymentKey")
 //                .orderId("test_orderId")
 //                .status(PaymentStatus.PAID)
@@ -143,7 +144,7 @@ class PaymentServiceTest {
 //
 //        given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
 //        given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
-//        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000)).willReturn(tossResponse);
+//        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", new BigDecimal("50000"))).willReturn(tossResponse);
 //        given(paymentRepository.save(any(Payment.class))).willReturn(savedPayment);
 //
 //        // When
@@ -161,12 +162,12 @@ class PaymentServiceTest {
 //    void confirmDeposit_금액불일치_PAYMENT_AMOUNT_MISMATCH예외() {
 //        // Given
 //        PaymentConfirmRequest request = new PaymentConfirmRequest(
-//                "test_paymentKey", "test_orderId", 99999, 1L  // 실제 금액과 다른 금액
+//                "test_paymentKey", "test_orderId", new BigDecimal("99999"), 1L
 //        );
 //
 //        Participation participation = Participation.builder()
 //                .participationId(1L)
-//                .finalAmount(50000)
+//                .finalAmount(new BigDecimal("50000"))
 //                .build();
 //
 //        given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
@@ -187,18 +188,18 @@ class PaymentServiceTest {
     void confirmBalance_정상요청_결제성공() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         TossConfirmResponse tossResponse = new TossConfirmResponse(
-                "test_paymentKey", "test_orderId", "DONE", 50000
+                "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
         );
 
         Payment savedPayment = Payment.builder()
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.BALANCE)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.PAID)
@@ -206,7 +207,7 @@ class PaymentServiceTest {
                 .build();
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
-        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000)).willReturn(tossResponse);
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", new BigDecimal("50000"))).willReturn(tossResponse);
         given(paymentWriter.save(any(Payment.class))).willReturn(savedPayment);
 
         // When
@@ -215,7 +216,7 @@ class PaymentServiceTest {
         // Then
         assertThat(response.paymentId()).isEqualTo(1L);
         assertThat(response.paymentType()).isEqualTo(PaymentType.BALANCE);
-        assertThat(response.amount()).isEqualTo(50000);
+        assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("50000"));
         assertThat(response.tossPaymentKey()).isEqualTo("test_paymentKey");
         assertThat(response.orderId()).isEqualTo("test_orderId");
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
@@ -227,7 +228,7 @@ class PaymentServiceTest {
     void confirmBalance_중복orderId_DUPLICATE_PAYMENT예외() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         given(paymentRepository.findByOrderId("test_orderId"))
@@ -253,11 +254,11 @@ class PaymentServiceTest {
     void confirmBalance_토스API실패_TOSS_PAYMENT_FAILED예외() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
-        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000))
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", new BigDecimal("50000")))
                 .willThrow(new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED));
 
         // When & Then
@@ -274,11 +275,11 @@ class PaymentServiceTest {
     void confirmDeposit_토스API실패_TOSS_PAYMENT_FAILED예외() {
         // Given
         PaymentConfirmRequest request = new PaymentConfirmRequest(
-                "test_paymentKey", "test_orderId", 50000, 1L
+                "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
-        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", 50000))
+        given(tossPaymentClient.confirm("test_paymentKey", "test_orderId", new BigDecimal("50000")))
                 .willThrow(new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED));
 
         // When & Then
@@ -300,7 +301,7 @@ class PaymentServiceTest {
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.PAID)
@@ -311,7 +312,7 @@ class PaymentServiceTest {
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.REFUNDED)
@@ -358,7 +359,7 @@ class PaymentServiceTest {
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.REFUNDED)
@@ -387,7 +388,7 @@ class PaymentServiceTest {
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.FAILED)
@@ -416,7 +417,7 @@ class PaymentServiceTest {
                 .paymentId(1L)
                 .participation(null)
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(50000)
+                .amount(new BigDecimal("50000"))
                 .tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId")
                 .status(PaymentStatus.PAID)

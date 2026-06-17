@@ -21,6 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -55,7 +56,7 @@ class PaymentControllerTest {
     private PaymentResponse sampleResponse(PaymentType type, PaymentStatus status) {
         return new PaymentResponse(
                 1L, null, type, "test_orderId",
-                50000, "test_paymentKey", status, LocalDateTime.now()
+                new BigDecimal("50000"), "test_paymentKey", status, LocalDateTime.now()
         );
     }
 
@@ -68,7 +69,7 @@ class PaymentControllerTest {
         mockMvc.perform(post("/api/payments/deposit/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", 50000, 1L))))
+                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("보증금 결제가 완료되었습니다."))
@@ -94,7 +95,7 @@ class PaymentControllerTest {
         mockMvc.perform(post("/api/payments/balance/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", 50000, 1L))))
+                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("잔액 결제가 완료되었습니다."))
