@@ -12,8 +12,8 @@ public class FundingScheduler {
 
     private final FundingTimelineService fundingTimelineService;
 
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul") // 매일 자정
-    public void processDailyFundingTimeline() {
-        fundingTimelineService.processDailyTimeline();
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 1시간마다 조회
+    public void processFundingTimeline() {
+        fundingTimelineService.processTimeline();
     }
 }
