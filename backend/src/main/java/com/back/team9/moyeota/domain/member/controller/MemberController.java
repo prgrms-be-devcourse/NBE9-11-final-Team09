@@ -28,6 +28,7 @@ public class MemberController {
     private final MemberLogoutService memberLogoutService;
     private final MemberProfileService memberProfileService;
     private final MemberHistoryService memberHistoryService;
+    private final MemberWithdrawService memberWithdrawService;
 
     public MemberController(
             MemberService memberService,
@@ -35,6 +36,7 @@ public class MemberController {
             MemberLogoutService memberLogoutService,
             MemberProfileService memberProfileService,
             MemberHistoryService memberHistoryService,
+            MemberWithdrawService memberWithdrawService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
@@ -42,6 +44,7 @@ public class MemberController {
         this.memberLogoutService = memberLogoutService;
         this.memberProfileService = memberProfileService;
         this.memberHistoryService = memberHistoryService;
+        this.memberWithdrawService = memberWithdrawService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -191,5 +194,33 @@ public class MemberController {
                 "내 결제 내역 조회 성공",
                 memberHistoryService.getMyPayments(memberId, pageable)
         ));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> withdraw(
+            @AuthenticationPrincipal Long memberId,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @Valid @RequestBody MemberWithdrawRequest request
+    ) {
+        memberWithdrawService.withdraw(memberId, request, authorization);
+
+        ResponseCookie expiredRefreshTokenCookie = ResponseCookie
+                .from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        expiredRefreshTokenCookie.toString()
+                )
+                .body(new ApiResponse<>(
+                        "USR_WITHDRAW_SUCCESS",
+                        "회원탈퇴가 완료되었습니다."
+                ));
     }
 }
