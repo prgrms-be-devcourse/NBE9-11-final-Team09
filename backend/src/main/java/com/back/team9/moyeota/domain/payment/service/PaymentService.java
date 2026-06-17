@@ -35,6 +35,9 @@ public class PaymentService {
         if (paymentRepository.findByOrderId(request.orderId()).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
         }
+        if (paymentRepository.findByTossPaymentKey(request.paymentKey()).isPresent()) {
+            throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
+        }
 
         //Todo: participation repository 업데이트 후 수정 필요
 //        Participation participation = participationRepository.findById(request.participationId())
