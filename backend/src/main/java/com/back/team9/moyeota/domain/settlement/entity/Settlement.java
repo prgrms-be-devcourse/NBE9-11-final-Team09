@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,13 +28,13 @@ public class Settlement {
     private Funding funding;
 
     @Column(nullable = false)
-    private Integer totalAmount;
+    private BigDecimal totalAmount;
 
     @Column(nullable = false)
-    private Integer platformFee;
+    private BigDecimal platformFee;
 
     @Column(nullable = false)
-    private Integer hostPaybackAmount;
+    private BigDecimal hostPaybackAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

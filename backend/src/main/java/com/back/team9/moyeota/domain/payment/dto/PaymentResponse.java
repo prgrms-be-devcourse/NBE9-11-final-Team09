@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PaymentResponse(
@@ -11,7 +12,7 @@ public record PaymentResponse(
         Long participationId,
         PaymentType paymentType,
         String orderId,
-        Integer amount,
+        BigDecimal amount,
         String tossPaymentKey,
         PaymentStatus status,
         LocalDateTime createdAt

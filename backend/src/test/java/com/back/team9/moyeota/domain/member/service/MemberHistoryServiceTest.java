@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -150,7 +151,7 @@ class MemberHistoryServiceTest {
                 .paymentId(1L)
                 .participation(createParticipation())
                 .paymentType(PaymentType.DEPOSIT)
-                .amount(10000)
+                .amount(new BigDecimal("10000"))
                 .tossPaymentKey("toss-payment-key")
                 .orderId("order-id")
                 .status(PaymentStatus.PAID)
@@ -306,7 +307,7 @@ class MemberHistoryServiceTest {
         assertThat(content.paymentId()).isEqualTo(1L);
         assertThat(content.fundingTitle()).isEqualTo("강남 → 부산 합승 모집");
         assertThat(content.type()).isEqualTo(PaymentType.DEPOSIT);
-        assertThat(content.amount()).isEqualTo(10000);
+        assertThat(content.amount()).isEqualByComparingTo(new BigDecimal("10000"));
         assertThat(content.status()).isEqualTo(PaymentStatus.PAID);
         assertThat(content.createdAt())
                 .isEqualTo(LocalDateTime.of(2026, 6, 1, 9, 0));
