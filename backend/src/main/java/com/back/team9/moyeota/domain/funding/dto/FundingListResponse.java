@@ -18,6 +18,7 @@ public record FundingListResponse(
         Integer minParticipants,
         Integer maxParticipants,
         Integer totalPrice,
+        Integer currentPrice,
         Integer minPrice,
         Integer maxPrice
 ) {
@@ -35,6 +36,11 @@ public record FundingListResponse(
                 (double) funding.getTotalPrice() / funding.getMinParticipants() / 100
         ) * 100);
 
+        Integer currentPrice = calculateCurrentPrice(
+                funding,
+                currentParticipants
+        );
+
         return new FundingListResponse(
                 funding.getFundingId(),
                 funding.getTitle(),
@@ -47,8 +53,23 @@ public record FundingListResponse(
                 funding.getMinParticipants(),
                 funding.getMaxParticipants(),
                 funding.getTotalPrice(),
+                currentPrice,
                 minPrice,
                 maxPrice
         );
+    }
+
+    private static Integer calculateCurrentPrice(
+            Funding funding,
+            Integer currentParticipants
+    ) {
+        if (currentParticipants == null
+                || currentParticipants < funding.getMinParticipants()) {
+            return null;
+        }
+
+        return (int) (Math.ceil(
+                (double) funding.getTotalPrice() / currentParticipants / 100
+        ) * 100);
     }
 }
