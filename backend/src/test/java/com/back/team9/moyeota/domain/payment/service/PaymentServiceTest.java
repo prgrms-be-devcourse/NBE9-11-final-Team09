@@ -113,6 +113,33 @@ class PaymentServiceTest {
         verify(paymentWriter, never()).save(any());
     }
 
+    @Test
+    @DisplayName("보증금 결제 승인 - 중복 paymentKey 요청 시 DUPLICATE_PAYMENT 예외 발생")
+    void confirmDeposit_중복paymentKey_DUPLICATE_PAYMENT예외() {
+        // Given
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", "test_orderId_new", new BigDecimal("50000"), 1L
+        );
+
+        given(paymentRepository.findByOrderId("test_orderId_new")).willReturn(Optional.empty());
+        given(paymentRepository.findByTossPaymentKey("test_paymentKey"))
+                .willReturn(Optional.of(Payment.builder()
+                        .paymentId(1L)
+                        .tossPaymentKey("test_paymentKey")
+                        .status(PaymentStatus.PAID)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+
+        // When & Then
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.DUPLICATE_PAYMENT));
+
+        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
+        verify(paymentWriter, never()).save(any());
+    }
+
     //Todo: ParticipationRepository  머지 후 주석 해제 — 금액 일치 시 정상 결제 성공 케이스
 //    @Test
 //    @DisplayName("보증금 결제 승인 - 참여 금액 일치 시 결제 성공")

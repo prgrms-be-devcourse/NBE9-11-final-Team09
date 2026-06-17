@@ -4,11 +4,14 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 
 @Component
@@ -19,12 +22,21 @@ public class TossPaymentClient {
 
     public TossPaymentClient(
             @Value("${toss.secret-key}") String secretKey,
-            @Value("${toss.base-url}") String baseUrl
+            @Value("${toss.base-url}") String baseUrl,
+            @Value("${toss.connect-timeout-seconds:3}") int connectTimeoutSeconds,
+            @Value("${toss.read-timeout-seconds:3}") int readTimeoutSeconds
     ) {
         String encodedKey = Base64.getEncoder()
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(connectTimeoutSeconds))
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
+
         this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Basic " + encodedKey)
                 .defaultHeader("Content-Type", "application/json")
