@@ -33,7 +33,7 @@ public class SeatService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
 
         // 해당 노선의 전체 좌석 DB 조회
-        List<Seat> seats = seatRepository.findByPathinfoPathinfoId(pathId);
+        List<Seat> seats = seatRepository.findByPathinfo_PathinfoId(pathId);
 
         // 전체 좌석 ID 목록 추출
         List<Long> seatIds = seats.stream()

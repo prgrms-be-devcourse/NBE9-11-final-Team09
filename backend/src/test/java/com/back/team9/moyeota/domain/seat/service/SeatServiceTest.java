@@ -62,7 +62,7 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 홀딩 중인 좌석 없음
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Collections.emptyMap());
@@ -109,7 +109,7 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 2번 유저가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, holdMemberId));
@@ -137,7 +137,7 @@ class SeatServiceTest {
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 내가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, currentMemberId));
