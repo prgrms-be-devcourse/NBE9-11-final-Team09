@@ -3,9 +3,6 @@ name: Run Tests on Any Push
 # 1. 어떤 브랜치든 push가 일어나면 이 로봇이 켜집니다!
 on:
   push:
-    branches-not: [ "main" ] # 필요하다면 특정 브랜치를 제외할 수도 있지만, 일단 기본은 다 돌게 설정합니다.
-    # 혹은 완전히 모든 브랜치를 타겟팅하려면 아래처럼만 써도 됩니다.
-    branches: [ "**" ]
 
 jobs:
   run-tests:
@@ -23,6 +20,7 @@ jobs:
 
       - name: 3. 스프링 부트 테스트 수행 (검증 단계)
         # 빌드(build)까지 할 필요 없이 오직 'test' 작업만 수행해서 속도를 높입니다.
+        working-directory: backend
         run: |
           chmod +x ./gradlew
           ./gradlew test
