@@ -3,8 +3,10 @@ package com.back.team9.moyeota.domain.settlement.dto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import java.math.BigDecimal;
+
 public record SettlementCreateRequest(
         @NotNull Long fundingId,
-        @NotNull @Positive Integer totalAmount
+        @NotNull @Positive BigDecimal totalAmount
         ) {
 }

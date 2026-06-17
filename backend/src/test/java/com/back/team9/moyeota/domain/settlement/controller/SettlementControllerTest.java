@@ -21,6 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -55,7 +56,7 @@ class SettlementControllerTest {
 
     private SettlementResponse sampleResponse() {
         return new SettlementResponse(
-                1L, 100000, 5000, 95000,
+                1L, new BigDecimal("100000"), new BigDecimal("10000"), new BigDecimal("90000"),
                 SettlementStatus.CALCULATED, false, null, LocalDateTime.now()
         );
     }
@@ -69,14 +70,14 @@ class SettlementControllerTest {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, 100000))))
+                                new SettlementCreateRequest(1L, new BigDecimal("100000")))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("정산 내역이 생성되었습니다."))
                 .andExpect(jsonPath("$.data.settlementId").value(1))
                 .andExpect(jsonPath("$.data.status").value("CALCULATED"))
-                .andExpect(jsonPath("$.data.platformFee").value(5000))
-                .andExpect(jsonPath("$.data.hostPaybackAmount").value(95000))
+                .andExpect(jsonPath("$.data.platformFee").value(10000))
+                .andExpect(jsonPath("$.data.hostPaybackAmount").value(90000))
                 .andExpect(jsonPath("$.data.paybackPaidAt").doesNotExist());
     }
 
@@ -89,7 +90,7 @@ class SettlementControllerTest {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, 100000))))
+                                new SettlementCreateRequest(1L, new BigDecimal("100000")))))
                 .andExpect(status().isForbidden());
     }
 
@@ -108,7 +109,7 @@ class SettlementControllerTest {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, 0))))
+                                new SettlementCreateRequest(1L, BigDecimal.ZERO))))
                 .andExpect(status().isBadRequest());
     }
 

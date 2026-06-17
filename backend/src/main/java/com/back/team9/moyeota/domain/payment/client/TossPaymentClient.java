@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -30,7 +31,7 @@ public class TossPaymentClient {
                 .build();
     }
 
-    public TossConfirmResponse confirm(String paymentKey, String orderId, Integer amount) {
+    public TossConfirmResponse confirm(String paymentKey, String orderId, BigDecimal amount) {
         try {
             return restClient.post()
                     .uri("/v1/payments/confirm")
@@ -56,7 +57,7 @@ public class TossPaymentClient {
         }
     }
 
-    private record ConfirmRequest(String paymentKey, String orderId, Integer amount) {
+    private record ConfirmRequest(String paymentKey, String orderId, BigDecimal amount) {
     }
     private record CancelRequest(String cancelReason) {
     }

@@ -7,12 +7,13 @@ import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PaymentConfirmRequest(
         @NotBlank String paymentKey,
         @NotBlank String orderId,
-        @NotNull Integer amount,
+        @NotNull BigDecimal amount,
         @NotNull Long participationId
         ) {
 

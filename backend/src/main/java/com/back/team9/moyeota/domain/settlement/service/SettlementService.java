@@ -11,9 +11,12 @@ import com.back.team9.moyeota.domain.settlement.repository.SettlementRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Service
@@ -23,8 +26,8 @@ public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final FundingRepository fundingRepository;
 
-    //TODO: 플랫폼 수수료 수정예정
-    private static final double PLATFORM_FEE_RATE = 0.05;
+    @Value("${platform.fee-rate}")
+    private BigDecimal platformFeeRate;
 
     @Transactional
     public SettlementResponse create(SettlementCreateRequest request, Long memberId) {
@@ -42,8 +45,8 @@ public class SettlementService {
             throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
         }
 
-        int platformFee = (int) (request.totalAmount() * PLATFORM_FEE_RATE);
-        int hostPaybackAmount = request.totalAmount() - platformFee;
+        BigDecimal platformFee = request.totalAmount().multiply(platformFeeRate).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal hostPaybackAmount = request.totalAmount().subtract(platformFee);
 
         Settlement settlement = Settlement.builder()
                 .member(funding.getMember())

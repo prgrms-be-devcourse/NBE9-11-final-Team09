@@ -52,3 +52,6 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 1209600000
   cookie-secure: ${JWT_COOKIE_SECURE:true}
+
+platform:
+  fee-rate: "0.10"

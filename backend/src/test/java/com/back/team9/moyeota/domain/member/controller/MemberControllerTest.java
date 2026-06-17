@@ -14,6 +14,7 @@ import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -515,7 +516,7 @@ class MemberControllerTest {
                         1L,
                         "강남 → 부산 합승 모집",
                         PaymentType.DEPOSIT,
-                        10000,
+                        new BigDecimal("10000"),
                         PaymentStatus.PAID,
                         LocalDateTime.of(2026, 6, 1, 9, 0)
                 );
