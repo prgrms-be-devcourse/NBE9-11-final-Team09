@@ -13,7 +13,6 @@ spring:
     problemdetails:
       enabled: false
 
-
   jpa:
     defer-datasource-initialization: true
     properties:
