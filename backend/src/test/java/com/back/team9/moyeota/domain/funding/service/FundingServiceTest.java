@@ -9,12 +9,16 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
+import com.back.team9.moyeota.domain.seat.entity.Seat;
+import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
@@ -58,6 +62,12 @@ class FundingServiceTest {
 
     @Autowired
     private PathinfoService pathinfoService;
+
+    @Autowired
+    private ParticipationRepository participationRepository;
+
+    @Autowired
+    private SeatRepository seatRepository;
 
     @Test
     @DisplayName("편도 펀딩 생성 성공")
@@ -148,6 +158,38 @@ class FundingServiceTest {
         // Then
         assertThat(result.content()).hasSize(2);
         assertThat(result.totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("펀딩 목록 조회 - 현재 참가자 수 반영")
+    void getFundingList_returnsCurrentParticipants() {
+        // Given
+        Member host = saveMember();
+        Member participant = saveMember("participant@test.com", "participant");
+        FundingCreateResponse response =
+                fundingService.createFunding(host.getMemberId(), oneWayCreateRequest());
+        Funding funding = findFunding(response.fundingId());
+        Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        Seat seat = seatRepository.save(
+                Seat.builder()
+                        .pathinfo(outbound)
+                        .seatNumber("1A")
+                        .build()
+        );
+        participationRepository.save(
+                Participation.create(funding, participant, seat, null)
+        );
+
+        // When
+        PageResponse<FundingListResponse> result =
+                fundingService.getFundingList(emptyCondition(), PageRequest.of(0, 10));
+
+        // Then
+        assertThat(result.content())
+                .filteredOn(content -> content.fundingId().equals(response.fundingId()))
+                .singleElement()
+                .extracting(FundingListResponse::currentParticipants)
+                .isEqualTo(1);
     }
 
     @Test
@@ -882,11 +924,15 @@ class FundingServiceTest {
     }
 
     private Member saveMember() {
+        return saveMember("test@test.com", "test");
+    }
+
+    private Member saveMember(String email, String nickname) {
         Member member = Member.builder()
-                .email("test@test.com")
+                .email(email)
                 .password("1234")
                 .name("test")
-                .nickname("test")
+                .nickname(nickname)
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())

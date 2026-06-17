@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +26,24 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     // 특정 상태의 참여자 수 조회
     long countByFunding_FundingIdAndStatus(Long fundingId, ParticipationStatus status);
+
+    // 펀딩 목록의 각 펀딩 참여자 수 조회
+    @Query("""
+        select p.funding.fundingId as fundingId,
+               count(p) as count
+        from Participation p
+        where p.funding.fundingId in :fundingIds
+          and p.status = :status
+        group by p.funding.fundingId
+        """)
+    List<FundingParticipationCount> countByFundingIdsAndStatus(
+            List<Long> fundingIds,
+            ParticipationStatus status
+    );
+
+    // 참가자 수 인터페이스
+    interface FundingParticipationCount {
+        Long getFundingId();
+        Long getCount();
+    }
 }

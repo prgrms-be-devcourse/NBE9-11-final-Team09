@@ -373,16 +373,23 @@ class FundingServiceUnitTest {
                 List.of(10L),
                 Direction.OUTBOUND
         )).willReturn(List.of(pathinfo));
+        given(participationRepository.countByFundingIdsAndStatus(
+                List.of(10L),
+                ParticipationStatus.ACTIVE
+        )).willReturn(List.of(participantCount(10L, 7L)));
 
         // When
-        PageResponse<?> response =
+        PageResponse<com.back.team9.moyeota.domain.funding.dto.FundingListResponse> response =
                 fundingService.getFundingList(condition, pageable);
 
         // Then
         assertThat(response.content()).hasSize(1);
         assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.content().get(0).currentParticipants()).isEqualTo(7);
         verify(pathinfoService)
                 .findByFundingIdsAndDirection(List.of(10L), Direction.OUTBOUND);
+        verify(participationRepository)
+                .countByFundingIdsAndStatus(List.of(10L), ParticipationStatus.ACTIVE);
     }
 
     private FundingCreateRequest createRequest() {
@@ -477,5 +484,22 @@ class FundingServiceUnitTest {
                 .status(MemberStatus.ACTIVE)
                 .createdAt(DEPARTURE_TIME.minusDays(10))
                 .build();
+    }
+
+    private ParticipationRepository.FundingParticipationCount participantCount(
+            Long fundingId,
+            Long count
+    ) {
+        return new ParticipationRepository.FundingParticipationCount() {
+            @Override
+            public Long getFundingId() {
+                return fundingId;
+            }
+
+            @Override
+            public Long getCount() {
+                return count;
+            }
+        };
     }
 }

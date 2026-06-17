@@ -118,6 +118,9 @@ public class FundingService {
                         .map(Funding::getFundingId)
                         .toList();
 
+        Map<Long, Integer> participantCountMap =
+                getActiveParticipantCountMap(fundingIds);
+
         List<Pathinfo> pathinfos =
                 fundingIds.isEmpty()
                         ? List.of()
@@ -144,7 +147,10 @@ public class FundingService {
                                 pathinfoMap.get(
                                         funding.getFundingId()
                                 ),
-                                0
+                                participantCountMap.getOrDefault(
+                                        funding.getFundingId(),
+                                        0
+                                )
                         )
                 );
 
@@ -255,6 +261,22 @@ public class FundingService {
                 fundingId,
                 ACTIVE
         );
+    }
+
+    private Map<Long, Integer> getActiveParticipantCountMap(List<Long> fundingIds) {
+        if (fundingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return participationRepository.countByFundingIdsAndStatus(
+                        fundingIds,
+                        ACTIVE
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        ParticipationRepository.FundingParticipationCount::getFundingId,
+                        count -> count.getCount().intValue()
+                ));
     }
 
 }

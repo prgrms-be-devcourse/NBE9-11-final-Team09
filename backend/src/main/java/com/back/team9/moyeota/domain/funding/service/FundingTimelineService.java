@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -51,20 +52,34 @@ public class FundingTimelineService {
                         targetDepartureDate
                 );
 
+        if (fundings.isEmpty()) {
+            return;
+        }
+
+        List<Long> fundingIds = fundings.stream()
+                .map(Funding::getFundingId)
+                .toList();
+
+        Map<Long, Long> activeParticipantCountMap =
+                participationRepository.countByFundingIdsAndStatus(
+                                fundingIds,
+                                ParticipationStatus.ACTIVE
+                        )
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ParticipationRepository.FundingParticipationCount::getFundingId,
+                                ParticipationRepository.FundingParticipationCount::getCount
+                        ));
+
         for (Funding funding : fundings) {
             long activeParticipants =
-                    participationRepository.countByFunding_FundingIdAndStatus(
-                            funding.getFundingId(),
-                            ParticipationStatus.ACTIVE
-                    );
+                    activeParticipantCountMap.getOrDefault(funding.getFundingId(), 0L);
 
-            // 최소인원 이상이면 confirmed 로 변경
             if (activeParticipants >= funding.getMinParticipants()) {
                 funding.confirm();
                 continue;
             }
 
-            // 최소인원 미만이면 failed 로 변경
             funding.fail();
         }
     }
@@ -84,6 +99,10 @@ public class FundingTimelineService {
                 .map(path -> path.getFunding().getFundingId())
                 .distinct()
                 .toList();
+
+        if (fundingIds.isEmpty()) {
+            return;
+        }
 
         List<Pathinfo> allPathinfos =
                 pathinfoRepository.findByFunding_FundingIdInAndStatusNot(
