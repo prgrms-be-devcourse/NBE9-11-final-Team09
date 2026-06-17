@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.groupingBy;
 @RequiredArgsConstructor
 public class FundingTimelineProcessor {
 
+    // 펀딩 확정 기준 날짜 (현재 10일)
     private static final int CONFIRMATION_DAYS_BEFORE_DEPARTURE = 10;
 
     private final FundingRepository fundingRepository;
