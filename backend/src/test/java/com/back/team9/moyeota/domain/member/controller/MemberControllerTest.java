@@ -317,7 +317,10 @@ class MemberControllerTest {
                 ));
 
         verify(memberWithdrawService)
-                .withdraw(any(), any(), eq(authorization));
+                .withdraw(any(), any());
+
+        verify(memberLogoutService)
+                .logout(authorization);
     }
 
     @Test

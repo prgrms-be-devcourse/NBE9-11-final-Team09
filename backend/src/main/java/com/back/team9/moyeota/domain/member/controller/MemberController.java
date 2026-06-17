@@ -202,7 +202,8 @@ public class MemberController {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @Valid @RequestBody MemberWithdrawRequest request
     ) {
-        memberWithdrawService.withdraw(memberId, request, authorization);
+        memberWithdrawService.withdraw(memberId, request);
+        memberLogoutService.logout(authorization);
 
         ResponseCookie expiredRefreshTokenCookie = ResponseCookie
                 .from("refreshToken", "")

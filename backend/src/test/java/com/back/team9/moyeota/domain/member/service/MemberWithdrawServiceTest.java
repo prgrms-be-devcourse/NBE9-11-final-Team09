@@ -31,20 +31,16 @@ class MemberWithdrawServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private MemberLogoutService memberLogoutService;
-
     @InjectMocks
     private MemberWithdrawService memberWithdrawService;
 
     @Test
-    @DisplayName("비밀번호가 일치하면 회원 상태를 탈퇴로 변경하고 토큰을 무효화한다")
-    void withdrawWithValidPasswordChangesStatusAndLogsOut() {
+    @DisplayName("비밀번호가 일치하면 회원 상태를 탈퇴로 변경한다")
+    void withdrawWithValidPasswordChangesStatus() {
         // Given
         Member member = createMember(MemberStatus.ACTIVE, "encoded-password");
         MemberWithdrawRequest request =
                 new MemberWithdrawRequest("Password123!");
-        String authorization = "Bearer access-token";
 
         when(memberRepository.findById(1L))
                 .thenReturn(Optional.of(member));
@@ -52,13 +48,11 @@ class MemberWithdrawServiceTest {
                 .thenReturn(true);
 
         // When
-        memberWithdrawService.withdraw(1L, request, authorization);
+        memberWithdrawService.withdraw(1L, request);
 
         // Then
         assertThat(member.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
         assertThat(member.getUpdatedAt()).isNotNull();
-
-        verify(memberLogoutService).logout(authorization);
     }
 
     @Test
@@ -72,15 +66,13 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         null,
-                        request,
-                        "Bearer access-token"
+                        request
                 ),
                 ErrorCode.USER_NOT_FOUND
         );
 
         verifyNoInteractions(memberRepository);
         verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(memberLogoutService);
     }
 
     @Test
@@ -97,14 +89,12 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         1L,
-                        request,
-                        "Bearer access-token"
+                        request
                 ),
                 ErrorCode.USER_NOT_FOUND
         );
 
         verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(memberLogoutService);
     }
 
     @Test
@@ -125,14 +115,12 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         1L,
-                        request,
-                        "Bearer access-token"
+                        request
                 ),
                 ErrorCode.USER_ALREADY_WITHDRAWN
         );
 
         verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(memberLogoutService);
     }
 
     @Test
@@ -153,14 +141,12 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         1L,
-                        request,
-                        "Bearer access-token"
+                        request
                 ),
                 ErrorCode.USER_SUSPENDED
         );
 
         verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(memberLogoutService);
     }
 
     @Test
@@ -183,14 +169,12 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         1L,
-                        request,
-                        authorization
+                        request
                 ),
                 ErrorCode.INVALID_LOGIN_CREDENTIALS
         );
 
         assertThat(member.getStatus()).isEqualTo(MemberStatus.ACTIVE);
-        verify(memberLogoutService, never()).logout(anyString());
     }
 
     @Test
@@ -208,14 +192,12 @@ class MemberWithdrawServiceTest {
         assertBusinessException(
                 () -> memberWithdrawService.withdraw(
                         1L,
-                        request,
-                        "Bearer access-token"
+                        request
                 ),
                 ErrorCode.INVALID_LOGIN_CREDENTIALS
         );
 
         verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(memberLogoutService);
     }
 
     private Member createMember(

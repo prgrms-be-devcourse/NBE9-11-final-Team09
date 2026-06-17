@@ -17,13 +17,11 @@ public class MemberWithdrawService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final MemberLogoutService memberLogoutService;
 
     @Transactional
     public void withdraw(
             Long memberId,
-            MemberWithdrawRequest request,
-            String authorization
+            MemberWithdrawRequest request
     ) {
         Member member = getMember(memberId);
 
@@ -31,8 +29,6 @@ public class MemberWithdrawService {
         validatePassword(member, request.password());
 
         member.withdraw();
-
-        memberLogoutService.logout(authorization);
     }
 
     private Member getMember(Long memberId) {
