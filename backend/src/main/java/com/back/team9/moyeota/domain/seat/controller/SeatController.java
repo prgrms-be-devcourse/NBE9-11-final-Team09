@@ -21,7 +21,7 @@ public class SeatController {
 
     // TODO: Swagger 설정 팀이랑 맞춘 후 @Tag, @Operation 주석 해제
     //@Operation(summary = "특정 버스 좌석 배치도 조회") // Swagger API 설명
-    @GetMapping("/pathinfos/{pathId}/seats") // GET /api/pathinfos/{pathId}/seats
+    @GetMapping("/pathinfos/{pathId}/seats")
     public ResponseEntity<ApiResponse<SeatLayoutResponse>> getSeatLayout(
             @PathVariable("pathId") Long pathId // 조회할 노선 ID
     ) {
@@ -40,7 +40,7 @@ public class SeatController {
 
     // TODO: Swagger 설정 팀이랑 맞춘 후 @Tag, @Operation 주석 해제
     //@Operation(summary = "좌석 선점 (5분 홀딩)") // Swagger API 설명
-    @PostMapping("/seats/{seatId}/hold") // POST /api/seats/{seatId}/hold
+    @PostMapping("/seats/{seatId}/hold")
     public ResponseEntity<ApiResponse<SeatResponse>> holdSeat(
             @PathVariable("seatId") Long seatId // 선점할 좌석 ID
     ) {

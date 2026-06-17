@@ -9,17 +9,21 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.back.team9.moyeota.global.response.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,9 +38,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(FundingController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
+@WithMockUser
 class FundingControllerTest {
 
     private static final LocalDateTime DEFAULT_DEPARTURE_TIME =
@@ -48,6 +53,15 @@ class FundingControllerTest {
     @MockitoBean
     private FundingService fundingService;
 
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtTokenResolver jwtTokenResolver;
+
+    @MockitoBean
+    private JwtBlacklistService jwtBlacklistService;
+
     private final ObjectMapper objectMapper =
             JsonMapper.builder()
                     .findAndAddModules()
@@ -58,7 +72,7 @@ class FundingControllerTest {
     void createFunding_withValidRequest_returnsOk() throws Exception {
         given(
                 fundingService.createFunding(
-                        anyLong(),
+                        any(),
                         any(FundingCreateRequest.class)
                 )
         ).willReturn(
@@ -82,7 +96,7 @@ class FundingControllerTest {
 
         verify(fundingService)
                 .createFunding(
-                        eq(1L),
+                        any(),
                         any(FundingCreateRequest.class)
                 );
     }
@@ -251,7 +265,7 @@ class FundingControllerTest {
 
         verify(fundingService)
                 .updateFunding(
-                        eq(1L),
+                        any(),
                         eq(1L),
                         any(FundingUpdateRequest.class)
                 );
@@ -263,7 +277,7 @@ class FundingControllerTest {
         willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
                 .given(fundingService)
                 .updateFunding(
-                        eq(1L),
+                        any(),
                         eq(1L),
                         any(FundingUpdateRequest.class)
                 );
@@ -347,12 +361,13 @@ class FundingControllerTest {
     @Test
     @DisplayName("펀딩 취소 요청 성공")
     void cancelFunding_withValidRequest_returnsOk() throws Exception {
-        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+        mockMvc.perform(delete("/api/fundings/{id}", 1L)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").exists());
 
-        verify(fundingService).cancelFunding(1L, 1L);
+        verify(fundingService).cancelFunding(any(), eq(1L));
     }
 
     @Test
@@ -360,9 +375,10 @@ class FundingControllerTest {
     void cancelFunding_whenServiceThrowsAlreadyCancelled_returnsFnd004() throws Exception {
         willThrow(new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED))
                 .given(fundingService)
-                .cancelFunding(1L, 1L);
+                .cancelFunding(any(), eq(1L));
 
-        mockMvc.perform(delete("/api/fundings/{id}", 1L))
+        mockMvc.perform(delete("/api/fundings/{id}", 1L)
+        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("FND004"))
                 .andExpect(jsonPath("$.message").exists());

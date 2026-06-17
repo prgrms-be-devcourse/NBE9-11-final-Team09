@@ -54,4 +54,9 @@ public class Member {
 
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void withdraw() {
+        this.status = MemberStatus.WITHDRAWN;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
