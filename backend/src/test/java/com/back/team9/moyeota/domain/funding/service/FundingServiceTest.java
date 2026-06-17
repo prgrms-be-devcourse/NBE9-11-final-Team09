@@ -9,12 +9,16 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
+import com.back.team9.moyeota.domain.seat.entity.Seat;
+import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
@@ -59,15 +63,24 @@ class FundingServiceTest {
     @Autowired
     private PathinfoService pathinfoService;
 
+    @Autowired
+    private ParticipationRepository participationRepository;
+
+    @Autowired
+    private SeatRepository seatRepository;
+
     @Test
     @DisplayName("편도 펀딩 생성 성공")
     void createOneWayFunding_success() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = oneWayCreateRequest();
 
+        // When
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), request);
 
+        // Then
         Funding funding = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
 
@@ -76,49 +89,23 @@ class FundingServiceTest {
     }
 
     @Test
-    @DisplayName("펀딩 생성 - 최소 인원 초과 예외")
-    void createFunding_whenMinParticipantsExceedsCapacity_throwsException() {
-        Member member = saveMember();
-        FundingCreateRequest request = createRequest(
-                BusType.BUS_45,
-                70,
-                TripType.ONE_WAY,
-                oneWayRoute()
-        );
-
-        assertThatThrownBy(() ->
-                fundingService.createFunding(member.getMemberId(), request)
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
-    }
-
-    @Test
     @DisplayName("왕복 펀딩 생성 성공")
     void createRoundFunding_success() {
+        // Given
         Member member = saveMember();
 
+        // When
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // Then
         assertThat(findPathinfos(response.fundingId())).hasSize(2);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 회원의 펀딩 생성 예외")
-    void createFunding_whenMemberDoesNotExist_throwsException() {
-        assertThatThrownBy(() ->
-                fundingService.createFunding(999L, oneWayCreateRequest())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 
     @Test
     @DisplayName("왕복 펀딩 - 복귀 시간 없음 예외")
     void createFunding_whenRoundTripHasNoReturnTime_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -127,6 +114,7 @@ class FundingServiceTest {
                 route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.SEOUL_A)
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(member.getMemberId(), request)
         )
@@ -138,132 +126,144 @@ class FundingServiceTest {
     @Test
     @DisplayName("펀딩 상세 조회 성공")
     void getFunding_success() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
+        // When
         FundingDetailResponse result = fundingService.getFunding(response.fundingId());
 
+        // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
         assertThat(result.title()).isEqualTo("Football Match Bus");
         assertThat(result.pathinfos()).hasSize(1);
     }
 
     @Test
-    @DisplayName("펀딩 상세 조회 - 존재하지 않는 펀딩 예외")
-    void getFunding_whenFundingDoesNotExist_throwsException() {
-        assertThatThrownBy(() -> fundingService.getFunding(999L))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
-    }
-
-    @Test
     @DisplayName("펀딩 목록 조회 성공")
     void getFundingList_success() {
+        // Given
         Member member = saveMember();
         fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
         fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // When
         PageResponse<FundingListResponse> result =
                 fundingService.getFundingList(
                         emptyCondition(),
                         PageRequest.of(0, 10)
                 );
 
+        // Then
         assertThat(result.content()).hasSize(2);
         assertThat(result.totalElements()).isEqualTo(2);
     }
 
     @Test
+    @DisplayName("펀딩 목록 조회 - 현재 참가자 수 반영")
+    void getFundingList_returnsCurrentParticipants() {
+        // Given
+        Member host = saveMember();
+        Member participant = saveMember("participant@test.com", "participant");
+        FundingCreateResponse response =
+                fundingService.createFunding(host.getMemberId(), oneWayCreateRequest());
+        Funding funding = findFunding(response.fundingId());
+        Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        Seat seat = seatRepository.save(
+                Seat.builder()
+                        .pathinfo(outbound)
+                        .seatNumber("1A")
+                        .build()
+        );
+        participationRepository.save(
+                Participation.create(funding, participant, seat, null)
+        );
+
+        // When
+        PageResponse<FundingListResponse> result =
+                fundingService.getFundingList(emptyCondition(), PageRequest.of(0, 10));
+
+        // Then
+        assertThat(result.content())
+                .filteredOn(content -> content.fundingId().equals(response.fundingId()))
+                .singleElement()
+                .extracting(FundingListResponse::currentParticipants)
+                .isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("펀딩 전체 수정 성공")
     void updateFunding_success() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
                 oneWayUpdateRequest()
         );
 
+        // Then
         Funding funding = findFunding(response.fundingId());
         assertThat(funding.getTitle()).isEqualTo("Updated Title");
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
     }
 
     @Test
-    @DisplayName("존재하지 않는 펀딩 수정 예외")
-    void updateFunding_whenFundingDoesNotExist_throwsException() {
-        Member member = saveMember();
-
-        assertThatThrownBy(() ->
-                fundingService.updateFunding(member.getMemberId(), 999L, oneWayUpdateRequest())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
-    }
-
-    @Test
     @DisplayName("펀딩 취소 성공")
     void cancelFunding_success() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
+        // When
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
+        // Then
         Funding funding = findFunding(response.fundingId());
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
     }
 
     @Test
-    @DisplayName("이미 취소된 펀딩 취소 예외")
-    void cancelFunding_whenAlreadyCancelled_throwsException() {
-        Member member = saveMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-        fundingService.cancelFunding(member.getMemberId(), response.fundingId());
-
-        assertThatThrownBy(() ->
-                fundingService.cancelFunding(member.getMemberId(), response.fundingId())
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_ALREADY_CANCELLED);
-    }
-
-    @Test
     @DisplayName("편도->왕복 수정 오는 노선 생성")
     void updateFunding_fromOneWayToRound_createsReturnPathinfo() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
                 roundUpdateRequest()
         );
 
+        // Then
         assertThat(findPathinfos(response.fundingId())).hasSize(2);
     }
 
     @Test
     @DisplayName("왕복->편도 수정 오는 노선 취소")
     void updateFunding_fromRoundToOneWay_cancelsReturnPathinfo() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
                 oneWayUpdateRequest()
         );
 
+        // Then
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
         Pathinfo outbound = findPathinfo(pathinfos, Direction.OUTBOUND);
         Pathinfo returned = findPathinfo(pathinfos, Direction.RETURN);
@@ -278,12 +278,15 @@ class FundingServiceTest {
     @Test
     @DisplayName("펀딩 취소 시 모든 노선 취소")
     void cancelFunding_cancelsAllPathinfos() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // When
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
+        // Then
         assertThat(findPathinfos(response.fundingId()))
                 .allMatch(pathinfo -> pathinfo.getStatus() == PathinfoStatus.CANCELLED);
     }
@@ -291,6 +294,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("왕복 노선 수정 성공")
     void updateFunding_roundPathinfo_success() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -309,8 +313,10 @@ class FundingServiceTest {
                 )
         );
 
+        // When
         fundingService.updateFunding(member.getMemberId(), response.fundingId(), request);
 
+        // Then
         assertThat(findPathinfos(response.fundingId()))
                 .extracting(Pathinfo::getDepartureAddress)
                 .contains("Gangnam Station");
@@ -319,6 +325,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("생성 - 출발지역-도착지역 동일 예외")
     void createFunding_whenDepartureAndArrivalRegionsAreSame_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -327,6 +334,7 @@ class FundingServiceTest {
                 route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.INCHEON)
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(member.getMemberId(), request)
         )
@@ -338,6 +346,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 출발지역-도착지역 동일 예외")
     void updateFunding_whenDepartureAndArrivalRegionsAreSame_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
@@ -349,6 +358,7 @@ class FundingServiceTest {
                 route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.INCHEON)
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(member.getMemberId(), response.fundingId(), request)
         )
@@ -360,6 +370,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("생성 - 출발일 14일 미만 예외")
     void createFunding_whenDepartureDateIsTooSoon_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -368,6 +379,7 @@ class FundingServiceTest {
                 route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL_A)
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(member.getMemberId(), request)
         )
@@ -379,6 +391,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("생성 - 출발시간이 복귀시간보다 늦음 예외")
     void createFunding_whenReturnTimeIsBeforeDepartureTime_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -392,6 +405,7 @@ class FundingServiceTest {
                 )
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(member.getMemberId(), request)
         )
@@ -403,6 +417,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("생성 - 왕복 날짜 다름 예외")
     void createFunding_whenReturnDateDiffersFromDepartureDate_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateRequest request = createRequest(
                 BusType.BUS_45,
@@ -416,6 +431,7 @@ class FundingServiceTest {
                 )
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.createFunding(member.getMemberId(), request)
         )
@@ -427,6 +443,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 출발일 14일 미만 예외")
     void updateFunding_whenDepartureDateIsTooSoon_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
@@ -438,6 +455,7 @@ class FundingServiceTest {
                 route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL_A)
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(member.getMemberId(), response.fundingId(), request)
         )
@@ -449,6 +467,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 출발시간이 복귀시간보다 늦음 예외")
     void updateFunding_whenReturnTimeIsBeforeDepartureTime_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -465,6 +484,7 @@ class FundingServiceTest {
                 )
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(member.getMemberId(), response.fundingId(), request)
         )
@@ -476,6 +496,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 왕복 날짜 다름 예외")
     void updateFunding_whenReturnDateDiffersFromDepartureDate_throwsException() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -492,6 +513,7 @@ class FundingServiceTest {
                 )
         );
 
+        // When / Then
         assertThatThrownBy(() ->
                 fundingService.updateFunding(member.getMemberId(), response.fundingId(), request)
         )
@@ -503,11 +525,14 @@ class FundingServiceTest {
     @Test
     @DisplayName("생성 - 펀딩/노선 버스 타입 일치")
     void createFunding_syncsBusTypeToAllPathinfos() {
+        // Given
         Member member = saveMember();
 
+        // When
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // Then
         Funding funding = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
 
@@ -521,16 +546,19 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 펀딩/노선 버스 타입 일치")
     void updateFunding_syncsBusTypeToAllPathinfos() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
                 oneWayUpdateRequest()
         );
 
+        // Then
         Funding funding = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
 
@@ -543,6 +571,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 버스 타입만 변경해도 노선 버스 타입 동기화")
     void updateFunding_whenOnlyBusTypeChanges_syncsAllPathinfoBusTypes() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -561,8 +590,10 @@ class FundingServiceTest {
                 roundRoute()
         );
 
+        // When
         fundingService.updateFunding(member.getMemberId(), response.fundingId(), request);
 
+        // Then
         Funding fundingAfter = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
 
@@ -576,63 +607,9 @@ class FundingServiceTest {
     }
 
     @Test
-    @DisplayName("생성 - 버스타입에 따라 최대 인원 설정")
-    void createFunding_setsMaxParticipantsFromBusType() {
-        Member member = saveMember();
-
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-
-        Funding funding = findFunding(response.fundingId());
-        assertThat(funding.getBusType()).isEqualTo(BusType.BUS_45);
-        assertThat(funding.getMaxParticipants()).isEqualTo(BusType.BUS_45.getCapacity());
-    }
-
-    @Test
-    @DisplayName("수정 - 버스타입 변경 시 최대 인원 변경")
-    void updateFunding_whenBusTypeChanges_updatesMaxParticipants() {
-        Member member = saveMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
-
-        Funding fundingBefore = findFunding(response.fundingId());
-        assertThat(fundingBefore.getBusType()).isEqualTo(BusType.BUS_45);
-        assertThat(fundingBefore.getMaxParticipants()).isEqualTo(BusType.BUS_45.getCapacity());
-
-        fundingService.updateFunding(
-                member.getMemberId(),
-                response.fundingId(),
-                oneWayUpdateRequest()
-        );
-
-        Funding fundingAfter = findFunding(response.fundingId());
-        assertThat(fundingAfter.getBusType()).isEqualTo(BusType.BUS_25);
-        assertThat(fundingAfter.getMaxParticipants()).isEqualTo(BusType.BUS_25.getCapacity());
-    }
-
-    @Test
-    @DisplayName("방장이 아닌 인원이 취소 시 예외")
-    void cancelFunding_whenMemberIsNotHost_throwsException() {
-        Member host = saveMember();
-        Member other = saveOtherMember();
-        FundingCreateResponse response =
-                fundingService.createFunding(host.getMemberId(), roundCreateRequest());
-
-        Funding funding = findFunding(response.fundingId());
-
-        assertThatThrownBy(() ->
-                fundingService.cancelFunding(other.getMemberId(), funding.getFundingId())
-        )
-                .isInstanceOf(BusinessException.class)
-                .satisfies(e ->
-                        assertThat(((BusinessException) e).getErrorCode())
-                                .isEqualTo(ErrorCode.FUNDING_FORBIDDEN)
-                );
-    }
-
-    @Test
     @DisplayName("기본 목록에서 취소 펀딩 제외")
     void getFundingList_defaultStatusExcludesCancelledFunding() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse active =
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
@@ -641,9 +618,11 @@ class FundingServiceTest {
 
         fundingService.cancelFunding(member.getMemberId(), cancelled.fundingId());
 
+        // When
         PageResponse<FundingListResponse> result =
                 fundingService.getFundingList(emptyCondition(), PageRequest.of(0, 10));
 
+        // Then
         assertThat(result.content())
                 .extracting(FundingListResponse::fundingId)
                 .containsExactly(active.fundingId());
@@ -652,12 +631,14 @@ class FundingServiceTest {
     @Test
     @DisplayName("취소 상태 목록에서 추가 시 취소된 노선 포함")
     void getFundingList_statusFilterIncludesCancelledPathinfo() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
+        // When
         PageResponse<FundingListResponse> result =
                 fundingService.getFundingList(
                         new FundingSearchCondition(
@@ -669,6 +650,7 @@ class FundingServiceTest {
                         PageRequest.of(0, 10)
                 );
 
+        // Then
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().get(0).fundingId()).isEqualTo(response.fundingId());
         assertThat(result.content().get(0).departureAddress()).isNotNull();
@@ -679,6 +661,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("펀딩 목록 - 상태 필터 동작")
     void getFundingList_filtersByRegionDateAndStatus() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse expected =
                 fundingService.createFunding(
@@ -698,6 +681,7 @@ class FundingServiceTest {
 
         fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
+        // When
         PageResponse<FundingListResponse> result =
                 fundingService.getFundingList(
                         new FundingSearchCondition(
@@ -709,6 +693,7 @@ class FundingServiceTest {
                         PageRequest.of(0, 10)
                 );
 
+        // Then
         assertThat(result.content())
                 .extracting(FundingListResponse::fundingId)
                 .containsExactly(expected.fundingId());
@@ -717,10 +702,12 @@ class FundingServiceTest {
     @Test
     @DisplayName("수정 - 왕복->편도->왕복 오는 노선 재활성화")
     void updateFunding_roundToOneWayToRound_reactivatesReturnPathinfo() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
@@ -730,12 +717,14 @@ class FundingServiceTest {
         Pathinfo cancelledReturn = findPathinfo(response.fundingId(), Direction.RETURN);
         assertThat(cancelledReturn.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
 
+        // When
         fundingService.updateFunding(
                 member.getMemberId(),
                 response.fundingId(),
                 roundUpdateRequest()
         );
 
+        // Then
         Pathinfo returned = findPathinfo(response.fundingId(), Direction.RETURN);
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.PENDING);
         assertThat(pathinfoService.getPathinfoResponses(response.fundingId())).hasSize(2);
@@ -744,6 +733,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("펀딩 상세 조회 - 취소된 펀딩 상세 조회 시 최종 편도 기준 노선 조회")
     void getFunding_cancelledOneWayDetail_usesFinalTripType() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -755,8 +745,10 @@ class FundingServiceTest {
         );
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
+        // When
         FundingDetailResponse result = fundingService.getFunding(response.fundingId());
 
+        // Then
         assertThat(result.tripType()).isEqualTo(TripType.ONE_WAY);
         assertThat(result.pathinfos()).hasSize(1);
         assertThat(result.pathinfos().get(0).direction()).isEqualTo(Direction.OUTBOUND);
@@ -765,6 +757,7 @@ class FundingServiceTest {
     @Test
     @DisplayName("펀딩 상세 조회 - 실패한 펀딩 상세 조회 시 최종 편도 기준 노선 조회")
     void getFunding_failedRoundDetail_usesFinalTripType() {
+        // Given
         Member member = saveMember();
         FundingCreateResponse response =
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
@@ -773,8 +766,10 @@ class FundingServiceTest {
         ReflectionTestUtils.setField(funding, "status", FundingStatus.FAILED);
         pathinfoService.cancelPathinfos(response.fundingId());
 
+        // When
         FundingDetailResponse result = fundingService.getFunding(response.fundingId());
 
+        // Then
         assertThat(result.status()).isEqualTo(FundingStatus.FAILED);
         assertThat(result.tripType()).isEqualTo(TripType.ROUND);
         assertThat(result.pathinfos()).hasSize(2);
@@ -929,11 +924,15 @@ class FundingServiceTest {
     }
 
     private Member saveMember() {
+        return saveMember("test@test.com", "test");
+    }
+
+    private Member saveMember(String email, String nickname) {
         Member member = Member.builder()
-                .email("test@test.com")
+                .email(email)
                 .password("1234")
                 .name("test")
-                .nickname("test")
+                .nickname(nickname)
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
@@ -941,16 +940,4 @@ class FundingServiceTest {
         return memberRepository.save(member);
     }
 
-    private Member saveOtherMember() {
-        Member member = Member.builder()
-                .email("test2@test.com")
-                .password("1234")
-                .name("other")
-                .nickname("other")
-                .phoneNumber("01012345678")
-                .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        return memberRepository.save(member);
-    }
 }

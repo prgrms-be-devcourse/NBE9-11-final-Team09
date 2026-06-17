@@ -1,10 +1,13 @@
 package com.back.team9.moyeota.domain.pathinfo.repository;
 
+import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +42,27 @@ public interface PathinfoRepository extends JpaRepository<Pathinfo, Long> {
     // 상세조회에서 유효한 노선만 보여주는데 사용
     List<Pathinfo> findByFunding_FundingIdAndStatusNot(
             Long fundingId,
+            PathinfoStatus status
+    );
+
+    // 유효한 노선들과 연결된 펀딩 조회
+    // 출발시간 지난 노선 상태 바꾸는데 사용
+    @Query("""
+        select p
+        from Pathinfo p
+        join fetch p.funding f
+        where p.status = :status
+          and p.departureTime <= :now
+          and f.status = :fundingStatus
+        """)
+    List<Pathinfo> findPathinfosWithFunding(
+            PathinfoStatus status,
+            LocalDateTime now,
+            FundingStatus fundingStatus
+    );
+
+    List<Pathinfo> findByFunding_FundingIdInAndStatusNot(
+            List<Long> fundingIds,
             PathinfoStatus status
     );
 }

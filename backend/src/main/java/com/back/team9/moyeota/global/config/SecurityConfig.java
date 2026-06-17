@@ -31,6 +31,7 @@ public class SecurityConfig {
                                 "/api/members/email-verification/confirm",
                                 "/api/members/login",
                                 "/swagger-ui/**",
+                                "/health",
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()

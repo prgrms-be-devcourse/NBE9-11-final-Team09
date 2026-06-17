@@ -22,16 +22,18 @@ public class TossPaymentClient {
 
     public TossPaymentClient(
             @Value("${toss.secret-key}") String secretKey,
-            @Value("${toss.base-url}") String baseUrl
+            @Value("${toss.base-url}") String baseUrl,
+            @Value("${toss.connect-timeout-seconds:3}") int connectTimeoutSeconds,
+            @Value("${toss.read-timeout-seconds:3}") int readTimeoutSeconds
     ) {
         String encodedKey = Base64.getEncoder()
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
+                .connectTimeout(Duration.ofSeconds(connectTimeoutSeconds))
                 .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(Duration.ofSeconds(3));
+        requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
 
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)

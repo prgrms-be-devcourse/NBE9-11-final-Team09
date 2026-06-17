@@ -41,6 +41,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MemberController.class)
@@ -74,6 +75,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberHistoryService memberHistoryService;
+
+    @MockitoBean
+    private MemberWithdrawService memberWithdrawService;
 
     @Test
     @DisplayName("유효한 회원가입 요청 시 201 Created를 반환한다")
@@ -269,6 +273,75 @@ class MemberControllerTest {
                 ));
 
         verify(memberLogoutService).logout(authorization);
+    }
+
+    @Test
+    @DisplayName("인증된 회원이 비밀번호 확인 후 회원 탈퇴한다")
+    void withdrawWithValidRequestReturnsOkAndExpiresRefreshTokenCookie()
+            throws Exception {
+        // Given
+        String authorization = "Bearer access-token";
+        String requestBody = """
+            {
+              "password": "Password123!"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(delete("/api/members/me")
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_WITHDRAW_SUCCESS"))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken="
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "Max-Age=0"
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "HttpOnly"
+                                ),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                )
+                        )
+                ));
+
+        verify(memberWithdrawService)
+                .withdraw(any(), any());
+
+        verify(memberLogoutService)
+                .logout(authorization);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 시 비밀번호가 누락되면 400 Bad Request를 반환한다")
+    void withdrawWithMissingPasswordReturnsBadRequest() throws Exception {
+        // Given
+        String requestBody = """
+            {
+              "password": ""
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(delete("/api/members/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .with(memberAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberWithdrawService);
     }
 
     @Test
