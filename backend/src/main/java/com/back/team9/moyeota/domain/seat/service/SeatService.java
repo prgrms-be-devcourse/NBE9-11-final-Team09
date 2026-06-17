@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service // 좌석 도메인 비즈니스 로직 담당
-@RequiredArgsConstructor // final 필드 생성자 자동 생성
+@RequiredArgsConstructor
 public class SeatService {
     private final SeatRepository seatRepository; // 좌석 DB 조회
     private final SeatRedisService seatRedisService; // 좌석 HOLD Redis 처리
