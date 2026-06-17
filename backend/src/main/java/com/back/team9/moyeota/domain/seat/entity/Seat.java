@@ -25,7 +25,7 @@ public class Seat {
     private Participation participation;
 
     @ManyToOne(fetch = FetchType.LAZY) // 여러 좌석이 하나의 노선에 속함
-    @JoinColumn(name = "pathinfo_id", nullable = false) // pathinfo_id FK, 필수 연관관계
+    @JoinColumn(name = "pathinfo_id", nullable = false) // pathinfo_id FK
     private Pathinfo pathinfo; // pathinfo → pathinfo (camelCase 컨벤션)
 
     @Column(nullable = false) // 버스 좌석 번호 (예: 1A, 2B)
