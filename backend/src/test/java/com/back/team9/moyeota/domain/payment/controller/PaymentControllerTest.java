@@ -6,6 +6,8 @@ import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.domain.payment.service.PaymentService;
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
@@ -55,7 +57,7 @@ class PaymentControllerTest {
 
     private PaymentResponse sampleResponse(PaymentType type, PaymentStatus status) {
         return new PaymentResponse(
-                1L, null, type, "test_orderId",
+                1L, 1L, type, "test_orderId",
                 new BigDecimal("50000"), "test_paymentKey", status, LocalDateTime.now()
         );
     }
@@ -115,7 +117,7 @@ class PaymentControllerTest {
     @Test
     @DisplayName("환불 - 정상 요청 200 OK")
     void refund_정상요청_200OK() throws Exception {
-        given(paymentService.refund(eq(1L), any(PaymentRefundRequest.class)))
+        given(paymentService.refund(eq(1L), any(PaymentRefundRequest.class), any()))
                 .willReturn(sampleResponse(PaymentType.DEPOSIT, PaymentStatus.REFUNDED));
 
         mockMvc.perform(post("/api/payments/1/refund")
@@ -126,6 +128,19 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("환불이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+    }
+
+    @Test
+    @DisplayName("환불 - 타인의 결제 환불 요청 시 403 Forbidden")
+    void refund_타인결제_403() throws Exception {
+        given(paymentService.refund(eq(1L), any(PaymentRefundRequest.class), any()))
+                .willThrow(new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED));
+
+        mockMvc.perform(post("/api/payments/1/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PaymentRefundRequest("변심"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test

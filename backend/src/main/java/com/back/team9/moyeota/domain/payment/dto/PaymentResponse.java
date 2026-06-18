@@ -21,9 +21,7 @@ public record PaymentResponse(
     public static PaymentResponse from(Payment payment) {
         return new PaymentResponse(
                 payment.getPaymentId(),
-//Todo: participation merge 후 nullable 수정
-//                payment.getParticipation().getParticipationId(),
-                null,
+                payment.getParticipation().getParticipationId(),
                 payment.getPaymentType(),
                 payment.getOrderId(),
                 payment.getAmount(),
