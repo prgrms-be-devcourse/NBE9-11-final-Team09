@@ -54,7 +54,7 @@ class PaymentServiceTest {
     @InjectMocks
     private PaymentService paymentService;
 
-    private Participation mockParticipationForConfirm(Integer finalAmount) {
+    private Participation mockParticipationForConfirm(BigDecimal finalAmount) {
         Participation participation = mock(Participation.class);
         given(participation.getFinalAmount()).willReturn(finalAmount);
         return participation;
@@ -76,7 +76,9 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
+
         given(participation.getParticipationId()).willReturn(1L);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
                 "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
@@ -109,7 +111,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("99999"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
@@ -168,7 +171,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
@@ -191,7 +195,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
         given(participation.getParticipationId()).willReturn(1L);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
                 "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
@@ -241,7 +246,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
