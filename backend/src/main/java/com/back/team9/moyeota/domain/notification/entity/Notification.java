@@ -44,4 +44,13 @@ public class Notification {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    public void markSuccess() {
+        this.sendStatus = SendStatus.SUCCESS;
+        this.emailSentAt = LocalDateTime.now();
+    }
+
+    public void markFailed() {
+        this.sendStatus = SendStatus.FAILED;
+    }
 }
