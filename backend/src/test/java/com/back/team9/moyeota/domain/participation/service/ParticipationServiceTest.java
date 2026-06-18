@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.ArgumentCaptor;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.LocalDateTime;
@@ -146,7 +147,7 @@ class ParticipationServiceTest {
 
         // Then
         assertThat(response.status()).isEqualTo(ParticipationStatus.ACTIVE);
-        assertThat(response.finalAmount()).isEqualTo(0);
+        assertThat(response.finalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.outboundSeatId()).isEqualTo(outboundSeatId);
         assertThat(response.returnSeatId()).isNull();
 

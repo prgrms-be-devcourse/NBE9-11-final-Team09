@@ -140,7 +140,7 @@ class MemberHistoryServiceTest {
                 .funding(createFunding())
                 .member(createMember())
                 .paymentStatus(ParticipationPaymentStatus.ACTIVE)
-                .finalAmount(0)
+                .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
                 .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
