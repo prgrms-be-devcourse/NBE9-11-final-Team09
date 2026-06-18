@@ -64,18 +64,23 @@ public class SeatRedisService {
     }
 
     // 좌석 선점 해제 (결제 완료 또는 참여 취소 시)
-    public void releaseSeat(Long seatId, Long memberId) {
+    public boolean releaseSeat(Long seatId, Long memberId) {
         String key = generateKey(seatId);
 
         try {
             // RELEASE_SCRIPT 상수 재사용 (매 호출마다 새 객체 생성 방지)
-            redisTemplate.execute(
+            // 반환값 1: 본인 소유 키를 정상 삭제 / 0: 소유자가 아니거나 키가 이미 없음
+            Long result = redisTemplate.execute(
                     RELEASE_SCRIPT,
                     Collections.singletonList(key),
                     String.valueOf(memberId)
             );
+
+            return result != null && result == 1L;
+
         } catch (Exception e) {
             log.error("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
+            return false;
         }
     }
 
