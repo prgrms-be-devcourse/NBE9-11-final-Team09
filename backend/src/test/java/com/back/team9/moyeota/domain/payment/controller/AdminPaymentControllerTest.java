@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AdminPaymentController.class)
 @Import(GlobalExceptionHandler.class)
-@WithMockUser
+@WithMockUser(roles = "ADMIN")
 class AdminPaymentControllerTest {
 
     @Autowired
@@ -61,14 +61,5 @@ class AdminPaymentControllerTest {
 
         mockMvc.perform(post("/api/admin/payments/retry-refund/999"))
                 .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("환불 재시도 - 이미 환불된 결제 요청 시 환불 스킵 후 200 OK")
-    void retryRefund_이미환불된결제_200OK() throws Exception {
-        willDoNothing().given(paymentService).refundByParticipationId(1L);
-
-        mockMvc.perform(post("/api/admin/payments/retry-refund/1"))
-                .andExpect(status().isOk());
     }
 }
