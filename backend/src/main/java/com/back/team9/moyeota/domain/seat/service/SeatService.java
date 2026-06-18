@@ -68,8 +68,6 @@ public class SeatService {
                     } else {
                         displayStatus = SeatDisplayStatus.AVAILABLE;
                     }
-
-                    // mySeat 계산: 내가 선점한 좌석인지 확인
                     // 현재 로그인한 사용자가 선점한 좌석인지 확인
                     boolean mySeat = holdMemberId != null
                             && holdMemberId.equals(currentMemberId);
@@ -85,24 +83,29 @@ public class SeatService {
         // 전체 좌석 배치도 응답 반환
         return SeatLayoutResponse.from(
                 pathId,
-                "TEMP", // TODO: Funding의 busType 연결 예정
+                pathinfo.getBusType().name(),
                 seatResponses
         );
     }
 
-    @Transactional(readOnly = true) // DB 변경 없음 (Redis만 사용)
+    @Transactional(readOnly = true) // DB는 조회만 수행하고, 좌석 선점 상태는 Redis에 저장
     public SeatResponse holdSeat(Long seatId, Long currentMemberId) {
+
+        // 인증되지 않은 사용자는 좌석 선점 불가
+        if (currentMemberId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
         // 좌석 존재 여부 확인
         Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
 
         // 노선 상태 확인
-        // TODO: PathinfoStatus에 CANCELLED 추가 후 CANCELLED 체크 로직 추가 필요
         Pathinfo pathinfo = seat.getPathinfo();
 
-        // 운행 완료 노선은 선점 불가
-        if (pathinfo.getStatus() == PathinfoStatus.COMPLETED) {
+        // 운행 완료되거나 취소된 노선은 선점 불가
+        if (pathinfo.getStatus() == PathinfoStatus.COMPLETED
+                || pathinfo.getStatus() == PathinfoStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.PATH_INVALID_STATUS);
         }
 
