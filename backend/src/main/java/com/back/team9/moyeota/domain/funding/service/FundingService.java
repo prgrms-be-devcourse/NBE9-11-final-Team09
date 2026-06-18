@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class FundingService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        int totalPrice = FundingPricePolicy.calculateTotalPrice(
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
                 request.busType(),
                 request.tripType()
@@ -184,7 +185,7 @@ public class FundingService {
         fundingValidator.validateHost(funding, memberId);
         fundingValidator.validateUpdatable(funding);
 
-        int totalPrice = FundingPricePolicy.calculateTotalPrice(
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
                 request.busType(),
                 request.tripType()
@@ -206,7 +207,7 @@ public class FundingService {
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
-    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, int totalPrice) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, BigDecimal totalPrice) {
 
         boolean changed =
                 !Objects.equals(funding.getBusType(), request.busType())
@@ -232,7 +233,7 @@ public class FundingService {
     private void updateFundingWithoutParticipants(
             Funding funding,
             FundingUpdateRequest request,
-            int totalPrice
+            BigDecimal totalPrice
     ) {
 
         LocalDate departureDate = request.route()

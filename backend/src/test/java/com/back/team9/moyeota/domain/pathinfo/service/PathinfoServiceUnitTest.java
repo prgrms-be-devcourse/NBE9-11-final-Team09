@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -428,7 +429,7 @@ class PathinfoServiceUnitTest {
                 DEPARTURE_TIME.toLocalDate(),
                 BusType.BUS_45,
                 20,
-                500000,
+                BigDecimal.valueOf(500000),
                 tripType
         );
         ReflectionTestUtils.setField(funding, "fundingId", fundingId);

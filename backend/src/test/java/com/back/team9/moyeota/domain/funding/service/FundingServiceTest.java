@@ -31,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -347,7 +348,7 @@ class FundingServiceTest {
         Funding funding = findFunding(response.fundingId());
         Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
 
-        assertThat(funding.getTotalPrice()).isEqualTo(774400);
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(774400));
         assertThat(outbound.getDepartureRegion()).isEqualTo(Region.DAEJEON);
         assertThat(outbound.getArrivalRegion()).isEqualTo(Region.SEOUL);
     }
@@ -373,7 +374,7 @@ class FundingServiceTest {
         Funding funding = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
 
-        assertThat(funding.getTotalPrice()).isEqualTo(1452000);
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(1452000));
         assertThat(funding.getTripType()).isEqualTo(TripType.ROUND);
         assertThat(pathinfos).hasSize(2);
     }
@@ -399,7 +400,7 @@ class FundingServiceTest {
         Funding funding = findFunding(response.fundingId());
         Pathinfo returned = findPathinfo(response.fundingId(), Direction.RETURN);
 
-        assertThat(funding.getTotalPrice()).isEqualTo(726000);
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(726000));
         assertThat(funding.getTripType()).isEqualTo(TripType.ONE_WAY);
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
     }

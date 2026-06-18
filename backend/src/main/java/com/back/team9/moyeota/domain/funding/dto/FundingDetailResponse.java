@@ -6,6 +6,8 @@ import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,15 +25,17 @@ public record FundingDetailResponse(
         Integer minParticipants,
         Integer maxParticipants,
         TripType tripType,
-        Integer totalPrice,
-        Integer minPrice,
-        Integer maxPrice,
+        BigDecimal totalPrice,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
         List<PathinfoResponse> pathinfos,
         Long chatRoomId,
         Boolean isHost,
         Boolean isJoined,
         LocalDateTime createdAt
 ) {
+    private static final BigDecimal PRICE_UNIT = BigDecimal.valueOf(100);
+
     public static FundingDetailResponse from(
             Funding funding,
             List<PathinfoResponse> pathinfos,
@@ -41,13 +45,15 @@ public record FundingDetailResponse(
             Boolean isJoined
     ) {
 
-        Integer minPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMaxParticipants() / 100
-        ) * 100);
+        BigDecimal minPrice = calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMaxParticipants()
+        );
 
-        Integer maxPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMinParticipants() / 100
-        ) * 100);
+        BigDecimal maxPrice = calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMinParticipants()
+        );
 
         return new FundingDetailResponse(
                 funding.getFundingId(),
@@ -71,5 +77,15 @@ public record FundingDetailResponse(
                 isJoined,
                 funding.getCreatedAt()
         );
+    }
+
+    private static BigDecimal calculateRoundedPrice(
+            BigDecimal totalPrice,
+            Integer participants
+    ) {
+        return totalPrice
+                .divide(BigDecimal.valueOf(participants), 0, RoundingMode.CEILING)
+                .divide(PRICE_UNIT, 0, RoundingMode.CEILING)
+                .multiply(PRICE_UNIT);
     }
 }

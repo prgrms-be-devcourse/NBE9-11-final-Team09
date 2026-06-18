@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -221,7 +222,7 @@ class FundingServiceUnitTest {
         assertThat(funding.getMinParticipants()).isEqualTo(10);
         assertThat(funding.getMaxParticipants())
                 .isEqualTo(BusType.BUS_25.getCapacity());
-        assertThat(funding.getTotalPrice()).isEqualTo(495000);
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(495000));
 
         verify(fundingValidator).validateHost(funding, 1L);
         verify(fundingValidator).validateUpdatable(funding);
@@ -241,7 +242,7 @@ class FundingServiceUnitTest {
                 member(1L),
                 FundingStatus.RECRUITING,
                 BusType.BUS_25,
-                495000
+                BigDecimal.valueOf(495000)
         );
         FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
@@ -260,7 +261,7 @@ class FundingServiceUnitTest {
         fundingService.updateFunding(1L, 10L, request);
 
         // Then
-        assertThat(funding.getTotalPrice()).isEqualTo(550000);
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(550000));
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
 
         verify(fundingValidator).validateHost(funding, 1L);
@@ -520,7 +521,7 @@ class FundingServiceUnitTest {
                 member,
                 status,
                 BusType.BUS_45,
-                500000
+                BigDecimal.valueOf(500000)
         );
     }
 
@@ -529,7 +530,7 @@ class FundingServiceUnitTest {
             Member member,
             FundingStatus status,
             BusType busType,
-            Integer totalPrice
+            BigDecimal totalPrice
     ) {
         Funding funding = Funding.create(
                 member,

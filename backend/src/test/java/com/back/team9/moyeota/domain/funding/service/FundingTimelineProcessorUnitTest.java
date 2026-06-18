@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -216,7 +217,7 @@ class FundingTimelineProcessorUnitTest {
                 TODAY.plusDays(10),
                 BusType.BUS_45,
                 minParticipants,
-                500000,
+                BigDecimal.valueOf(500000),
                 TripType.ROUND
         );
         ReflectionTestUtils.setField(funding, "fundingId", fundingId);

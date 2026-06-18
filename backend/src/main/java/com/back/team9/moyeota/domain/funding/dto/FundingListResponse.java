@@ -4,6 +4,8 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 public record FundingListResponse(
@@ -17,26 +19,29 @@ public record FundingListResponse(
         Integer currentParticipants,
         Integer minParticipants,
         Integer maxParticipants,
-        Integer totalPrice,
-        Integer currentPrice,
-        Integer minPrice,
-        Integer maxPrice
+        BigDecimal totalPrice,
+        BigDecimal currentPrice,
+        BigDecimal minPrice,
+        BigDecimal maxPrice
 ) {
+    private static final BigDecimal PRICE_UNIT = BigDecimal.valueOf(100);
+
     public static FundingListResponse from(
             Funding funding,
             Pathinfo pathinfo,
             Integer currentParticipants
     ) {
+        BigDecimal minPrice = calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMaxParticipants()
+        );
 
-        Integer minPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMaxParticipants() / 100
-        ) * 100);
+        BigDecimal maxPrice = calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMinParticipants()
+        );
 
-        Integer maxPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMinParticipants() / 100
-        ) * 100);
-
-        Integer currentPrice = calculateCurrentPrice(
+        BigDecimal currentPrice = calculateCurrentPrice(
                 funding,
                 currentParticipants
         );
@@ -59,7 +64,7 @@ public record FundingListResponse(
         );
     }
 
-    private static Integer calculateCurrentPrice(
+    private static BigDecimal calculateCurrentPrice(
             Funding funding,
             Integer currentParticipants
     ) {
@@ -68,8 +73,19 @@ public record FundingListResponse(
             return null;
         }
 
-        return (int) (Math.ceil(
-                (double) funding.getTotalPrice() / currentParticipants / 100
-        ) * 100);
+        return calculateRoundedPrice(
+                funding.getTotalPrice(),
+                currentParticipants
+        );
+    }
+
+    private static BigDecimal calculateRoundedPrice(
+            BigDecimal totalPrice,
+            Integer participants
+    ) {
+        return totalPrice
+                .divide(BigDecimal.valueOf(participants), 0, RoundingMode.CEILING)
+                .divide(PRICE_UNIT, 0, RoundingMode.CEILING)
+                .multiply(PRICE_UNIT);
     }
 }

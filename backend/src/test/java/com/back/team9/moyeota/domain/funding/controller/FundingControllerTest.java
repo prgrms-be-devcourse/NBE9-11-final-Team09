@@ -27,6 +27,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -508,10 +509,10 @@ class FundingControllerTest {
                                 0,
                                 20,
                                 45,
-                                500000,
+                                BigDecimal.valueOf(500000),
                                 null,
-                                11200,
-                                25000
+                                BigDecimal.valueOf(11200),
+                                BigDecimal.valueOf(25000)
                         )
                 ),
                 0,
