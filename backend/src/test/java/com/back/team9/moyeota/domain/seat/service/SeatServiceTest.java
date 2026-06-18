@@ -274,4 +274,19 @@ class SeatServiceTest {
 
         verify(seatRedisService, never()).holdSeat(seatId, currentMemberId);
     }
+
+    @Test
+    @DisplayName("좌석 선점 - 인증되지 않은 사용자(currentMemberId null) UNAUTHORIZED_ACCESS 예외 발생")
+    void holdSeat_인증되지않은사용자_UNAUTHORIZED_ACCESS예외() {
+        // Given
+        Long seatId = 1L;
+        Long currentMemberId = null;
+
+        // When & Then
+        assertThatThrownBy(() -> seatService.holdSeat(seatId, currentMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.UNAUTHORIZED_ACCESS));
+    }
 }
+
