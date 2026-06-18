@@ -37,6 +37,8 @@ public enum ErrorCode {
     ADMIN_TARGET_ALREADY_WITHDRAWN(HttpStatus.BAD_REQUEST, "ADM003", "이미 탈퇴 처리된 회원입니다."),
     USER_ALREADY_SUSPENDED(HttpStatus.BAD_REQUEST,"ADM004", "이미 정지된 회원입니다."),
     INVALID_USER_STATUS_CHANGE(HttpStatus.BAD_REQUEST,"ADM005", "올바르지 않은 회원 상태 변경 요청입니다."),
+    ADMIN_FUNDING_ALREADY_CANCELLED(HttpStatus.CONFLICT, "ADM006", "이미 취소된 펀딩입니다."),
+    ADMIN_FUNDING_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "ADM007", "현재 상태에서는 펀딩을 강제 취소할 수 없습니다."),
 
     // [FND] 펀딩
     FUNDING_NOT_FOUND(HttpStatus.NOT_FOUND,"FND001", "존재하지 않는 펀딩입니다."),
