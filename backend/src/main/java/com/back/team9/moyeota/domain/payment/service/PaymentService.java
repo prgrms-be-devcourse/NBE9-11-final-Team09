@@ -53,7 +53,7 @@ public class PaymentService {
         }
 
         Participation participation = pendingPayment.getParticipation();
-        if (request.amount().compareTo(new BigDecimal(participation.getFinalAmount())) != 0) {
+        if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
@@ -120,7 +120,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .participation(participation)
                 .orderId(orderId)
-                .amount(new BigDecimal(participation.getFinalAmount()))
+                .amount(participation.getFinalAmount())
                 .status(PaymentStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();

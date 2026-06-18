@@ -49,7 +49,7 @@ class PaymentServiceTest {
     @InjectMocks
     private PaymentService paymentService;
 
-    private Participation mockParticipationForConfirm(Integer finalAmount) {
+    private Participation mockParticipationForConfirm(BigDecimal finalAmount) {
         Participation participation = mock(Participation.class);
         given(participation.getFinalAmount()).willReturn(finalAmount);
         return participation;
@@ -134,7 +134,9 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
+
         given(participation.getParticipationId()).willReturn(1L);
         Payment pendingPayment = pendingPaymentOf(participation);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
@@ -204,7 +206,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("99999"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
         Payment pendingPayment = pendingPaymentOf(participation);
 
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
@@ -226,7 +228,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
         Payment pendingPayment = pendingPaymentOf(participation);
 
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
@@ -251,7 +253,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation =
+                mockParticipationForConfirm(BigDecimal.valueOf(50000));
         given(participation.getParticipationId()).willReturn(1L);
         Payment pendingPayment = pendingPaymentOf(participation);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
@@ -277,7 +280,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipationForConfirm(50000);
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
         Payment pendingPayment = pendingPaymentOf(participation);
 
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))

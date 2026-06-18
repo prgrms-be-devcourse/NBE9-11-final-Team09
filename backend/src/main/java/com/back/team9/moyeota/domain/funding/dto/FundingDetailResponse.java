@@ -4,8 +4,10 @@ import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,9 +25,9 @@ public record FundingDetailResponse(
         Integer minParticipants,
         Integer maxParticipants,
         TripType tripType,
-        Integer totalPrice,
-        Integer minPrice,
-        Integer maxPrice,
+        BigDecimal totalPrice,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
         List<PathinfoResponse> pathinfos,
         Long chatRoomId,
         Boolean isHost,
@@ -41,13 +43,15 @@ public record FundingDetailResponse(
             Boolean isJoined
     ) {
 
-        Integer minPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMaxParticipants() / 100
-        ) * 100);
+        BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMaxParticipants()
+        );
 
-        Integer maxPrice = (int) (Math.ceil(
-                (double) funding.getTotalPrice() / funding.getMinParticipants() / 100
-        ) * 100);
+        BigDecimal maxPrice = FundingPricePolicy.calculateRoundedPrice(
+                funding.getTotalPrice(),
+                funding.getMinParticipants()
+        );
 
         return new FundingDetailResponse(
                 funding.getFundingId(),

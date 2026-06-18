@@ -160,7 +160,7 @@ class AdminSettlementQueryServiceTest {
                 .status(FundingStatus.COMPLETED)
                 .minParticipants(20)
                 .maxParticipants(44)
-                .totalPrice(600000)
+                .totalPrice(BigDecimal.valueOf(600000))
                 .paybackHold(false)
                 .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
