@@ -381,4 +381,52 @@ class PaymentServiceTest {
 
         verify(paymentWriter, never()).update(any(), any());
     }
+
+    // ===== refundByParticipationId =====
+
+    @Test
+    @DisplayName("참여 ID 환불 - 정상 환불 성공")
+    void refundByParticipationId_정상환불성공() {
+        Payment payment = Payment.builder()
+                .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.DEPOSIT)
+                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+
+        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(Optional.of(payment));
+
+        paymentService.refundByParticipationId(1L);
+
+        verify(tossPaymentClient).cancel("test_paymentKey", "참여 취소로 인한 환불");
+        verify(paymentWriter).update(any(Payment.class), eq(PaymentStatus.REFUNDED));
+    }
+
+    @Test
+    @DisplayName("참여 ID 환불 - 결제 내역 없을 시 ORDER_NOT_FOUND 예외 발생")
+    void refundByParticipationId_결제없음_ORDER_NOT_FOUND예외() {
+        given(paymentRepository.findByParticipation_ParticipationId(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundByParticipationId(999L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ORDER_NOT_FOUND));
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("참여 ID 환불 - PAID 아닌 상태(이미 환불 등)는 Toss 호출 없이 스킵")
+    void refundByParticipationId_PAID아닌상태_스킵() {
+        Payment refundedPayment = Payment.builder()
+                .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.DEPOSIT)
+                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId").status(PaymentStatus.REFUNDED).createdAt(LocalDateTime.now()).build();
+
+        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(Optional.of(refundedPayment));
+
+        paymentService.refundByParticipationId(1L);
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).update(any(), any());
+    }
 }
