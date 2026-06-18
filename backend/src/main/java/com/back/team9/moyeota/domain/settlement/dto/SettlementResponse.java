@@ -3,13 +3,14 @@ package com.back.team9.moyeota.domain.settlement.dto;
 import com.back.team9.moyeota.domain.settlement.entity.Settlement;
 import com.back.team9.moyeota.domain.settlement.entity.SettlementStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record SettlementResponse(
         Long settlementId,
-        Integer totalAmount,
-        Integer platformFee,
-        Integer hostPaybackAmount,
+        BigDecimal totalAmount,
+        BigDecimal platformFee,
+        BigDecimal hostPaybackAmount,
         SettlementStatus status,
         Boolean paybackHold,
         LocalDateTime paybackPaidAt,

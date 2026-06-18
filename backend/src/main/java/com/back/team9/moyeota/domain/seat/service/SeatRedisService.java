@@ -13,11 +13,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j  // 로그 출력용
-@Service // 좌석 HOLD 관련 Redis 작업 전담
-@RequiredArgsConstructor // final 필드 생성자 자동 생성
+@Slf4j
+@Service //좌석 HOLD 관련 Redis 작업 전담
+@RequiredArgsConstructor
 public class SeatRedisService {
-    private final StringRedisTemplate redisTemplate; // Redis 문자열 저장/조회
+    private final StringRedisTemplate redisTemplate; // edis 문자열 저장/조회
 
     private static final String SEAT_KEY_PREFIX = "seat:"; // Redis Key 접두사
     private static final Duration HOLD_DURATION = Duration.ofSeconds(300); // HOLD 5분 유지
@@ -64,24 +64,27 @@ public class SeatRedisService {
     }
 
     // 좌석 선점 해제 (결제 완료 또는 참여 취소 시)
-    public void releaseSeat(Long seatId, Long memberId) {
+    public boolean releaseSeat(Long seatId, Long memberId) {
         String key = generateKey(seatId);
 
         try {
             // RELEASE_SCRIPT 상수 재사용 (매 호출마다 새 객체 생성 방지)
-            redisTemplate.execute(
+            // 반환값 1: 본인 소유 키를 정상 삭제 / 0: 소유자가 아니거나 키가 이미 없음
+            Long result = redisTemplate.execute(
                     RELEASE_SCRIPT,
                     Collections.singletonList(key),
                     String.valueOf(memberId)
             );
+
+            return result != null && result == 1L;
+
         } catch (Exception e) {
-            log.error("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
+            log.warn("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
+            return false;
         }
     }
 
     // 여러 좌석의 선점 유저 ID를 한 번에 조회 (N+1 최적화)
-    // 기존: 좌석마다 GET 호출 → Redis 조회 N번 발생
-    // 개선: MGET으로 여러 Key를 한 번에 조회 → Redis 왕복 1회
     public Map<Long, Long> getHoldMemberIds(List<Long> seatIds) {
         // 조회할 좌석이 없으면 빈 Map 반환
         if (seatIds.isEmpty()) {
@@ -89,7 +92,6 @@ public class SeatRedisService {
         }
 
         // seatId 목록 → Redis Key 목록 변환
-        // 예: [1, 2, 3] → ["seat:1", "seat:2", "seat:3"]
         List<String> keys = seatIds.stream()
                 .map(this::generateKey)
                 .toList();

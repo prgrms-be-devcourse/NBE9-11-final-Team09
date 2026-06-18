@@ -7,13 +7,17 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.back.team9.moyeota.domain.participation.entity.ParticipationStatus.ACTIVE;
+
 @Service
 @RequiredArgsConstructor
 public class FundingService {
@@ -30,6 +36,7 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final PathinfoService pathinfoService;
+    private final ParticipationRepository participationRepository;
     private final FundingValidator fundingValidator;
 
     // 펀딩 생성
@@ -83,33 +90,41 @@ public class FundingService {
     public FundingDetailResponse getFunding(Long fundingId) {
 
         Funding funding = findFundingById(fundingId);
-
-        List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponses(fundingId);
-
+        int currentParticipants = countActiveParticipants(fundingId);
+        List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponsesForDetail(funding);
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
-                0,      // TODO 현재 참가자 수
+                currentParticipants,
                 null,   // TODO 채팅방 ID
                 false,  // TODO 방장 여부
                 false   // TODO 참여 여부
         );
     }
 
-    // 펀딩 목록 조회
+    // TODO: 펀딩 목록 조회 참가자 수 연동
+    // 펀딩 목록 조회(핕터링)
     @Transactional(readOnly = true)
-    public List<FundingListResponse> getFundingList() {
+    public PageResponse<FundingListResponse> getFundingList(
+            FundingSearchCondition condition,
+            Pageable pageable
+    ) {
 
-        List<Funding> fundings = fundingRepository.findAllWithMember();
+        Page<Funding> fundings =
+                fundingRepository.findPageByCondition(condition, pageable);
 
         List<Long> fundingIds =
-                fundings.stream()
+                fundings.getContent().stream()
                         .map(Funding::getFundingId)
                         .toList();
 
+        Map<Long, Integer> participantCountMap =
+                getActiveParticipantCountMap(fundingIds);
+
         List<Pathinfo> pathinfos =
-                pathinfoService
-                        .findByFunding_FundingIdInAndDirection(
+                fundingIds.isEmpty()
+                        ? List.of()
+                        : pathinfoService.findByFundingIdsAndDirection(
                                 fundingIds,
                                 Direction.OUTBOUND
                         );
@@ -125,21 +140,24 @@ public class FundingService {
                                 )
                         );
 
-        return fundings.stream()
-                .map(funding ->
+        Page<FundingListResponse> response =
+                fundings.map(funding ->
                         FundingListResponse.from(
                                 funding,
                                 pathinfoMap.get(
                                         funding.getFundingId()
                                 ),
-                                0
+                                participantCountMap.getOrDefault(
+                                        funding.getFundingId(),
+                                        0
+                                )
                         )
-                )
-                .toList();
+                );
+
+        return PageResponse.from(response);
     }
 
-    // 펀딩 취소
-    // TODO: 방장일 경우
+    // 펀딩 취소(방장검증, 연결된 노선 취소 처리)
     @Transactional
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
@@ -147,16 +165,20 @@ public class FundingService {
         if (funding.getStatus() == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
+        fundingValidator.validateUpdatable(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
 
+    // 펀딩 수정
+    // 참가자 여부에 따라 수정 가능 범위 상이
     @Transactional
     public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
 
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
-        int currentParticipants = 0; // TODO
+        fundingValidator.validateUpdatable(funding);
+        int currentParticipants = countActiveParticipants(fundingId);
 
         if (currentParticipants > 0) {
             updateFundingWithParticipants(funding, request);
@@ -173,6 +195,7 @@ public class FundingService {
 
     }
 
+    // 참가자 있을경우 제목/내용만 수정 허용
     private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
 
         boolean changed =
@@ -195,6 +218,7 @@ public class FundingService {
         funding.updateTitleAndContent(request.title(), request.content());
     }
 
+    // 참가자 없을경우 전체 수정 허용
     private void updateFundingWithoutParticipants(
             Funding funding,
             FundingUpdateRequest request
@@ -226,12 +250,33 @@ public class FundingService {
 
     }
 
-
+    // 펀딩 조회 공통 메서드
     private Funding findFundingById(Long fundingId) {
         return fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
     }
+    // 참가자 수 조회(int로 반환)
+    private int countActiveParticipants(Long fundingId) {
+        return (int) participationRepository.countByFunding_FundingIdAndStatus(
+                fundingId,
+                ACTIVE
+        );
+    }
 
+    private Map<Long, Integer> getActiveParticipantCountMap(List<Long> fundingIds) {
+        if (fundingIds.isEmpty()) {
+            return Map.of();
+        }
 
+        return participationRepository.countByFundingIdsAndStatus(
+                        fundingIds,
+                        ACTIVE
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        ParticipationRepository.FundingParticipationCount::getFundingId,
+                        count -> count.getCount().intValue()
+                ));
+    }
 
 }

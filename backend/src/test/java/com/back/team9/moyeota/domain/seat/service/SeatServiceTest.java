@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.seat.service;
 
+import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
@@ -60,9 +61,10 @@ class SeatServiceTest {
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(pathinfo.getBusType()).willReturn(BusType.BUS_45);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 홀딩 중인 좌석 없음
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Collections.emptyMap());
@@ -107,9 +109,10 @@ class SeatServiceTest {
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(pathinfo.getBusType()).willReturn(BusType.BUS_45);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 2번 유저가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, holdMemberId));
@@ -135,9 +138,10 @@ class SeatServiceTest {
         given(seat.getSeatId()).willReturn(1L);
         given(seat.getSeatNumber()).willReturn("1A");
         given(seat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(pathinfo.getBusType()).willReturn(BusType.BUS_45);
 
         given(pathinfoRepository.findById(pathId)).willReturn(Optional.of(pathinfo));
-        given(seatRepository.findByPathinfoPathinfoId(pathId)).willReturn(List.of(seat));
+        given(seatRepository.findByPathinfo_PathinfoId(pathId)).willReturn(List.of(seat));
         // MGET 결과: 1번 좌석을 내가 선점 중
         given(seatRedisService.getHoldMemberIds(List.of(1L)))
                 .willReturn(Map.of(1L, currentMemberId));
@@ -247,27 +251,42 @@ class SeatServiceTest {
         verify(seatRedisService, never()).holdSeat(seatId, currentMemberId);
     }
 
-    // TODO: PathinfoStatus에 CANCELLED 추가 후 아래 테스트 주석 해제
-//    @Test
-//    @DisplayName("좌석 선점 - 취소된 노선 PATH_INVALID_STATUS 예외 발생")
-//    void holdSeat_취소된노선_PATH_INVALID_STATUS예외() {
-//        // Given
-//        Long seatId = 1L;
-//        Long currentMemberId = 1L;
-//
-//        Pathinfo pathinfo = mock(Pathinfo.class);
-//        given(pathinfo.getStatus()).willReturn(PathinfoStatus.CANCELLED);
-//
-//        Seat seat = mock(Seat.class);
-//        given(seat.getPathinfo()).willReturn(pathinfo);
-//
-//        given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
-//
-//        assertThatThrownBy(() -> seatService.holdSeat(seatId, currentMemberId))
-//                .isInstanceOf(BusinessException.class)
-//                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-//                        .isEqualTo(ErrorCode.PATH_INVALID_STATUS));
-//
-//        verify(seatRedisService, never()).holdSeat(seatId, currentMemberId);
-//    }
+    @Test
+    @DisplayName("좌석 선점 - 취소된 노선 PATH_INVALID_STATUS 예외 발생")
+    void holdSeat_취소된노선_PATH_INVALID_STATUS예외() {
+        // Given
+        Long seatId = 1L;
+        Long currentMemberId = 1L;
+
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getStatus()).willReturn(PathinfoStatus.CANCELLED);
+
+        Seat seat = mock(Seat.class);
+        given(seat.getPathinfo()).willReturn(pathinfo);
+
+        given(seatRepository.findById(seatId)).willReturn(Optional.of(seat));
+
+        // When & Then
+        assertThatThrownBy(() -> seatService.holdSeat(seatId, currentMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PATH_INVALID_STATUS));
+
+        verify(seatRedisService, never()).holdSeat(seatId, currentMemberId);
+    }
+
+    @Test
+    @DisplayName("좌석 선점 - 인증되지 않은 사용자(currentMemberId null) UNAUTHORIZED_ACCESS 예외 발생")
+    void holdSeat_인증되지않은사용자_UNAUTHORIZED_ACCESS예외() {
+        // Given
+        Long seatId = 1L;
+        Long currentMemberId = null;
+
+        // When & Then
+        assertThatThrownBy(() -> seatService.holdSeat(seatId, currentMemberId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.UNAUTHORIZED_ACCESS));
+    }
 }
+

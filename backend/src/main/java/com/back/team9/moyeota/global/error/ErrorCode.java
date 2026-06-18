@@ -61,6 +61,8 @@ public enum ErrorCode {
     DUPLICATE_PARTICIPATION(HttpStatus.CONFLICT,"PTC002", "이미 해당 펀딩에 참여 중입니다."),
     FUNDING_RECRUITMENT_CLOSED(HttpStatus.BAD_REQUEST,"PTC003", "모집이 마감된 펀딩입니다."),
     FUNDING_CANCELLED(HttpStatus.BAD_REQUEST, "PTC004", "취소된 펀딩입니다."),
+    ALREADY_CANCELED_PARTICIPATION(HttpStatus.BAD_REQUEST, "PTC005", "이미 취소된 참여입니다."),
+    PARTICIPATION_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PTC006", "출발 7일 전부터는 참여를 취소할 수 없습니다."),
 
 
     // [SEA] 좌석
@@ -80,6 +82,7 @@ public enum ErrorCode {
     DUPLICATE_PAYMENT(HttpStatus.CONFLICT,"PAY007", "중복 결제 요청입니다."),
     BALANCE_PAYMENT_EXPIRED(HttpStatus.BAD_REQUEST,"PAY008", "잔액 결제 기한이 만료되었습니다."),
     ALREADY_REFUNDED(HttpStatus.CONFLICT, "PAY009", "이미 환불된 결제입니다."),
+    PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PAY010", "해당 결제에 대한 접근 권한이 없습니다."),
 
     // [STL] 정산
     SETTLEMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST,"STL001", "이미 방장 페이백이 완료된 펀딩입니다."),
@@ -88,6 +91,8 @@ public enum ErrorCode {
     SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"STL004", "정산 내역이 존재하지 않습니다."),
     SETTLEMENT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST,"STL005", "정산 가능한 상태가 아닙니다."),
     SETTLEMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "STL006", "이미 정산 내역이 존재하는 펀딩입니다."),
+    SETTLEMENT_MANUAL_NOT_REQUIRED(HttpStatus.BAD_REQUEST, "STL007", "수동 페이백 처리 대상이 아닙니다."),
+
 
 
     // [NTF] 알림

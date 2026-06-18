@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,13 +28,13 @@ public class Settlement {
     private Funding funding;
 
     @Column(nullable = false)
-    private Integer totalAmount;
+    private BigDecimal totalAmount;
 
     @Column(nullable = false)
-    private Integer platformFee;
+    private BigDecimal platformFee;
 
     @Column(nullable = false)
-    private Integer hostPaybackAmount;
+    private BigDecimal hostPaybackAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -48,4 +49,15 @@ public class Settlement {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public void approve(){
+        LocalDateTime now = LocalDateTime.now();
+        this.status = SettlementStatus.APPROVED;
+        this.paybackPaidAt = now;
+        this.updatedAt = now;
+    }
+    public void reject(){
+        LocalDateTime now = LocalDateTime.now();
+        this.status = SettlementStatus.REJECTED;
+        this.updatedAt = now;    }
 }

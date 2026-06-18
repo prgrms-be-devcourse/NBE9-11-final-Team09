@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.participation.entity.Participation;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,9 +18,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentId;
 
-    //Todo: participation merge 후 nullable 수정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "participation_id", nullable = true)
+    @JoinColumn(name = "participation_id", nullable = false)
     private Participation participation;
 
     @Enumerated(EnumType.STRING)
@@ -27,7 +27,7 @@ public class Payment {
     private PaymentType paymentType;
 
     @Column(nullable = false)
-    private Integer amount;
+    private BigDecimal amount;
 
     @Column(nullable = false, unique = true)
     private String tossPaymentKey;
