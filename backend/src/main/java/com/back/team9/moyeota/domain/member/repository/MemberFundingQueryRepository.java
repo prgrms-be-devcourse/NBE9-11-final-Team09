@@ -13,7 +13,7 @@ public interface MemberFundingQueryRepository extends JpaRepository<Funding, Lon
 
     @Query(
             value = """
-                    select new com.back.team9.moyeota.domain.member.dto.MemberFundingResponse(
+                    select new com.back.team9.moyeota.domain.member.dto.history.MemberFundingResponse(
                         f.fundingId,
                         f.title,
                         f.departureDate,
