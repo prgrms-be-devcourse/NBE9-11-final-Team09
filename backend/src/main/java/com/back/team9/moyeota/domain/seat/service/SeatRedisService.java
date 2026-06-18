@@ -79,7 +79,7 @@ public class SeatRedisService {
             return result != null && result == 1L;
 
         } catch (Exception e) {
-            log.error("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
+            log.warn("Redis 장애 발생 - 좌석 해제 실패. seatId={}, memberId={}", seatId, memberId, e);
             return false;
         }
     }
