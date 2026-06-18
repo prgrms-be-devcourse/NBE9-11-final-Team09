@@ -120,6 +120,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .participation(participation)
                 .orderId(orderId)
+                .amount(new BigDecimal(participation.getFinalAmount()))
                 .status(PaymentStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
