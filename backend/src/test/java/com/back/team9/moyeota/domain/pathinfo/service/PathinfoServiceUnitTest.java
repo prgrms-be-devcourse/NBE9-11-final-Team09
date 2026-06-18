@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -312,7 +313,7 @@ class PathinfoServiceUnitTest {
                 "Changed Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
 
         given(pathinfoRepository.findByFunding_FundingId(1L))
@@ -377,7 +378,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
     }
 
@@ -388,7 +389,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
     }
 
@@ -399,7 +400,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 Direction.OUTBOUND
         );
     }
@@ -409,7 +410,7 @@ class PathinfoServiceUnitTest {
                 funding,
                 RETURN_TIME,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 "Incheon Terminal",
                 Region.INCHEON,
                 Direction.RETURN
@@ -428,7 +429,7 @@ class PathinfoServiceUnitTest {
                 DEPARTURE_TIME.toLocalDate(),
                 BusType.BUS_45,
                 20,
-                500000,
+                BigDecimal.valueOf(500000),
                 tripType
         );
         ReflectionTestUtils.setField(funding, "fundingId", fundingId);
