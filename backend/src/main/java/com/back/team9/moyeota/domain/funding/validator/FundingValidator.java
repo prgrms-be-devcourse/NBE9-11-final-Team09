@@ -12,8 +12,7 @@ public class FundingValidator {
 
     public void validateFundingRequest(
             Integer minParticipants,
-            BusType busType,
-            Integer totalPrice
+            BusType busType
     ) {
 
         if (minParticipants > busType.getCapacity()) {
