@@ -23,13 +23,13 @@ public class Payment {
     private Participation participation;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private PaymentType paymentType;
 
     @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true)
     private String tossPaymentKey;
 
     @Column(nullable = false, unique = true)
@@ -48,5 +48,12 @@ public class Payment {
 
     public void updateStatus(PaymentStatus status){
         this.status = status;
+    }
+
+    public void confirm(PaymentType paymentType, String tossPaymentKey) {
+        this.paymentType = paymentType;
+        this.tossPaymentKey = tossPaymentKey;
+        this.status = PaymentStatus.PAID;
+        this.updatedAt = LocalDateTime.now();
     }
 }
