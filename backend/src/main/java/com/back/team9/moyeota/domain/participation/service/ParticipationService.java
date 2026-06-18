@@ -213,6 +213,9 @@ public class ParticipationService {
                 .getPathinfo()
                 .getDepartureTime();
 
+        // 현재 시각을 한 번만 구해서 재사용 (취소/환불 두 판단이 같은 순간 기준이 되도록)
+        LocalDateTime now = LocalDateTime.now(clock);
+
         // 출발 7일 전 자정 = 취소 가능 마감 시점
         LocalDateTime cancelDeadline = departureTime
                 .toLocalDate()
@@ -220,8 +223,7 @@ public class ParticipationService {
                 .atStartOfDay();
 
         // 출발 7일 전 자정 이후엔 참여 취소 요청 자체를 허용하지 않음
-        // 프론트에서는 취소 버튼을 숨기고, 백엔드에서도 예외로 한 번 더 방어(PTC006)
-        if (LocalDateTime.now(clock).isAfter(cancelDeadline)) {
+        if (now.isAfter(cancelDeadline)) {
             throw new BusinessException(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED);
         }
 
@@ -232,7 +234,7 @@ public class ParticipationService {
                 .atStartOfDay();
 
         // 환불 대상(10일 전 이전 취소)일 때만 이벤트 발행
-        if (LocalDateTime.now(clock).isBefore(refundDeadline)) {
+        if (now.isBefore(refundDeadline)) {
             eventPublisher.publishEvent(
                     new ParticipationCancelledEvent(participationId)
             );
