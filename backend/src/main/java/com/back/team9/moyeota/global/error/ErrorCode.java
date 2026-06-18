@@ -82,6 +82,7 @@ public enum ErrorCode {
     DUPLICATE_PAYMENT(HttpStatus.CONFLICT,"PAY007", "중복 결제 요청입니다."),
     BALANCE_PAYMENT_EXPIRED(HttpStatus.BAD_REQUEST,"PAY008", "잔액 결제 기한이 만료되었습니다."),
     ALREADY_REFUNDED(HttpStatus.CONFLICT, "PAY009", "이미 환불된 결제입니다."),
+    PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PAY010", "해당 결제에 대한 접근 권한이 없습니다."),
 
     // [STL] 정산
     SETTLEMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST,"STL001", "이미 방장 페이백이 완료된 펀딩입니다."),

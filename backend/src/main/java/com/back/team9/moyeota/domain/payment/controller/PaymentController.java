@@ -8,6 +8,7 @@ import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,9 +41,10 @@ public class PaymentController {
     @PostMapping("/{paymentId}/refund")
     public ResponseEntity<ApiResponse<PaymentResponse>> refund(
             @PathVariable Long paymentId,
-            @RequestBody @Valid PaymentRefundRequest request
+            @RequestBody @Valid PaymentRefundRequest request,
+            @AuthenticationPrincipal Long memberId
     ) {
-        PaymentResponse response = paymentService.refund(paymentId, request);
+        PaymentResponse response = paymentService.refund(paymentId, request, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS","환불이 완료되었습니다.", response));
     }
 }
