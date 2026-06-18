@@ -8,6 +8,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,7 @@ import java.util.Set;
 public class FundingPricePolicy {
 
     private static final BigDecimal ROUND_TRIP_MULTIPLIER = BigDecimal.valueOf(2);
+    private static final BigDecimal PRICE_UNIT = BigDecimal.valueOf(100);
 
     // 지역1, 지역2, 버스타입, 총 금액
     private static final Map<PriceKey, BigDecimal> ONE_WAY_PRICES = Map.ofEntries(
@@ -89,6 +91,16 @@ public class FundingPricePolicy {
 
     private static BigDecimal price(long amount) {
         return BigDecimal.valueOf(amount);
+    }
+
+    public static BigDecimal calculateRoundedPrice(
+            BigDecimal totalPrice,
+            Integer participants
+    ) {
+        return totalPrice
+                .divide(BigDecimal.valueOf(participants), 0, RoundingMode.CEILING)
+                .divide(PRICE_UNIT, 0, RoundingMode.CEILING)
+                .multiply(PRICE_UNIT);
     }
 
     private record PriceKey(

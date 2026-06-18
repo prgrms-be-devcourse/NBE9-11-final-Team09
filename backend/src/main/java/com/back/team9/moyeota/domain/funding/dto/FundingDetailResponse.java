@@ -4,10 +4,10 @@ import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,8 +34,6 @@ public record FundingDetailResponse(
         Boolean isJoined,
         LocalDateTime createdAt
 ) {
-    private static final BigDecimal PRICE_UNIT = BigDecimal.valueOf(100);
-
     public static FundingDetailResponse from(
             Funding funding,
             List<PathinfoResponse> pathinfos,
@@ -45,12 +43,12 @@ public record FundingDetailResponse(
             Boolean isJoined
     ) {
 
-        BigDecimal minPrice = calculateRoundedPrice(
+        BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
                 funding.getMaxParticipants()
         );
 
-        BigDecimal maxPrice = calculateRoundedPrice(
+        BigDecimal maxPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
                 funding.getMinParticipants()
         );
@@ -77,15 +75,5 @@ public record FundingDetailResponse(
                 isJoined,
                 funding.getCreatedAt()
         );
-    }
-
-    private static BigDecimal calculateRoundedPrice(
-            BigDecimal totalPrice,
-            Integer participants
-    ) {
-        return totalPrice
-                .divide(BigDecimal.valueOf(participants), 0, RoundingMode.CEILING)
-                .divide(PRICE_UNIT, 0, RoundingMode.CEILING)
-                .multiply(PRICE_UNIT);
     }
 }

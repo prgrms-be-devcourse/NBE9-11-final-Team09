@@ -2,10 +2,10 @@ package com.back.team9.moyeota.domain.funding.dto;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 public record FundingListResponse(
@@ -24,19 +24,17 @@ public record FundingListResponse(
         BigDecimal minPrice,
         BigDecimal maxPrice
 ) {
-    private static final BigDecimal PRICE_UNIT = BigDecimal.valueOf(100);
-
     public static FundingListResponse from(
             Funding funding,
             Pathinfo pathinfo,
             Integer currentParticipants
     ) {
-        BigDecimal minPrice = calculateRoundedPrice(
+        BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
                 funding.getMaxParticipants()
         );
 
-        BigDecimal maxPrice = calculateRoundedPrice(
+        BigDecimal maxPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
                 funding.getMinParticipants()
         );
@@ -73,19 +71,9 @@ public record FundingListResponse(
             return null;
         }
 
-        return calculateRoundedPrice(
+        return FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
                 currentParticipants
         );
-    }
-
-    private static BigDecimal calculateRoundedPrice(
-            BigDecimal totalPrice,
-            Integer participants
-    ) {
-        return totalPrice
-                .divide(BigDecimal.valueOf(participants), 0, RoundingMode.CEILING)
-                .divide(PRICE_UNIT, 0, RoundingMode.CEILING)
-                .multiply(PRICE_UNIT);
     }
 }
