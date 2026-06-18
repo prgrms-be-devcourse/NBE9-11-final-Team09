@@ -109,7 +109,7 @@ class FundingServiceUnitTest {
                 .isEqualTo(BusType.BUS_45.getCapacity());
 
         verify(fundingValidator)
-                .validateFundingRequest(20, BusType.BUS_45, 500000);
+                .validateFundingRequest(20, BusType.BUS_45);
         verify(pathinfoService)
                 .createPathinfos(savedFunding, TripType.ONE_WAY, request.route());
     }
@@ -145,7 +145,7 @@ class FundingServiceUnitTest {
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         willThrow(new BusinessException(ErrorCode.FUNDING_MIN_INVALID))
                 .given(fundingValidator)
-                .validateFundingRequest(70, BusType.BUS_45, 500000);
+                .validateFundingRequest(70, BusType.BUS_45);
 
         // When / Then
         assertThatThrownBy(() -> fundingService.createFunding(1L, request))
@@ -221,12 +221,51 @@ class FundingServiceUnitTest {
         assertThat(funding.getMinParticipants()).isEqualTo(10);
         assertThat(funding.getMaxParticipants())
                 .isEqualTo(BusType.BUS_25.getCapacity());
-        assertThat(funding.getTotalPrice()).isEqualTo(300000);
+        assertThat(funding.getTotalPrice()).isEqualTo(495000);
 
         verify(fundingValidator).validateHost(funding, 1L);
         verify(fundingValidator).validateUpdatable(funding);
         verify(fundingValidator)
-                .validateFundingRequest(10, BusType.BUS_25, 300000);
+                .validateFundingRequest(10, BusType.BUS_25);
+        verify(pathinfoService)
+                .updatePathinfos(funding, TripType.ONE_WAY, request.route());
+        verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 - 참가자가 없으면 지역 변경 시 총금액을 재계산한다")
+    void updateFunding_whenNoParticipantsAndRegionChanges_recalculatesTotalPrice() {
+        // Given
+        Funding funding = funding(
+                10L,
+                member(1L),
+                FundingStatus.RECRUITING,
+                BusType.BUS_25,
+                495000
+        );
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ONE_WAY,
+                route(Region.DAEJEON, Region.SEOUL)
+        );
+
+        given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(0L);
+
+        // When
+        fundingService.updateFunding(1L, 10L, request);
+
+        // Then
+        assertThat(funding.getTotalPrice()).isEqualTo(550000);
+        assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
+
+        verify(fundingValidator).validateHost(funding, 1L);
+        verify(fundingValidator).validateUpdatable(funding);
+        verify(fundingValidator).validateFundingRequest(10, BusType.BUS_25);
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
@@ -290,7 +329,7 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE);
 
         verify(fundingValidator, never())
-                .validateFundingRequest(10, BusType.BUS_25, 300000);
+                .validateFundingRequest(10, BusType.BUS_25);
         verifyNoInteractions(pathinfoService);
     }
 
@@ -360,7 +399,7 @@ class FundingServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 Direction.OUTBOUND
         );
         FundingSearchCondition condition =
@@ -411,31 +450,50 @@ class FundingServiceUnitTest {
                 busType,
                 minParticipants,
                 tripType,
-                500000,
                 route()
         );
     }
 
     private FundingUpdateRequest updateRequest() {
-        return new FundingUpdateRequest(
-                "Updated Title",
-                "Updated Content",
+        return updateRequest(
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 route()
         );
     }
 
+    private FundingUpdateRequest updateRequest(
+            BusType busType,
+            int minParticipants,
+            TripType tripType,
+            RouteRequest route
+    ) {
+        return new FundingUpdateRequest(
+                "Updated Title",
+                "Updated Content",
+                busType,
+                minParticipants,
+                tripType,
+                route
+        );
+    }
+
     private RouteRequest route() {
+        return route(Region.INCHEON, Region.SEOUL);
+    }
+
+    private RouteRequest route(
+            Region departureRegion,
+            Region arrivalRegion
+    ) {
         return new RouteRequest(
                 DEPARTURE_TIME,
                 null,
                 "Incheon Terminal",
-                Region.INCHEON,
+                departureRegion,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                arrivalRegion
         );
     }
 
@@ -446,7 +504,7 @@ class FundingServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 PathinfoStatus.PENDING,
                 Direction.OUTBOUND
         );
@@ -457,14 +515,30 @@ class FundingServiceUnitTest {
             Member member,
             FundingStatus status
     ) {
+        return funding(
+                fundingId,
+                member,
+                status,
+                BusType.BUS_45,
+                500000
+        );
+    }
+
+    private Funding funding(
+            Long fundingId,
+            Member member,
+            FundingStatus status,
+            BusType busType,
+            Integer totalPrice
+    ) {
         Funding funding = Funding.create(
                 member,
                 "Football Match Bus",
                 "Ride together",
                 DEPARTURE_TIME.toLocalDate(),
-                BusType.BUS_45,
+                busType,
                 20,
-                500000,
+                totalPrice,
                 TripType.ONE_WAY
         );
         ReflectionTestUtils.setField(funding, "fundingId", fundingId);

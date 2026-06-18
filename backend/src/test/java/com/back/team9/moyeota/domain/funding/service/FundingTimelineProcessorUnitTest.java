@@ -236,7 +236,7 @@ class FundingTimelineProcessorUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 direction
         );
         ReflectionTestUtils.setField(pathinfo, "pathinfoId", pathinfoId);

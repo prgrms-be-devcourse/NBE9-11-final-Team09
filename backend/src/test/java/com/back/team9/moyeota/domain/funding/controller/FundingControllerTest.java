@@ -111,23 +111,8 @@ class FundingControllerTest {
                         BusType.BUS_45,
                         20,
                         TripType.ONE_WAY,
-                        500000,
                         oneWayRoute()
                 );
-
-        performCreateBadRequest(request);
-    }
-
-    @Test
-    @DisplayName("펀딩 생성 총금액 0원 400 반환")
-    void createFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
-        FundingCreateRequest request = createRequest(
-                BusType.BUS_45,
-                20,
-                TripType.ONE_WAY,
-                0,
-                oneWayRoute()
-        );
 
         performCreateBadRequest(request);
     }
@@ -139,7 +124,6 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 0,
                 TripType.ONE_WAY,
-                500000,
                 oneWayRoute()
         );
 
@@ -153,7 +137,6 @@ class FundingControllerTest {
                 null,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 oneWayRoute()
         );
 
@@ -167,7 +150,6 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 null,
-                500000,
                 oneWayRoute()
         );
 
@@ -181,7 +163,6 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 null
         );
 
@@ -195,14 +176,13 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 new RouteRequest(
                         null,
                         null,
                         "Incheon Terminal",
                         Region.INCHEON,
                         "Seoul Stadium",
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -216,14 +196,13 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 new RouteRequest(
                         DEFAULT_DEPARTURE_TIME,
                         null,
                         "",
                         Region.INCHEON,
                         "Seoul Stadium",
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -237,7 +216,6 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 new RouteRequest(
                         DEFAULT_DEPARTURE_TIME,
                         null,
@@ -302,23 +280,8 @@ class FundingControllerTest {
                         BusType.BUS_25,
                         10,
                         TripType.ONE_WAY,
-                        300000,
                         oneWayRoute()
                 );
-
-        performUpdateBadRequest(request);
-    }
-
-    @Test
-    @DisplayName("펀딩 수정 총금액 0원 400 반환")
-    void updateFunding_whenTotalPriceIsZero_returnsBadRequest() throws Exception {
-        FundingUpdateRequest request = updateRequest(
-                BusType.BUS_25,
-                10,
-                TripType.ONE_WAY,
-                0,
-                oneWayRoute()
-        );
 
         performUpdateBadRequest(request);
     }
@@ -330,7 +293,6 @@ class FundingControllerTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 null
         );
 
@@ -344,14 +306,13 @@ class FundingControllerTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 new RouteRequest(
                         DEFAULT_DEPARTURE_TIME,
                         null,
                         "Incheon Terminal",
                         Region.INCHEON,
                         "",
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -424,7 +385,7 @@ class FundingControllerTest {
                         get("/api/fundings")
                                 .param("statuses", "RECRUITING")
                                 .param("departureRegion", "INCHEON")
-                                .param("arrivalRegion", "SEOUL_A")
+                                .param("arrivalRegion", "SEOUL")
                                 .param("departureDate", "2027-06-20")
                                 .param("page", "0")
                                 .param("size", "20")
@@ -477,7 +438,6 @@ class FundingControllerTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                500000,
                 oneWayRoute()
         );
     }
@@ -486,7 +446,6 @@ class FundingControllerTest {
             BusType busType,
             int minParticipants,
             TripType tripType,
-            int totalPrice,
             RouteRequest route
     ) {
         return new FundingCreateRequest(
@@ -495,7 +454,6 @@ class FundingControllerTest {
                 busType,
                 minParticipants,
                 tripType,
-                totalPrice,
                 route
         );
     }
@@ -505,7 +463,6 @@ class FundingControllerTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 oneWayRoute()
         );
     }
@@ -514,7 +471,6 @@ class FundingControllerTest {
             BusType busType,
             int minParticipants,
             TripType tripType,
-            int totalPrice,
             RouteRequest route
     ) {
         return new FundingUpdateRequest(
@@ -523,7 +479,6 @@ class FundingControllerTest {
                 busType,
                 minParticipants,
                 tripType,
-                totalPrice,
                 route
         );
     }
@@ -535,7 +490,7 @@ class FundingControllerTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
     }
 

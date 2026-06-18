@@ -312,7 +312,7 @@ class PathinfoServiceUnitTest {
                 "Changed Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
 
         given(pathinfoRepository.findByFunding_FundingId(1L))
@@ -377,7 +377,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
     }
 
@@ -388,7 +388,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A
+                Region.SEOUL
         );
     }
 
@@ -399,7 +399,7 @@ class PathinfoServiceUnitTest {
                 "Incheon Terminal",
                 Region.INCHEON,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 Direction.OUTBOUND
         );
     }
@@ -409,7 +409,7 @@ class PathinfoServiceUnitTest {
                 funding,
                 RETURN_TIME,
                 "Seoul Stadium",
-                Region.SEOUL_A,
+                Region.SEOUL,
                 "Incheon Terminal",
                 Region.INCHEON,
                 Direction.RETURN

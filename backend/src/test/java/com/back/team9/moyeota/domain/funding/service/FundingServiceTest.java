@@ -111,7 +111,7 @@ class FundingServiceTest {
                 BusType.BUS_45,
                 20,
                 TripType.ROUND,
-                route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.SEOUL_A)
+                route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.SEOUL)
         );
 
         // When / Then
@@ -302,14 +302,13 @@ class FundingServiceTest {
                 BusType.BUS_45,
                 20,
                 TripType.ROUND,
-                500000,
                 route(
                         DEFAULT_DEPARTURE_TIME,
                         DEFAULT_RETURN_TIME,
                         "Gangnam Station",
-                        Region.SEOUL_B,
+                        Region.DAEJEON,
                         "Seoul Stadium",
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -320,6 +319,89 @@ class FundingServiceTest {
         assertThat(findPathinfos(response.fundingId()))
                 .extracting(Pathinfo::getDepartureAddress)
                 .contains("Gangnam Station");
+    }
+
+    @Test
+    @DisplayName("수정 - 참가자가 없으면 지역 변경 시 총금액 재계산")
+    void updateFunding_whenRegionChanges_recalculatesTotalPrice() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                route(
+                        DEFAULT_DEPARTURE_TIME,
+                        null,
+                        Region.DAEJEON,
+                        Region.SEOUL
+                )
+        );
+
+        // When
+        fundingService.updateFunding(member.getMemberId(), response.fundingId(), request);
+
+        // Then
+        Funding funding = findFunding(response.fundingId());
+        Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+
+        assertThat(funding.getTotalPrice()).isEqualTo(774400);
+        assertThat(outbound.getDepartureRegion()).isEqualTo(Region.DAEJEON);
+        assertThat(outbound.getArrivalRegion()).isEqualTo(Region.SEOUL);
+    }
+
+    @Test
+    @DisplayName("수정 - 편도에서 왕복으로 변경 시 총금액을 왕복 금액으로 재계산")
+    void updateFunding_fromOneWayToRound_recalculatesRoundTripTotalPrice() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ROUND,
+                roundRoute()
+        );
+
+        // When
+        fundingService.updateFunding(member.getMemberId(), response.fundingId(), request);
+
+        // Then
+        Funding funding = findFunding(response.fundingId());
+        List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
+
+        assertThat(funding.getTotalPrice()).isEqualTo(1452000);
+        assertThat(funding.getTripType()).isEqualTo(TripType.ROUND);
+        assertThat(pathinfos).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("수정 - 왕복에서 편도로 변경 시 총금액을 편도 금액으로 재계산")
+    void updateFunding_fromRoundToOneWay_recalculatesOneWayTotalPrice() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), roundCreateRequest());
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                oneWayRoute()
+        );
+
+        // When
+        fundingService.updateFunding(member.getMemberId(), response.fundingId(), request);
+
+        // Then
+        Funding funding = findFunding(response.fundingId());
+        Pathinfo returned = findPathinfo(response.fundingId(), Direction.RETURN);
+
+        assertThat(funding.getTotalPrice()).isEqualTo(726000);
+        assertThat(funding.getTripType()).isEqualTo(TripType.ONE_WAY);
+        assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
     }
 
     @Test
@@ -354,7 +436,6 @@ class FundingServiceTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.INCHEON)
         );
 
@@ -376,7 +457,7 @@ class FundingServiceTest {
                 BusType.BUS_45,
                 20,
                 TripType.ONE_WAY,
-                route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL_A)
+                route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL)
         );
 
         // When / Then
@@ -401,7 +482,7 @@ class FundingServiceTest {
                         DEFAULT_DEPARTURE_TIME,
                         LocalDateTime.of(2027, 6, 20, 5, 0),
                         Region.INCHEON,
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -427,7 +508,7 @@ class FundingServiceTest {
                         DEFAULT_DEPARTURE_TIME,
                         LocalDateTime.of(2027, 6, 22, 23, 0),
                         Region.INCHEON,
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -451,8 +532,7 @@ class FundingServiceTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
-                route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL_A)
+                route(LocalDateTime.now().plusDays(7), null, Region.INCHEON, Region.SEOUL)
         );
 
         // When / Then
@@ -475,12 +555,11 @@ class FundingServiceTest {
                 BusType.BUS_45,
                 20,
                 TripType.ROUND,
-                500000,
                 route(
                         DEFAULT_DEPARTURE_TIME,
                         LocalDateTime.of(2027, 6, 20, 5, 0),
                         Region.INCHEON,
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -504,12 +583,11 @@ class FundingServiceTest {
                 BusType.BUS_45,
                 20,
                 TripType.ROUND,
-                500000,
                 route(
                         DEFAULT_DEPARTURE_TIME,
                         LocalDateTime.of(2027, 6, 22, 23, 0),
                         Region.INCHEON,
-                        Region.SEOUL_A
+                        Region.SEOUL
                 )
         );
 
@@ -586,7 +664,6 @@ class FundingServiceTest {
                 BusType.BUS_25,
                 20,
                 TripType.ROUND,
-                500000,
                 roundRoute()
         );
 
@@ -673,7 +750,7 @@ class FundingServiceTest {
                                 route(
                                         LocalDateTime.of(2027, 6, 21, 8, 0),
                                         null,
-                                        Region.SEOUL_B,
+                                        Region.SEOUL,
                                         Region.INCHEON
                                 )
                         )
@@ -687,7 +764,7 @@ class FundingServiceTest {
                         new FundingSearchCondition(
                                 List.of(FundingStatus.RECRUITING),
                                 LocalDate.of(2027, 6, 21),
-                                Region.SEOUL_B,
+                                Region.SEOUL,
                                 Region.INCHEON
                         ),
                         PageRequest.of(0, 10)
@@ -813,7 +890,6 @@ class FundingServiceTest {
                 busType,
                 minParticipants,
                 tripType,
-                500000,
                 route
         );
     }
@@ -823,7 +899,6 @@ class FundingServiceTest {
                 BusType.BUS_25,
                 10,
                 TripType.ONE_WAY,
-                300000,
                 oneWayRoute()
         );
     }
@@ -833,7 +908,6 @@ class FundingServiceTest {
                 BusType.BUS_25,
                 10,
                 TripType.ROUND,
-                300000,
                 roundRoute()
         );
     }
@@ -842,7 +916,6 @@ class FundingServiceTest {
             BusType busType,
             int minParticipants,
             TripType tripType,
-            int totalPrice,
             RouteRequest route
     ) {
         return new FundingUpdateRequest(
@@ -851,17 +924,16 @@ class FundingServiceTest {
                 busType,
                 minParticipants,
                 tripType,
-                totalPrice,
                 route
         );
     }
 
     private RouteRequest oneWayRoute() {
-        return route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.SEOUL_A);
+        return route(DEFAULT_DEPARTURE_TIME, null, Region.INCHEON, Region.SEOUL);
     }
 
     private RouteRequest roundRoute() {
-        return route(DEFAULT_DEPARTURE_TIME, DEFAULT_RETURN_TIME, Region.INCHEON, Region.SEOUL_A);
+        return route(DEFAULT_DEPARTURE_TIME, DEFAULT_RETURN_TIME, Region.INCHEON, Region.SEOUL);
     }
 
     private RouteRequest route(
