@@ -94,7 +94,7 @@ public class ChatRoomServiceTest {
 
         // then
         assertThat(exception.getErrorCode())
-                .isEqualTo(ErrorCode.CHAY_ROOM_ALREADY_EXISTS);
+                .isEqualTo(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
 
         verify(chatRoomRepository, never()).save(any());
         verify(fundingRepository, never()).findById(any());

@@ -33,9 +33,15 @@ public class ChatRoomController {
                 )
         );
     }
-
     @GetMapping("/{chatRoomId}/messages")
-    public List<MessageResponse> getMessages(@PathVariable Long chatRoomId) {
-        return chatMessageService.getMessages(chatRoomId);
+    public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(@PathVariable Long chatRoomId) {
+        List<MessageResponse> response = chatMessageService.getMessages(chatRoomId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "채팅 메시지 조회 성공",
+                        response
+                )
+        );
     }
 }

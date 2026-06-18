@@ -5,8 +5,10 @@ import com.back.team9.moyeota.domain.chatroom.dto.MessageResponse;
 import com.back.team9.moyeota.domain.chatroom.entity.Message;
 import com.back.team9.moyeota.domain.chatroom.service.ChatMessageService;
 import com.back.team9.moyeota.domain.chatroom.service.ChatRoomService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -19,7 +21,7 @@ public class ChatController {
     private final ChatMessageService chatMessageService;
 
     @MessageMapping("/chat.send")
-    public void sendMessage(ChatMessageRequest request) {
+    public void sendMessage(@Payload @Valid ChatMessageRequest request) {
 
         Message saved = chatMessageService.sendMessage(request);
 

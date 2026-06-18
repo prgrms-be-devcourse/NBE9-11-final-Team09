@@ -29,7 +29,7 @@ public class ChatMessageService {
 
 
     public Message sendMessage(ChatMessageRequest request){
-        ChatRoom room = chatRoomService.getRoom(request.getChatRoomId());
+        ChatRoom room = chatRoomService.getRoomById(request.getChatRoomId());
 
         Member member = memberRepository.findById(request.getSenderId())
                 .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));

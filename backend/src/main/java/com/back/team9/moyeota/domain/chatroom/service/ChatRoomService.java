@@ -27,7 +27,7 @@ public class ChatRoomService {
 
     public ChatRoomResponse createRoom(Long fundingId){
         if(chatRoomRepository.existsByFundingFundingId(fundingId)){
-            throw new BusinessException(ErrorCode.CHAY_ROOM_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
         }
 
         Funding funding = fundingRepository.findById(fundingId)
@@ -47,6 +47,11 @@ public class ChatRoomService {
     public ChatRoom getRoom(Long fundingId){
         return chatRoomRepository.findByFundingFundingId(fundingId)
                 .orElseThrow(()-> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    public ChatRoom getRoomById(Long chatRoomId) {
+        return chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
     public Long getHostId(Long chatRoomId) {

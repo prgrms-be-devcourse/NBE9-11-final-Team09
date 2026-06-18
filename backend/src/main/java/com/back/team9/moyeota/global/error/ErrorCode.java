@@ -98,7 +98,7 @@ public enum ErrorCode {
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,"CHT001", "존재하지 않는 채팅방입니다."),
     CHAT_ROOM_ALREADY_DELETED(HttpStatus.BAD_REQUEST,"CHT002", "이미 삭제된 채팅방입니다."),
     MESSAGE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"CHT003", "메시지 전송에 실패했습니다."),
-    CHAY_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHT006", "이미 존재하는 채팅방입니다.");
+    CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHT006", "이미 존재하는 채팅방입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

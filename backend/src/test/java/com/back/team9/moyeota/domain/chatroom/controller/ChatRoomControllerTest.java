@@ -89,12 +89,14 @@ class ChatRoomControllerTest {
 
         mockMvc.perform(get("/chatrooms/{chatRoomId}/messages", chatRoomId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].messageId").value(1))
-                .andExpect(jsonPath("$[0].content").value("안녕하세요"))
-                .andExpect(jsonPath("$[0].host").value(false))
-                .andExpect(jsonPath("$[1].messageId").value(2))
-                .andExpect(jsonPath("$[1].content").value("반갑습니다"))
-                .andExpect(jsonPath("$[1].host").value(true));
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").value("채팅 메시지 조회 성공"))
+                .andExpect(jsonPath("$.data[0].messageId").value(1))
+                .andExpect(jsonPath("$.data[0].content").value("안녕하세요"))
+                .andExpect(jsonPath("$.data[0].host").value(false))
+                .andExpect(jsonPath("$.data[1].messageId").value(2))
+                .andExpect(jsonPath("$.data[1].content").value("반갑습니다"))
+                .andExpect(jsonPath("$.data[1].host").value(true));
 
         verify(chatMessageService).getMessages(chatRoomId);
     }

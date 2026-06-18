@@ -67,9 +67,14 @@ public class ChatMessageServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(chatRoomService.getRoom(1L)).willReturn(room);
-        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
-        given(messageRepository.save(any(Message.class))).willReturn(savedMessage);
+        given(chatRoomService.getRoomById(1L))
+                .willReturn(room);
+
+        given(memberRepository.findById(1L))
+                .willReturn(Optional.of(member));
+
+        given(messageRepository.save(any(Message.class)))
+                .willReturn(savedMessage);
 
         // when
         Message result = chatMessageService.sendMessage(request);
@@ -78,31 +83,29 @@ public class ChatMessageServiceTest {
         assertThat(result.getMessageId()).isEqualTo(1L);
         assertThat(result.getContent()).isEqualTo("안녕하세요");
 
+        verify(chatRoomService).getRoomById(1L);
+        verify(memberRepository).findById(1L);
         verify(messageRepository).save(any(Message.class));
     }
 
     @Test
     @DisplayName("메시지 전송 실패 - 사용자 없음")
     void sendMessage_사용자없음_예외발생() {
-        // given
+
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
         ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
-        ChatRoom room = mock(ChatRoom.class);
+        given(memberRepository.findById(1L))
+                .willReturn(Optional.empty());
 
-        given(chatRoomService.getRoom(1L)).willReturn(room);
-        given(memberRepository.findById(1L)).willReturn(Optional.empty());
-
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> chatMessageService.sendMessage(request)
         );
 
-        // then
         assertThat(exception.getErrorCode())
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
 
@@ -112,23 +115,21 @@ public class ChatMessageServiceTest {
     @Test
     @DisplayName("메시지 전송 실패 - 채팅방 없음")
     void sendMessage_채팅방없음_예외발생() {
-        // given
+
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
         ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
-        given(chatRoomService.getRoom(1L))
+        given(chatRoomService.getRoomById(1L))
                 .willThrow(new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> chatMessageService.sendMessage(request)
         );
 
-        // then
         assertThat(exception.getErrorCode())
                 .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
 
