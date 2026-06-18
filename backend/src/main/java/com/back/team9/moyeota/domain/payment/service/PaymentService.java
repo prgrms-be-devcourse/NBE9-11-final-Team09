@@ -51,7 +51,7 @@ public class PaymentService {
         Participation participation = participationRepository.findById(request.participationId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
-        if (request.amount().compareTo(new BigDecimal(participation.getFinalAmount())) != 0) {
+        if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
