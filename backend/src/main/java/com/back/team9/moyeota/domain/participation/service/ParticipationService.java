@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,6 +44,7 @@ public class ParticipationService {
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     // ============================== 1. 참여 신청 ==============================
     @Transactional
@@ -118,7 +119,7 @@ public class ParticipationService {
 
         // Redis HOLD 해제 - 더 이상 임시 선점 상태가 아니므로 Redis 키 삭제
         // 각 좌석을 독립적으로 처리 - 한쪽 실패가 다른 쪽 처리를 막지 않도록 함
-        // HOLD 키는 5분 TTL이 설정되어 있어, 삭제 실패해도 자동 만료됨
+        // HOLD 키는 5분 TTL이 설정되어 있어-> 삭제 실패해도 자동 만료됨
         releaseSeatHoldSafely(outboundSeat.getSeatId(), memberId);
 
         if (returnSeat != null) {
@@ -220,7 +221,7 @@ public class ParticipationService {
 
         // 출발 7일 전 자정 이후엔 참여 취소 요청 자체를 허용하지 않음
         // 프론트에서는 취소 버튼을 숨기고, 백엔드에서도 예외로 한 번 더 방어(PTC006)
-        if (LocalDateTime.now().isAfter(cancelDeadline)) {
+        if (LocalDateTime.now(clock).isAfter(cancelDeadline)) {
             throw new BusinessException(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED);
         }
 
@@ -231,7 +232,7 @@ public class ParticipationService {
                 .atStartOfDay();
 
         // 환불 대상(10일 전 이전 취소)일 때만 이벤트 발행
-        if (LocalDateTime.now().isBefore(refundDeadline)) {
+        if (LocalDateTime.now(clock).isBefore(refundDeadline)) {
             eventPublisher.publishEvent(
                     new ParticipationCancelledEvent(participationId)
             );
