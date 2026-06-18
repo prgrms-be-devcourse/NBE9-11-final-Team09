@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -138,9 +139,9 @@ class AdminSettlementQueryServiceTest {
                 .settlementId(1L)
                 .member(createMember())
                 .funding(createFunding())
-                .totalAmount(600000)
-                .platformFee(0)
-                .hostPaybackAmount(600000)
+                .totalAmount(BigDecimal.valueOf(600000))
+                .platformFee(BigDecimal.ZERO)
+                .hostPaybackAmount(BigDecimal.valueOf(600000))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
                 .createdAt(LocalDateTime.of(2026, 6, 20, 23, 0))
