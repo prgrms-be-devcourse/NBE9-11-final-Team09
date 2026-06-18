@@ -1,13 +1,6 @@
 package com.back.team9.moyeota.domain.admin.controller;
 
-import com.back.team9.moyeota.domain.admin.dto.AdminFundingListResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminMemberDetailResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminMemberListResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminMemberWithdrawResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminSettlementDetailResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminSettlementListResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminSettlementPaymentSummaryResponse;
-import com.back.team9.moyeota.domain.admin.dto.AdminStatisticsResponse;
+import com.back.team9.moyeota.domain.admin.dto.*;
 import com.back.team9.moyeota.domain.admin.service.AdminFundingService;
 import com.back.team9.moyeota.domain.admin.service.AdminMemberService;
 import com.back.team9.moyeota.domain.admin.service.AdminSettlementQueryService;
@@ -36,8 +29,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -341,5 +333,59 @@ class AdminManagementControllerTest {
                 .andExpect(jsonPath("$.data.totalUsers").value(100))
                 .andExpect(jsonPath("$.data.totalPaymentAmount")
                         .value(4820000));
+    }
+
+    @Test
+    @DisplayName("관리자가 펀딩을 강제 취소한다")
+    void cancelFundingReturnsCancelledFunding() throws Exception {
+        // Given
+        AdminFundingCancelResponse response =
+                new AdminFundingCancelResponse(
+                        10L,
+                        FundingStatus.CANCELLED
+                );
+
+        when(adminFundingService.cancelFunding(any(), any()))
+                .thenReturn(response);
+
+        String requestBody = """
+            {
+              "reason": "운영 정책 위반으로 인한 강제 취소"
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/admin/fundings/10")
+                        .with(user("admin"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("ADMIN_CANCEL_FUNDING_SUCCESS"))
+                .andExpect(jsonPath("$.data.fundingId").value(10))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        verify(adminFundingService).cancelFunding(any(), any());
+    }
+
+    @Test
+    @DisplayName("펀딩 강제 취소 사유가 없으면 400을 반환한다")
+    void cancelFundingWithoutReasonReturnsBadRequest() throws Exception {
+        // Given
+        String requestBody = """
+            {
+              "reason": ""
+            }
+            """;
+
+        // When / Then
+        mockMvc.perform(patch("/api/admin/fundings/10")
+                        .with(user("admin"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(adminFundingService);
     }
 }
