@@ -22,10 +22,6 @@ public record FundingUpdateRequest(
         @NotNull(message = "왕복 여부는 필수입니다.")
         TripType tripType,
 
-        @NotNull(message = "목표 금액은 필수입니다.")
-        @Positive(message = "목표 금액은 0보다 커야 합니다.")
-        Integer totalPrice,
-
 //        @NotEmpty(message = "최소 1개의 노선이 필요합니다.")
 //        List<PathinfoUpdateRequest> paths
         @NotNull(message = "노선 정보는 필수입니다.")

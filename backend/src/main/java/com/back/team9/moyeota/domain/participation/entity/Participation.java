@@ -6,6 +6,7 @@ import com.back.team9.moyeota.domain.seat.entity.Seat;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,9 +39,9 @@ public class Participation {
     private ParticipationPaymentStatus paymentStatus;
 
     // 최종 확정 금액 (출발 -7일 자정에 스케줄러가 계산 후 업데이트)
-    // 참여 신청 시점에는 아직 인원이 확정되지 않아 0으로 저장
+    // 참여 신청 시점에는 아직 인원이 확정되지 않아 BigDecimal.ZERO로 저장
     @Column(nullable = false)
-    private Integer finalAmount;
+    private BigDecimal finalAmount;
 
     // 참여 상태
     @Enumerated(EnumType.STRING)
@@ -73,7 +74,7 @@ public class Participation {
                 .funding(funding)
                 .member(member)
                 .paymentStatus(ParticipationPaymentStatus.ACTIVE)
-                .finalAmount(0)
+                .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
                 .outboundSeat(outboundSeat)
                 .returnSeat(returnSeat)

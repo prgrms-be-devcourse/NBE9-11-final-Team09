@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.funding.service;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +48,14 @@ public class FundingService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
+                request.route(),
+                request.busType(),
+                request.tripType()
+        );
         fundingValidator.validateFundingRequest(
                 request.minParticipants(),
-                request.busType(),
-                request.totalPrice()
+                request.busType()
         );
 
         LocalDate departureDate = request.route()
@@ -63,7 +69,7 @@ public class FundingService {
                 departureDate,
                 request.busType(),
                 request.minParticipants(),
-                request.totalPrice(),
+                totalPrice,
                 request.tripType()
         );
 
@@ -178,30 +184,35 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
         fundingValidator.validateUpdatable(funding);
+
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
+                request.route(),
+                request.busType(),
+                request.tripType()
+        );
         int currentParticipants = countActiveParticipants(fundingId);
 
         if (currentParticipants > 0) {
-            updateFundingWithParticipants(funding, request);
+            updateFundingWithParticipants(funding, request, totalPrice);
             return;
         }
 
         fundingValidator.validateFundingRequest(
                 request.minParticipants(),
-                request.busType(),
-                request.totalPrice()
+                request.busType()
         );
 
-        updateFundingWithoutParticipants(funding, request);
+        updateFundingWithoutParticipants(funding, request, totalPrice);
 
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
-    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, BigDecimal totalPrice) {
 
         boolean changed =
                 !Objects.equals(funding.getBusType(), request.busType())
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
-                        || !Objects.equals(funding.getTotalPrice(), request.totalPrice())
+                        || !Objects.equals(funding.getTotalPrice(), totalPrice)
                         || !Objects.equals(funding.getTripType(), request.tripType())
                         || pathinfoService.isRouteChanged(
                         funding.getFundingId(),
@@ -221,7 +232,8 @@ public class FundingService {
     // 참가자 없을경우 전체 수정 허용
     private void updateFundingWithoutParticipants(
             Funding funding,
-            FundingUpdateRequest request
+            FundingUpdateRequest request,
+            BigDecimal totalPrice
     ) {
 
         LocalDate departureDate = request.route()
@@ -233,7 +245,7 @@ public class FundingService {
                 request.content(),
                 request.busType(),
                 request.minParticipants(),
-                request.totalPrice(),
+                totalPrice,
                 request.tripType(),
                 departureDate
         );
