@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.domain.member.dto;
+package com.back.team9.moyeota.domain.member.dto.profile;
 
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;

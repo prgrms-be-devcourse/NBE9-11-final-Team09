@@ -1,6 +1,6 @@
 package com.back.team9.moyeota.domain.member.service;
 
-import com.back.team9.moyeota.domain.member.dto.MemberWithdrawRequest;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberWithdrawRequest;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;

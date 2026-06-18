@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.domain.member.dto;
+package com.back.team9.moyeota.domain.member.dto.history;
 
 import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;

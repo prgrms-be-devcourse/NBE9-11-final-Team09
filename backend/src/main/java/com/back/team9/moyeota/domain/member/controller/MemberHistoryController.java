@@ -1,8 +1,8 @@
 package com.back.team9.moyeota.domain.member.controller;
 
-import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberParticipationResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberPaymentResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberFundingResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberParticipationResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.service.MemberHistoryService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import com.back.team9.moyeota.global.response.PageResponse;

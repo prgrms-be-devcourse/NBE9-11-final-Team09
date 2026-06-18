@@ -1,10 +1,9 @@
 package com.back.team9.moyeota.domain.member.service;
 
-import com.back.team9.moyeota.domain.member.dto.MemberLoginRequest;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberLoginResult;
+import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginRequest;
+import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResponse;
+import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.entity.Member;
-import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;

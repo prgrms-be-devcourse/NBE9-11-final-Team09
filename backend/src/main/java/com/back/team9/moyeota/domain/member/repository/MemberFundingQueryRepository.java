@@ -1,7 +1,7 @@
 package com.back.team9.moyeota.domain.member.repository;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
-import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberFundingResponse;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

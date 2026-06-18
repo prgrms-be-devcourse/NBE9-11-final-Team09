@@ -1,6 +1,9 @@
 package com.back.team9.moyeota.domain.member.controller;
 
-import com.back.team9.moyeota.domain.member.dto.*;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberInfoResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateRequest;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberWithdrawRequest;
 import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.MemberProfileService;
 import com.back.team9.moyeota.domain.member.service.MemberWithdrawService;

@@ -1,7 +1,7 @@
 package com.back.team9.moyeota.domain.member.service;
 
-import com.back.team9.moyeota.domain.member.dto.EmailVerificationConfirmRequest;
-import com.back.team9.moyeota.domain.member.dto.MemberSignupRequest;
+import com.back.team9.moyeota.domain.member.dto.auth.EmailVerificationConfirmRequest;
+import com.back.team9.moyeota.domain.member.dto.auth.MemberSignupRequest;
 import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupData;
 import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupRedisRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;

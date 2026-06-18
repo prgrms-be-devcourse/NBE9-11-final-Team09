@@ -1,8 +1,8 @@
 package com.back.team9.moyeota.domain.member.service;
 
-import com.back.team9.moyeota.domain.member.dto.MemberInfoResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberUpdateRequest;
-import com.back.team9.moyeota.domain.member.dto.MemberUpdateResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberInfoResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateRequest;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;

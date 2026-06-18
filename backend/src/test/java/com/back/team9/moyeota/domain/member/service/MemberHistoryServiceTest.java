@@ -2,9 +2,9 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
-import com.back.team9.moyeota.domain.member.dto.MemberFundingResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberParticipationResponse;
-import com.back.team9.moyeota.domain.member.dto.MemberPaymentResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberFundingResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberParticipationResponse;
+import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
