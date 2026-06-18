@@ -21,9 +21,9 @@ import static org.mockito.Mockito.*;
 })
 @TestPropertySource(properties = {
         "app.mail.retry.max-retries=2",
-        "app.mail.retry.delay=0",
+        "app.mail.retry.delay=1",
         "app.mail.retry.multiplier=1.0",
-        "app.mail.retry.max-delay=0"
+        "app.mail.retry.max-delay=10"
 })
 @DisplayName("이메일 인증 메일 재시도 테스트")
 class EmailVerificationMailSenderTest {
