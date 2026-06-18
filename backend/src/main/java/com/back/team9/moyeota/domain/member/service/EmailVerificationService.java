@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.member.service;
 
+import com.back.team9.moyeota.domain.member.infrastructure.mail.EmailVerificationMailSender;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailVerificationService {
 
-    private final JavaMailSender mailSender;
+    private final EmailVerificationMailSender mailSender;
 
     public void sendVerificationCode(
             String email,

@@ -65,3 +65,11 @@ jwt:
 
 platform:
   fee-rate: "0.10"
+
+app:
+  mail:
+    retry:
+      max-retries: 2
+      delay: 500
+      multiplier: 2.0
+      max-delay: 2000
