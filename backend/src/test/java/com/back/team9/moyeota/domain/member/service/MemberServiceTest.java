@@ -2,11 +2,9 @@ package com.back.team9.moyeota.domain.member.service;
 
 import com.back.team9.moyeota.domain.member.dto.EmailVerificationConfirmRequest;
 import com.back.team9.moyeota.domain.member.dto.MemberSignupRequest;
-import com.back.team9.moyeota.domain.member.entity.Member;
-import com.back.team9.moyeota.domain.member.entity.MemberStatus;
-import com.back.team9.moyeota.domain.member.entity.PendingMemberSignup;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupData;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupRedisRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
-import com.back.team9.moyeota.domain.member.repository.PendingMemberSignupRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
@@ -19,27 +17,27 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("회원 서비스 테스트")
+@DisplayName("회원가입 서비스 테스트")
 class MemberServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
 
     @Mock
-    private PendingMemberSignupRepository pendingSignupRepository;
+    private PendingSignupRedisRepository pendingSignupRepository;
 
     @Mock
-    private PendingMemberSignupService pendingMemberSignupService;
+    private MemberRegistrationService memberRegistrationService;
 
     @Mock
     private EmailVerificationService emailVerificationService;
@@ -51,286 +49,232 @@ class MemberServiceTest {
     private MemberService memberService;
 
     @Test
-    @DisplayName("유효한 회원가입 요청 시 가입 대기 정보를 저장하고 인증 메일을 발송한다")
+    @DisplayName("유효한 회원가입 요청은 Redis에 저장하고 인증 메일을 발송한다")
     void requestSignupWithValidRequestSavesPendingSignupAndSendsEmail() {
-        // Given
         MemberSignupRequest request = createSignupRequest();
-
         when(passwordEncoder.encode(anyString()))
                 .thenAnswer(invocation ->
                         "encoded-" + invocation.getArgument(0, String.class)
                 );
 
-        // When
         memberService.requestSignup(request);
 
-        // Then
+        ArgumentCaptor<PendingSignupData> signupCaptor =
+                ArgumentCaptor.forClass(PendingSignupData.class);
         InOrder inOrder = inOrder(
-                pendingMemberSignupService,
+                pendingSignupRepository,
                 emailVerificationService
         );
+        inOrder.verify(pendingSignupRepository)
+                .save(signupCaptor.capture());
+        inOrder.verify(emailVerificationService)
+                .sendVerificationCode(eq(request.email()), anyString());
 
-        inOrder.verify(pendingMemberSignupService).saveOrUpdate(
-                eq(request),
-                eq("encoded-" + request.password()),
-                anyString(),
-                any(LocalDateTime.class)
-        );
-
-        inOrder.verify(emailVerificationService).sendVerificationCode(
-                eq(request.email()),
-                anyString()
-        );
+        PendingSignupData savedData = signupCaptor.getValue();
+        assertThat(savedData.email()).isEqualTo(request.email());
+        assertThat(savedData.encodedPassword())
+                .isEqualTo("encoded-" + request.password());
+        assertThat(savedData.name()).isEqualTo(request.name());
+        assertThat(savedData.nickname()).isEqualTo(request.nickname());
+        assertThat(savedData.phoneNumber())
+                .isEqualTo(request.phoneNumber());
+        assertThat(savedData.verificationCodeHash())
+                .startsWith("encoded-");
     }
 
     @Test
-    @DisplayName("이미 가입된 이메일이면 예외가 발생한다")
+    @DisplayName("이미 가입된 이메일이면 회원가입 요청을 거부한다")
     void requestSignupWithDuplicateEmailThrowsException() {
-        // Given
         MemberSignupRequest request = createSignupRequest();
-
         when(memberRepository.existsByEmail(request.email()))
                 .thenReturn(true);
 
-        // When / Then
-        assertThatThrownBy(() -> memberService.requestSignup(request))
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
+        assertBusinessException(
+                () -> memberService.requestSignup(request),
+                ErrorCode.DUPLICATE_EMAIL
+        );
 
         verifyNoInteractions(pendingSignupRepository);
         verifyNoInteractions(emailVerificationService);
     }
 
     @Test
-    @DisplayName("이미 사용 중인 닉네임이면 예외가 발생한다")
+    @DisplayName("이미 사용 중인 닉네임이면 회원가입 요청을 거부한다")
     void requestSignupWithDuplicateNicknameThrowsException() {
-        // Given
         MemberSignupRequest request = createSignupRequest();
-
         when(memberRepository.existsByNickname(request.nickname()))
                 .thenReturn(true);
 
-        // When / Then
-        assertThatThrownBy(() -> memberService.requestSignup(request))
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
+        assertBusinessException(
+                () -> memberService.requestSignup(request),
+                ErrorCode.DUPLICATE_NICKNAME
+        );
 
         verifyNoInteractions(pendingSignupRepository);
         verifyNoInteractions(emailVerificationService);
     }
 
     @Test
-    @DisplayName("잘못된 이메일 형식이면 예외가 발생한다")
+    @DisplayName("이메일 형식이 잘못되면 회원가입 요청을 거부한다")
     void requestSignupWithInvalidEmailThrowsException() {
-        // Given
         MemberSignupRequest request = new MemberSignupRequest(
-                "invalid-email",
-                "Password123!",
-                "홍길동",
-                "모여타요",
+                "invalid-email", "Password123!", "홍길동", "모여타요",
                 "010-1234-5678"
         );
 
-        // When / Then
-        assertThatThrownBy(() -> memberService.requestSignup(request))
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.INVALID_EMAIL_FORMAT);
-
-        verifyNoInteractions(memberRepository);
-        verifyNoInteractions(pendingSignupRepository);
+        assertBusinessException(
+                () -> memberService.requestSignup(request),
+                ErrorCode.INVALID_EMAIL_FORMAT
+        );
+        verifyNoInteractions(memberRepository, pendingSignupRepository);
     }
 
     @Test
-    @DisplayName("잘못된 비밀번호 형식이면 예외가 발생한다")
+    @DisplayName("비밀번호 형식이 잘못되면 회원가입 요청을 거부한다")
     void requestSignupWithInvalidPasswordThrowsException() {
-        // Given
         MemberSignupRequest request = new MemberSignupRequest(
-                "moyeota@example.com",
-                "password",
-                "홍길동",
-                "모여타요",
+                "moyeota@example.com", "password", "홍길동", "모여타요",
                 "010-1234-5678"
         );
 
-        // When / Then
-        assertThatThrownBy(() -> memberService.requestSignup(request))
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.INVALID_PASSWORD_FORMAT);
-
-        verifyNoInteractions(memberRepository);
-        verifyNoInteractions(pendingSignupRepository);
+        assertBusinessException(
+                () -> memberService.requestSignup(request),
+                ErrorCode.INVALID_PASSWORD_FORMAT
+        );
+        verifyNoInteractions(memberRepository, pendingSignupRepository);
     }
 
     @Test
-    @DisplayName("잘못된 전화번호 형식이면 예외가 발생한다")
+    @DisplayName("전화번호 형식이 잘못되면 회원가입 요청을 거부한다")
     void requestSignupWithInvalidPhoneNumberThrowsException() {
-        // Given
         MemberSignupRequest request = new MemberSignupRequest(
-                "moyeota@example.com",
-                "Password123!",
-                "홍길동",
-                "모여타요",
+                "moyeota@example.com", "Password123!", "홍길동", "모여타요",
                 "01012345678"
         );
 
-        // When / Then
+        assertBusinessException(
+                () -> memberService.requestSignup(request),
+                ErrorCode.INVALID_PHONE_NUMBER_FORMAT
+        );
+        verifyNoInteractions(memberRepository, pendingSignupRepository);
+    }
+
+    @Test
+    @DisplayName("인증 메일 발송에 실패하면 Redis 가입 대기 정보를 삭제한다")
+    void requestSignupWhenEmailSendingFailsDeletesPendingSignup() {
+        MemberSignupRequest request = createSignupRequest();
+        BusinessException mailException =
+                new BusinessException(ErrorCode.EMAIL_SEND_FAILED);
+        when(passwordEncoder.encode(anyString()))
+                .thenReturn("encoded-value");
+        doThrow(mailException).when(emailVerificationService)
+                .sendVerificationCode(eq(request.email()), anyString());
+
         assertThatThrownBy(() -> memberService.requestSignup(request))
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.INVALID_PHONE_NUMBER_FORMAT);
+                .isSameAs(mailException);
 
-        verifyNoInteractions(memberRepository);
-        verifyNoInteractions(pendingSignupRepository);
+        verify(pendingSignupRepository).deleteByEmail(request.email());
     }
 
     @Test
-    @DisplayName("올바른 인증코드 확인 시 회원가입을 완료한다")
-    void confirmEmailVerificationWithValidCodeSavesMember() {
-        // Given
-        String verificationCode = "A1B2C3";
-
+    @DisplayName("올바른 인증코드이면 회원 등록 후 Redis 데이터를 삭제한다")
+    void confirmEmailVerificationWithValidCodeRegistersMember() {
         EmailVerificationConfirmRequest request =
                 new EmailVerificationConfirmRequest(
-                        "moyeota@example.com",
-                        verificationCode
+                        "moyeota@example.com", "A1B2C3"
                 );
-
-        PendingMemberSignup pendingSignup = createPendingSignup();
-
+        PendingSignupData signupData = createPendingSignupData();
         when(pendingSignupRepository.findByEmail(request.email()))
-                .thenReturn(Optional.of(pendingSignup));
-
-        when(passwordEncoder.matches(
-                verificationCode,
-                pendingSignup.getVerificationCodeHash()
-        )).thenReturn(true);
-
-        // When
-        memberService.confirmEmailVerification(request);
-
-        // Then
-        ArgumentCaptor<Member> memberCaptor =
-                ArgumentCaptor.forClass(Member.class);
-
-        verify(memberRepository).save(memberCaptor.capture());
-        verify(pendingSignupRepository).delete(pendingSignup);
-
-        Member savedMember = memberCaptor.getValue();
-
-        assertThat(savedMember.getEmail())
-                .isEqualTo(pendingSignup.getEmail());
-        assertThat(savedMember.getNickname())
-                .isEqualTo(pendingSignup.getNickname());
-        assertThat(savedMember.getStatus())
-                .isEqualTo(MemberStatus.ACTIVE);
-    }
-
-    @Test
-    @DisplayName("잘못된 인증코드 확인 시 예외가 발생한다")
-    void confirmEmailVerificationWithInvalidCodeThrowsException() {
-        // Given
-        EmailVerificationConfirmRequest request =
-                new EmailVerificationConfirmRequest(
-                        "moyeota@example.com",
-                        "WRONG1"
-                );
-
-        PendingMemberSignup pendingSignup = createPendingSignup();
-
-        when(pendingSignupRepository.findByEmail(request.email()))
-                .thenReturn(Optional.of(pendingSignup));
-
+                .thenReturn(Optional.of(signupData));
         when(passwordEncoder.matches(
                 request.verificationCode(),
-                pendingSignup.getVerificationCodeHash()
-        )).thenReturn(false);
+                signupData.verificationCodeHash()
+        )).thenReturn(true);
 
-        // When / Then
-        assertThatThrownBy(
-                () -> memberService.confirmEmailVerification(request)
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting(exception ->
-                        ((BusinessException) exception).getErrorCode()
-                )
-                .isEqualTo(ErrorCode.INVALID_VERIFICATION_CODE);
+        memberService.confirmEmailVerification(request);
 
-        verify(memberRepository, never()).save(any(Member.class));
-        verify(pendingSignupRepository, never())
-                .delete(any(PendingMemberSignup.class));
+        InOrder inOrder = inOrder(
+                memberRegistrationService,
+                pendingSignupRepository
+        );
+        inOrder.verify(memberRegistrationService).register(signupData);
+        inOrder.verify(pendingSignupRepository)
+                .deleteByEmail(request.email());
     }
 
     @Test
-    @DisplayName("만료된 인증코드 확인 시 예외가 발생한다")
-    void confirmEmailVerificationWithExpiredCodeThrowsException() {
-        // Given
+    @DisplayName("인증코드가 일치하지 않으면 회원을 등록하지 않는다")
+    void confirmEmailVerificationWithInvalidCodeThrowsException() {
         EmailVerificationConfirmRequest request =
                 new EmailVerificationConfirmRequest(
-                        "moyeota@example.com",
-                        "A1B2C3"
+                        "moyeota@example.com", "WRONG1"
                 );
+        PendingSignupData signupData = createPendingSignupData();
+        when(pendingSignupRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(signupData));
+        when(passwordEncoder.matches(
+                request.verificationCode(),
+                signupData.verificationCodeHash()
+        )).thenReturn(false);
 
-        PendingMemberSignup expiredSignup = PendingMemberSignup.create(
-                request.email(),
-                "encoded-password",
-                "홍길동",
-                "모여타요",
-                "010-1234-5678",
-                "encoded-code",
-                LocalDateTime.now().minusMinutes(1)
+        assertBusinessException(
+                () -> memberService.confirmEmailVerification(request),
+                ErrorCode.INVALID_VERIFICATION_CODE
         );
 
-        when(pendingSignupRepository.findByEmail(request.email()))
-                .thenReturn(Optional.of(expiredSignup));
+        verify(memberRegistrationService, never())
+                .register(any(PendingSignupData.class));
+        verify(pendingSignupRepository, never())
+                .deleteByEmail(anyString());
+    }
 
-        // When / Then
-        assertThatThrownBy(
-                () -> memberService.confirmEmailVerification(request)
-        )
+    @Test
+    @DisplayName("Redis 가입 대기 정보가 없으면 인증코드가 만료된 것으로 처리한다")
+    void confirmEmailVerificationWithoutPendingSignupThrowsException() {
+        EmailVerificationConfirmRequest request =
+                new EmailVerificationConfirmRequest(
+                        "moyeota@example.com", "A1B2C3"
+                );
+        when(pendingSignupRepository.findByEmail(request.email()))
+                .thenReturn(Optional.empty());
+
+        assertBusinessException(
+                () -> memberService.confirmEmailVerification(request),
+                ErrorCode.VERIFICATION_CODE_EXPIRED
+        );
+
+        verifyNoInteractions(memberRegistrationService);
+        verify(pendingSignupRepository, never())
+                .deleteByEmail(anyString());
+    }
+
+    private void assertBusinessException(
+            Runnable action,
+            ErrorCode expectedErrorCode
+    ) {
+        assertThatThrownBy(action::run)
                 .isInstanceOf(BusinessException.class)
                 .extracting(exception ->
                         ((BusinessException) exception).getErrorCode()
                 )
-                .isEqualTo(ErrorCode.VERIFICATION_CODE_EXPIRED);
-
-        verifyNoInteractions(memberRepository);
-        verify(pendingSignupRepository, never())
-                .delete(any(PendingMemberSignup.class));
+                .isEqualTo(expectedErrorCode);
     }
 
     private MemberSignupRequest createSignupRequest() {
         return new MemberSignupRequest(
-                "moyeota@example.com",
-                "Password123!",
-                "홍길동",
-                "모여타요",
+                "moyeota@example.com", "Password123!", "홍길동", "모여타요",
                 "010-1234-5678"
         );
     }
 
-    private PendingMemberSignup createPendingSignup() {
-        return PendingMemberSignup.create(
+    private PendingSignupData createPendingSignupData() {
+        return new PendingSignupData(
                 "moyeota@example.com",
                 "encoded-password",
                 "홍길동",
                 "모여타요",
                 "010-1234-5678",
-                "encoded-code",
-                LocalDateTime.now().plusMinutes(30)
+                "encoded-code"
         );
     }
 }
