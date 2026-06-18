@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.admin.service;
 
+import com.back.team9.moyeota.domain.admin.dto.AdminFundingStatistics;
+import com.back.team9.moyeota.domain.admin.dto.AdminMemberStatistics;
 import com.back.team9.moyeota.domain.admin.dto.AdminStatisticsResponse;
 import com.back.team9.moyeota.domain.admin.repository.AdminFundingQueryRepository;
 import com.back.team9.moyeota.domain.admin.repository.AdminMemberQueryRepository;
@@ -42,17 +44,20 @@ class AdminStatisticsServiceTest {
     @DisplayName("서비스 통계를 조회한다")
     void getStatisticsReturnsServiceStatistics() {
         // Given
-        when(memberRepository.count()).thenReturn(100L);
-        when(memberRepository.countByStatus(MemberStatus.ACTIVE))
-                .thenReturn(90L);
-        when(memberRepository.countByStatus(MemberStatus.WITHDRAWN))
-                .thenReturn(5L);
-        when(fundingRepository.countByStatus(FundingStatus.RECRUITING))
-                .thenReturn(10L);
-        when(fundingRepository.countByStatus(FundingStatus.COMPLETED))
-                .thenReturn(20L);
-        when(fundingRepository.countByStatus(FundingStatus.CANCELLED))
-                .thenReturn(3L);
+        AdminMemberStatistics memberStatistics =
+                new AdminMemberStatistics(100L, 90L, 5L);
+        AdminFundingStatistics fundingStatistics =
+                new AdminFundingStatistics(10L, 20L, 3L);
+
+        when(memberRepository.findStatistics(
+                MemberStatus.ACTIVE,
+                MemberStatus.WITHDRAWN
+        )).thenReturn(memberStatistics);
+        when(fundingRepository.findStatistics(
+                FundingStatus.RECRUITING,
+                FundingStatus.COMPLETED,
+                FundingStatus.CANCELLED
+        )).thenReturn(fundingStatistics);
         when(paymentRepository.sumAmountByStatus(PaymentStatus.PAID))
                 .thenReturn(4820000L);
         when(settlementRepository.countByStatus(SettlementStatus.CALCULATED))

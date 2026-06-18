@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.admin.service;
 
+import com.back.team9.moyeota.domain.admin.dto.AdminFundingStatistics;
+import com.back.team9.moyeota.domain.admin.dto.AdminMemberStatistics;
 import com.back.team9.moyeota.domain.admin.dto.AdminStatisticsResponse;
 import com.back.team9.moyeota.domain.admin.repository.*;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
@@ -21,15 +23,30 @@ public class AdminStatisticsService {
 
     @Transactional(readOnly = true)
     public AdminStatisticsResponse getStatistics() {
+        AdminMemberStatistics memberStatistics =
+                memberRepository.findStatistics(
+                        MemberStatus.ACTIVE,
+                        MemberStatus.WITHDRAWN
+                );
+
+        AdminFundingStatistics fundingStatistics =
+                fundingRepository.findStatistics(
+                        FundingStatus.RECRUITING,
+                        FundingStatus.COMPLETED,
+                        FundingStatus.CANCELLED
+                );
+
         return new AdminStatisticsResponse(
-                memberRepository.count(),
-                memberRepository.countByStatus(MemberStatus.ACTIVE),
-                memberRepository.countByStatus(MemberStatus.WITHDRAWN),
-                fundingRepository.countByStatus(FundingStatus.RECRUITING),
-                fundingRepository.countByStatus(FundingStatus.COMPLETED),
-                fundingRepository.countByStatus(FundingStatus.CANCELLED),
+                memberStatistics.totalUsers(),
+                memberStatistics.activeUsers(),
+                memberStatistics.withdrawnUsers(),
+                fundingStatistics.activeFundings(),
+                fundingStatistics.completedFundings(),
+                fundingStatistics.cancelledFundings(),
                 paymentRepository.sumAmountByStatus(PaymentStatus.PAID),
-                settlementRepository.countByStatus(SettlementStatus.CALCULATED),
+                settlementRepository.countByStatus(
+                        SettlementStatus.CALCULATED
+                ),
                 0L
         );
     }

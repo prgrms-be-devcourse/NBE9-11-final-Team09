@@ -1,6 +1,8 @@
 package com.back.team9.moyeota.domain.admin.repository;
 
 import com.back.team9.moyeota.domain.admin.dto.AdminFundingListResponse;
+import com.back.team9.moyeota.domain.admin.dto.AdminFundingStatistics;
+import org.springframework.data.repository.query.Param;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -54,5 +56,28 @@ public interface AdminFundingQueryRepository extends JpaRepository<Funding, Long
     Page<AdminFundingListResponse> findAdminFundings(
             ParticipationStatus canceledStatus,
             Pageable pageable
+    );
+
+    @Query("""
+        SELECT new com.back.team9.moyeota.domain.admin.dto.AdminFundingStatistics(
+            COUNT(CASE
+                WHEN f.status = :activeStatus THEN 1
+                ELSE NULL
+            END),
+            COUNT(CASE
+                WHEN f.status = :completedStatus THEN 1
+                ELSE NULL
+            END),
+            COUNT(CASE
+                WHEN f.status = :cancelledStatus THEN 1
+                ELSE NULL
+            END)
+        )
+        FROM Funding f
+        """)
+    AdminFundingStatistics findStatistics(
+            @Param("activeStatus") FundingStatus activeStatus,
+            @Param("completedStatus") FundingStatus completedStatus,
+            @Param("cancelledStatus") FundingStatus cancelledStatus
     );
 }
