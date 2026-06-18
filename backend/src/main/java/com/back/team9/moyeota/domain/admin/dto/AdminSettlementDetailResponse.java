@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.settlement.entity.Settlement;
 import com.back.team9.moyeota.domain.settlement.entity.SettlementStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -16,9 +17,9 @@ public record AdminSettlementDetailResponse(
         String fundingTitle,
         FundingStatus fundingStatus,
         LocalDate departureDate,
-        Integer totalAmount,
-        Integer platformFee,
-        Integer hostPaybackAmount,
+        BigDecimal totalAmount,
+        BigDecimal platformFee,
+        BigDecimal hostPaybackAmount,
         SettlementStatus status,
         LocalDateTime paybackPaidAt,
         LocalDateTime createdAt,
