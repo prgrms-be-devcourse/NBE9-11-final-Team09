@@ -44,7 +44,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(MemberController.class)
+@WebMvcTest({
+        MemberAuthController.class,
+        MemberProfileController.class,
+        MemberHistoryController.class
+})
 @Import({GlobalExceptionHandler.class})
 @DisplayName("회원 컨트롤러 테스트")
 class MemberControllerTest {
