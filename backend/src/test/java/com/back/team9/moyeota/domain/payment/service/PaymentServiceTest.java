@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -433,7 +434,7 @@ class PaymentServiceTest {
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
 
-        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(Optional.of(payment));
+        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(payment));
 
         paymentService.refundByParticipationId(1L);
 
@@ -444,7 +445,7 @@ class PaymentServiceTest {
     @Test
     @DisplayName("참여 ID 환불 - 결제 내역 없을 시 ORDER_NOT_FOUND 예외")
     void refundByParticipationId_결제없음_ORDER_NOT_FOUND예외() {
-        given(paymentRepository.findByParticipation_ParticipationId(999L)).willReturn(Optional.empty());
+        given(paymentRepository.findByParticipation_ParticipationId(999L)).willReturn(List.of());
 
         assertThatThrownBy(() -> paymentService.refundByParticipationId(999L))
                 .isInstanceOf(BusinessException.class)
@@ -463,7 +464,7 @@ class PaymentServiceTest {
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId").status(PaymentStatus.REFUNDED).createdAt(LocalDateTime.now()).build();
 
-        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(Optional.of(refundedPayment));
+        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(refundedPayment));
 
         paymentService.refundByParticipationId(1L);
 

@@ -29,7 +29,7 @@ public class Payment {
     @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(nullable = true)
+    @Column(nullable = true, unique = true)
     private String tossPaymentKey;
 
     @Column(nullable = false, unique = true)

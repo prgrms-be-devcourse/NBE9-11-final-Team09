@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -96,15 +97,19 @@ public class PaymentService {
 
     @Transactional
     public void refundByParticipationId(Long participationId) {
-        Payment payment = paymentRepository.findByParticipation_ParticipationId(participationId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
-        if (payment.getStatus() != PaymentStatus.PAID) {
-            return;
+        List<Payment> payments = paymentRepository.findByParticipation_ParticipationId(participationId);
+        if(payments.isEmpty()){
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
 
-        tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
-        paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        for(Payment payment : payments){
+            if (payment.getStatus() != PaymentStatus.PAID) {
+                continue;
+            }
+            tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
+            paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        }
+
     }
 
     @Transactional
@@ -115,6 +120,10 @@ public class PaymentService {
         if (!participation.getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
+
+        List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
+                PaymentStatus.PENDING);
+        paymentRepository.deleteAll(existingPendings);
 
         String orderId = UUID.randomUUID().toString();
         Payment payment = Payment.builder()
