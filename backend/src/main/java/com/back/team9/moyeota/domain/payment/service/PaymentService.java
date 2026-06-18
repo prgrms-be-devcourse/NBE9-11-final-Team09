@@ -91,4 +91,17 @@ public class PaymentService {
         Payment updatedPayment = paymentWriter.update(payment, PaymentStatus.REFUNDED);
         return PaymentResponse.from(updatedPayment);
     }
+
+    @Transactional
+    public void refundByParticipationId(Long participationId) {
+        Payment payment = paymentRepository.findByParticipation_ParticipationId(participationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            return;
+        }
+
+        tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
+        paymentWriter.update(payment, PaymentStatus.REFUNDED);
+    }
 }
