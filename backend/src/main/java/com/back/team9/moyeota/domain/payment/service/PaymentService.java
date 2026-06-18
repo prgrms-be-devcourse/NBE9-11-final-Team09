@@ -15,6 +15,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -28,10 +29,12 @@ public class PaymentService {
     private final ParticipationRepository participationRepository;
 
 
+    @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
         return confirmPayment(request, PaymentType.DEPOSIT);
     }
 
+    @Transactional
     public PaymentResponse confirmBalance(PaymentConfirmRequest request) {
         return confirmPayment(request, PaymentType.BALANCE);
     }
@@ -64,6 +67,7 @@ public class PaymentService {
         return PaymentResponse.from(savePayment);
     }
 
+    @Transactional
     public PaymentResponse refund(Long paymentId, PaymentRefundRequest request, Long memberId) {
 
         Payment payment = paymentRepository.findById(paymentId)

@@ -20,8 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,7 +37,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class PaymentServiceTest {
 
     @Mock
@@ -57,12 +54,16 @@ class PaymentServiceTest {
     @InjectMocks
     private PaymentService paymentService;
 
-    private Participation mockParticipation(Integer finalAmount, Long memberId) {
+    private Participation mockParticipationForConfirm(Integer finalAmount) {
+        Participation participation = mock(Participation.class);
+        given(participation.getFinalAmount()).willReturn(finalAmount);
+        return participation;
+    }
+
+    private Participation mockParticipationForRefund(Long memberId) {
         Member member = mock(Member.class);
         given(member.getMemberId()).willReturn(memberId);
         Participation participation = mock(Participation.class);
-        given(participation.getFinalAmount()).willReturn(finalAmount);
-        given(participation.getParticipationId()).willReturn(1L);
         given(participation.getMember()).willReturn(member);
         return participation;
     }
@@ -75,7 +76,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForConfirm(50000);
+        given(participation.getParticipationId()).willReturn(1L);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
                 "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
         );
@@ -107,7 +109,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("99999"), 1L
         );
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForConfirm(50000);
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
@@ -166,7 +168,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForConfirm(50000);
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
@@ -189,7 +191,8 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForConfirm(50000);
+        given(participation.getParticipationId()).willReturn(1L);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
                 "test_paymentKey", "test_orderId", "DONE", new BigDecimal("50000")
         );
@@ -238,7 +241,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L
         );
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForConfirm(50000);
 
         given(paymentRepository.findByOrderId("test_orderId")).willReturn(Optional.empty());
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
@@ -259,7 +262,7 @@ class PaymentServiceTest {
     @DisplayName("환불 - 정상 환불 성공")
     void refund_정상요청_환불성공() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForRefund(1L);
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
@@ -283,7 +286,7 @@ class PaymentServiceTest {
     @DisplayName("환불 - 타인의 결제 환불 요청 시 PAYMENT_ACCESS_DENIED 예외 발생")
     void refund_타인결제_PAYMENT_ACCESS_DENIED예외() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForRefund(1L);
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
@@ -319,7 +322,7 @@ class PaymentServiceTest {
     @DisplayName("환불 - 이미 환불된 결제 요청 시 ALREADY_REFUNDED 예외 발생")
     void refund_이미환불된결제_ALREADY_REFUNDED예외() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForRefund(1L);
         Payment refundedPayment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
@@ -340,7 +343,7 @@ class PaymentServiceTest {
     @DisplayName("환불 - PAID 아닌 다른 상태(FAILED 등) 요청 시 INVALID_PAYMENT_STATUS 예외 발생")
     void refund_FAILED상태결제_INVALID_PAYMENT_STATUS예외() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForRefund(1L);
         Payment failedPayment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
@@ -361,7 +364,7 @@ class PaymentServiceTest {
     @DisplayName("환불 - 토스 API 실패 시 REFUND_FAILED 예외 발생")
     void refund_토스API실패_REFUND_FAILED예외() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipation(50000, 1L);
+        Participation participation = mockParticipationForRefund(1L);
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
