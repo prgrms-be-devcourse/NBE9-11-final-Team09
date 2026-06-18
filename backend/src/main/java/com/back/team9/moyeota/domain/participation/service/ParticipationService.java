@@ -142,18 +142,14 @@ public class ParticipationService {
         }
     }
 
-     //Redis HOLD 키 해제 (실패해도 무시)
-     //Redis 장애가 DB 트랜잭션(예약 성공)에 영향을 주지 않도록 예외를 흡수
-     //좌석별로 독립 처리하여, 한 좌석의 실패가 다른 좌석 처리를 막지 않음
+     // 좌석별로 독립 처리하여, 한 좌석의 실패가 다른 좌석 처리를 막지 않음
     private void releaseSeatHoldSafely(Long seatId, Long memberId) {
-        try {
-            seatRedisService.releaseSeat(seatId, memberId);
-        } catch (Exception e) {
+        boolean released = seatRedisService.releaseSeat(seatId, memberId);
+        if (!released) {
             log.warn(
-                    "좌석 HOLD 해제 실패 (TTL로 자동 만료됨) - seatId: {}, memberId: {}",
+                    "좌석 HOLD 해제 실패 (이미 만료/타인 소유 또는 Redis 장애 - TTL로 자동 정리됨) - seatId: {}, memberId: {}",
                     seatId,
-                    memberId,
-                    e
+                    memberId
             );
         }
     }
