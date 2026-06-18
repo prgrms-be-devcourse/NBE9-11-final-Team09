@@ -248,6 +248,36 @@ class MemberServiceTest {
                 .deleteByEmail(anyString());
     }
 
+    @Test
+    @DisplayName("회원 등록에 실패하면 Redis 가입 대기 정보를 유지한다")
+    void confirmEmailVerificationWhenRegistrationFailsKeepsPendingSignup() {
+        EmailVerificationConfirmRequest request =
+                new EmailVerificationConfirmRequest(
+                        "moyeota@example.com",
+                        "A1B2C3"
+                );
+        PendingSignupData signupData = createPendingSignupData();
+        BusinessException registrationException =
+                new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+
+        when(pendingSignupRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(signupData));
+        when(passwordEncoder.matches(
+                request.verificationCode(),
+                signupData.verificationCodeHash()
+        )).thenReturn(true);
+        doThrow(registrationException)
+                .when(memberRegistrationService)
+                .register(signupData);
+
+        assertThatThrownBy(
+                () -> memberService.confirmEmailVerification(request)
+        ).isSameAs(registrationException);
+
+        verify(pendingSignupRepository, never())
+                .deleteByEmail(anyString());
+    }
+
     private void assertBusinessException(
             Runnable action,
             ErrorCode expectedErrorCode
