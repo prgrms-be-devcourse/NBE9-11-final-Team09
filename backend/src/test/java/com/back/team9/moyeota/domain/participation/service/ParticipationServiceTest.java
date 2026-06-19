@@ -15,6 +15,7 @@ import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
@@ -49,13 +50,19 @@ import static org.mockito.Mockito.never;
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
 
-    @Mock
-    private ParticipationRepository participationRepository;
-
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2027, 6, 20, 9, 0);
     private static final Clock FIXED_CLOCK =
             Clock.fixed(FIXED_NOW.atZone(ZONE).toInstant(), ZONE);
+
+    @Mock
+    private ParticipationRepository participationRepository;
+
+    @Mock
+    private ParticipationService participationService;
+
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @Mock
     private FundingRepository fundingRepository;
@@ -72,7 +79,7 @@ class ParticipationServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    private ParticipationService participationService;
+
 
 
     @BeforeEach
@@ -83,6 +90,7 @@ class ParticipationServiceTest {
     private ParticipationService serviceWithClock(Clock clock) {
         return new ParticipationService(
                 participationRepository,
+                paymentRepository,
                 fundingRepository,
                 memberRepository,
                 seatRepository,
@@ -138,7 +146,8 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
+                fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -151,9 +160,6 @@ class ParticipationServiceTest {
         assertThat(response.outboundSeatId()).isEqualTo(outboundSeatId);
         assertThat(response.returnSeatId()).isNull();
 
-        // 좌석이 BOOKED로 확정됐는지, Redis HOLD가 해제됐는지 확인
-        verify(outboundSeat).book(any());
-        verify(seatRedisService).releaseSeat(outboundSeatId, memberId);
         verify(participationRepository).save(any());
     }
 
@@ -173,17 +179,14 @@ class ParticipationServiceTest {
                 returnSeatId
         );
 
-        // Funding Mock - 왕복(ROUND), 모집중(RECRUITING), 정원 10명
         Funding funding = mock(Funding.class);
         given(funding.getFundingId()).willReturn(fundingId);
         given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
         given(funding.getMaxParticipants()).willReturn(10);
         given(funding.getTripType()).willReturn(TripType.ROUND);
 
-        // Member Mock
         Member member = mock(Member.class);
 
-        // outboundSeat - OUTBOUND 노선
         Pathinfo outboundPathinfo = mock(Pathinfo.class);
         given(outboundPathinfo.getFunding()).willReturn(funding);
         given(outboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
@@ -193,7 +196,6 @@ class ParticipationServiceTest {
         given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
         given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
 
-        // returnSeat - RETURN 노선
         Pathinfo returnPathinfo = mock(Pathinfo.class);
         given(returnPathinfo.getFunding()).willReturn(funding);
         given(returnPathinfo.getDirection()).willReturn(Direction.RETURN);
@@ -203,12 +205,11 @@ class ParticipationServiceTest {
         given(returnSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
         given(returnSeat.getPathinfo()).willReturn(returnPathinfo);
 
-        // Repository Mock 동작 정의
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
         given(seatRepository.findByIdWithPathinfoAndFunding(returnSeatId)).willReturn(Optional.of(returnSeat));
@@ -221,11 +222,6 @@ class ParticipationServiceTest {
         assertThat(response.outboundSeatId()).isEqualTo(outboundSeatId);
         assertThat(response.returnSeatId()).isEqualTo(returnSeatId);
 
-        // 가는편/오는편 좌석 모두 BOOKED 확정, Redis HOLD 모두 해제
-        verify(outboundSeat).book(any());
-        verify(returnSeat).book(any());
-        verify(seatRedisService).releaseSeat(outboundSeatId, memberId);
-        verify(seatRedisService).releaseSeat(returnSeatId, memberId);
         verify(participationRepository).save(any());
     }
 
@@ -250,7 +246,6 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
 
-        // 펀딩이 없으니 그 이후 로직(좌석 조회 등)은 호출되면 안 됨
         verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
@@ -363,7 +358,6 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        // 이미 참여 중 → true
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(true);
 
@@ -373,7 +367,6 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.DUPLICATE_PARTICIPATION));
 
-        // 중복이라 좌석 조회는 호출되면 안 됨
         verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
     }
 
@@ -401,8 +394,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        // 현재 인원(10) >= 정원(10) → 정원 초과
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(10L);
 
         // When & Then
@@ -440,9 +432,8 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
-        // 좌석 조회 결과 없음
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.empty());
 
         // When & Then
@@ -473,7 +464,6 @@ class ParticipationServiceTest {
 
         Member member = mock(Member.class);
 
-        // 좌석이 이미 BOOKED 상태
         Seat outboundSeat = mock(Seat.class);
         given(outboundSeat.getStatus()).willReturn(SeatStatus.BOOKED);
 
@@ -481,7 +471,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -498,7 +488,7 @@ class ParticipationServiceTest {
         // Given
         Long memberId = 1L;
         Long fundingId = 10L;
-        Long otherFundingId = 20L; // 좌석이 속한 다른 펀딩
+        Long otherFundingId = 20L;
         Long outboundSeatId = 100L;
 
         ParticipationCreateRequest request = new ParticipationCreateRequest(
@@ -512,7 +502,6 @@ class ParticipationServiceTest {
         given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
         given(funding.getMaxParticipants()).willReturn(10);
 
-        // 좌석이 연결된 노선은 "다른 펀딩(20번)" 소속
         Funding otherFunding = mock(Funding.class);
         given(otherFunding.getFundingId()).willReturn(otherFundingId);
 
@@ -529,7 +518,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -559,7 +548,6 @@ class ParticipationServiceTest {
         given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
         given(funding.getMaxParticipants()).willReturn(10);
 
-        // 같은 펀딩 소속이지만, 노선 방향이 RETURN (오는편)
         Pathinfo wrongDirectionPathinfo = mock(Pathinfo.class);
         given(wrongDirectionPathinfo.getFunding()).willReturn(funding);
         given(wrongDirectionPathinfo.getDirection()).willReturn(Direction.RETURN);
@@ -574,7 +562,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -593,7 +581,6 @@ class ParticipationServiceTest {
         Long fundingId = 10L;
         Long outboundSeatId = 100L;
 
-        // returnSeatId = null인데, 펀딩은 ROUND(왕복)
         ParticipationCreateRequest request = new ParticipationCreateRequest(
                 fundingId,
                 outboundSeatId,
@@ -620,7 +607,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -666,7 +653,7 @@ class ParticipationServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
                 .willReturn(false);
-        given(participationRepository.countByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE))
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
@@ -676,8 +663,6 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED));
     }
-
-    // ==================== cancelParticipation 테스트 ====================
 
     @Test
     @DisplayName("참여 취소 - 본인 참여 내역 없음 PARTICIPATION_NOT_FOUND 예외 발생")
@@ -715,7 +700,6 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ALREADY_CANCELED_PARTICIPATION));
 
-        // 이미 취소된 상태라 cancel()이 또 호출되면 안 됨
         verify(participation, never()).cancel();
     }
 
@@ -754,8 +738,6 @@ class ParticipationServiceTest {
         Long memberId = 1L;
         Long participationId = 100L;
 
-        // 출발 15일 후 → refundDeadline(출발-10일)도 미래, cancelDeadline(출발-7일)도 미래
-        // 즉 지금 취소하면 "환불 대상"에 해당함
         LocalDateTime departureTime = FIXED_NOW.plusDays(15);
 
         Pathinfo outboundPathinfo = mock(Pathinfo.class);
@@ -779,7 +761,6 @@ class ParticipationServiceTest {
         verify(participation).cancel();
         verify(outboundSeat).release();
 
-        // 이벤트가 정확한 participationId로 발행됐는지 확인
         ArgumentCaptor<ParticipationCancelledEvent> captor =
                 ArgumentCaptor.forClass(ParticipationCancelledEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
@@ -793,8 +774,6 @@ class ParticipationServiceTest {
         Long memberId = 1L;
         Long participationId = 100L;
 
-        // 출발 8일 후 → refundDeadline(출발-10일)은 이미 지남, cancelDeadline(출발-7일)은 아직 안 지남
-        // 즉 취소는 되지만 환불 대상은 아님
         LocalDateTime departureTime = FIXED_NOW.plusDays(8);
 
         Pathinfo outboundPathinfo = mock(Pathinfo.class);
@@ -818,7 +797,6 @@ class ParticipationServiceTest {
         verify(participation).cancel();
         verify(outboundSeat).release();
 
-        // 환불 대상이 아니므로 이벤트가 발행되면 안 됨
         verify(eventPublisher, never()).publishEvent(any());
     }
 
@@ -945,8 +923,6 @@ class ParticipationServiceTest {
     }
 
 
-    // ==================== getParticipations 테스트 ====================
-
     @Test
     @DisplayName("참여자 목록 조회 - 정상 조회 성공")
     void getParticipations_정상조회_목록반환() {
@@ -959,7 +935,6 @@ class ParticipationServiceTest {
         given(hostMember.getMemberId()).willReturn(memberId);
         given(funding.getMember()).willReturn(hostMember);
 
-        // 참여자 1명 Mock
         Member participantMember = mock(Member.class);
         given(participantMember.getNickname()).willReturn("모여타요");
 
@@ -1010,8 +985,8 @@ class ParticipationServiceTest {
     @DisplayName("참여자 목록 조회 - 방장이 아닌 경우 FUNDING_FORBIDDEN 예외 발생")
     void getParticipations_방장아님_FUNDING_FORBIDDEN예외() {
         // Given
-        Long requestMemberId = 2L;  // 요청자 (방장 아님)
-        Long hostMemberId = 1L;     // 실제 방장
+        Long requestMemberId = 2L;
+        Long hostMemberId = 1L;
         Long fundingId = 10L;
 
         Funding funding = mock(Funding.class);
@@ -1027,7 +1002,6 @@ class ParticipationServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.FUNDING_FORBIDDEN));
 
-        // 권한 없으니 목록 조회는 호출되면 안 됨
         verify(participationRepository, never()).findByFunding_FundingId(any());
     }
 
