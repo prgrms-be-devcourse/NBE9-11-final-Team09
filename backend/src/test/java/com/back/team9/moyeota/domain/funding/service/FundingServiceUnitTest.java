@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
 import com.back.team9.moyeota.domain.funding.dto.FundingSearchCondition;
 import com.back.team9.moyeota.domain.funding.dto.FundingUpdateRequest;
 import com.back.team9.moyeota.domain.funding.dto.RouteRequest;
+import com.back.team9.moyeota.domain.chatroom.service.ChatRoomService;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
@@ -69,6 +70,9 @@ class FundingServiceUnitTest {
     private PathinfoService pathinfoService;
 
     @Mock
+    private ChatRoomService chatRoomService;
+
+    @Mock
     private ParticipationRepository participationRepository;
 
     @Mock
@@ -113,6 +117,7 @@ class FundingServiceUnitTest {
                 .validateFundingRequest(20, BusType.BUS_45);
         verify(pathinfoService)
                 .createPathinfos(savedFunding, TripType.ONE_WAY, request.route());
+        verify(chatRoomService).createRoomForFunding(savedFunding);
     }
 
     @Test
@@ -129,7 +134,7 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
 
-        verifyNoInteractions(fundingRepository, pathinfoService, fundingValidator);
+        verifyNoInteractions(fundingRepository, pathinfoService, chatRoomService, fundingValidator);
     }
 
     @Test
@@ -155,7 +160,7 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
 
         verify(fundingRepository, never()).save(any());
-        verifyNoInteractions(pathinfoService);
+        verifyNoInteractions(pathinfoService, chatRoomService);
     }
 
     @Test

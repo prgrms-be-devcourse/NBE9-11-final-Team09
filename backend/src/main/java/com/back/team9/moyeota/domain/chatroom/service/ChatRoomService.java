@@ -1,13 +1,11 @@
 package com.back.team9.moyeota.domain.chatroom.service;
 
-import com.back.team9.moyeota.domain.chatroom.dto.ChatMessageRequest;
 import com.back.team9.moyeota.domain.chatroom.dto.ChatRoomResponse;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoomStatus;
 import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
-import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -42,6 +40,21 @@ public class ChatRoomService {
         ChatRoom saved = chatRoomRepository.save(room);
 
         return ChatRoomResponse.from(saved);
+    }
+
+    // 펀딩 생성 시 자동 생성용 메서드
+    public ChatRoom createRoomForFunding(Funding funding) {
+        if (chatRoomRepository.existsByFundingFundingId(funding.getFundingId())) {
+            throw new BusinessException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+        }
+
+        ChatRoom room = ChatRoom.builder()
+                .funding(funding)
+                .status(ChatRoomStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return chatRoomRepository.save(room);
     }
 
     public ChatRoom getRoom(Long fundingId){

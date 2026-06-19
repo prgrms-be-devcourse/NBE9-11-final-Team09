@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.funding.service;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.chatroom.service.ChatRoomService;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
@@ -38,6 +39,7 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final PathinfoService pathinfoService;
+    private final ChatRoomService chatRoomService;
     private final ParticipationRepository participationRepository;
     private final FundingValidator fundingValidator;
 
@@ -80,9 +82,8 @@ public class FundingService {
                 request.tripType(),
                 request.route()
         );
+        chatRoomService.createRoomForFunding(savedFunding);
 
-        // TODO: 채팅방 생성
-        //ChatRoom chatRoom = ChatRoom.create(savedFunding);
         return new FundingCreateResponse(
                 savedFunding.getFundingId(),
                 savedFunding.getStatus(),
