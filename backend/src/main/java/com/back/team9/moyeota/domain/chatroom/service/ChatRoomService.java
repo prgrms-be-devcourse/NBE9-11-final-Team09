@@ -44,6 +44,10 @@ public class ChatRoomService {
 
     // 펀딩 생성 시 자동 생성용 메서드
     public ChatRoom createRoomForFunding(Funding funding) {
+        if (funding == null || funding.getFundingId() == null) {
+            throw new BusinessException(ErrorCode.FUNDING_NOT_FOUND);
+        }
+
         if (chatRoomRepository.existsByFundingFundingId(funding.getFundingId())) {
             throw new BusinessException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
         }
