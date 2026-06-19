@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
@@ -54,6 +55,11 @@ public class FundingService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        validateHostSeatRequest(
+                request.tripType(),
+                request.hostOutboundSeatNumber(),
+                request.hostReturnSeatNumber()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -195,6 +201,11 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
         fundingValidator.validateUpdatable(funding);
+        validateHostSeatRequest(
+                request.tripType(),
+                request.hostOutboundSeatNumber(),
+                request.hostReturnSeatNumber()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -325,6 +336,24 @@ public class FundingService {
     ) {
         return !Objects.equals(funding.getBusType(), request.busType())
                 || !Objects.equals(funding.getTripType(), request.tripType());
+    }
+
+    private void validateHostSeatRequest(
+            TripType tripType,
+            String hostOutboundSeatNumber,
+            String hostReturnSeatNumber
+    ) {
+        if (isBlank(hostOutboundSeatNumber)) {
+            throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
+        }
+
+        if (tripType == TripType.ROUND && isBlank(hostReturnSeatNumber)) {
+            throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
 }
