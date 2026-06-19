@@ -37,3 +37,5 @@ application-secret.yml
 application-secret.yaml
 
 .env
+
+*.sql
