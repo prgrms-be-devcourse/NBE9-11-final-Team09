@@ -6,6 +6,7 @@ import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
@@ -115,7 +116,6 @@ public class FundingService {
         );
     }
 
-    // TODO: 펀딩 목록 조회 참가자 수 연동
     // 펀딩 목록 조회(핕터링)
     @Transactional(readOnly = true)
     public PageResponse<FundingListResponse> getFundingList(
@@ -246,6 +246,7 @@ public class FundingService {
         LocalDate departureDate = request.route()
                 .departureTime()
                 .toLocalDate();
+        boolean shouldRecreateSeats = isSeatStructureChanged(funding, request);
 
         funding.update(
                 request.title(),
@@ -266,6 +267,12 @@ public class FundingService {
                 funding.getFundingId(),
                 funding.getBusType()
         );
+
+        if (shouldRecreateSeats) {
+            eventPublisher.publishEvent(
+                    new FundingSeatsRecreateEvent(funding.getFundingId())
+            );
+        }
 
     }
 
@@ -302,6 +309,14 @@ public class FundingService {
         return chatRoomRepository.findByFundingFundingId(fundingId)
                 .map(ChatRoom::getChatroomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private boolean isSeatStructureChanged(
+            Funding funding,
+            FundingUpdateRequest request
+    ) {
+        return !Objects.equals(funding.getBusType(), request.busType())
+                || !Objects.equals(funding.getTripType(), request.tripType());
     }
 
 }

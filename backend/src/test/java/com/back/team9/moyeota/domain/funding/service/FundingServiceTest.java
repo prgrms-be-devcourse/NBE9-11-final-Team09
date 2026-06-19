@@ -37,6 +37,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -837,6 +838,68 @@ class FundingServiceTest {
     }
 
     @Test
+    @DisplayName("펀딩 생성/수정 - 최종 버스 타입과 왕복 여부에 맞게 좌석 정합성을 유지한다")
+    void updateFunding_keepsSeatConsistencyAfterRepeatedChanges() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
+
+        Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        assertSeatsMatchBusType(outbound);
+
+        // When
+        fundingService.updateFunding(
+                member.getMemberId(),
+                response.fundingId(),
+                roundUpdateRequest()
+        );
+
+        // Then
+        Pathinfo roundOutbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        Pathinfo roundReturn = findPathinfo(response.fundingId(), Direction.RETURN);
+        assertThat(roundOutbound.getStatus()).isEqualTo(PathinfoStatus.PENDING);
+        assertThat(roundReturn.getStatus()).isEqualTo(PathinfoStatus.PENDING);
+        assertSeatsMatchBusType(roundOutbound);
+        assertSeatsMatchBusType(roundReturn);
+
+        // When
+        fundingService.updateFunding(
+                member.getMemberId(),
+                response.fundingId(),
+                updateRequest(
+                        BusType.BUS_45,
+                        20,
+                        TripType.ONE_WAY,
+                        oneWayRoute()
+                )
+        );
+
+        // Then
+        Pathinfo oneWayOutbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        Pathinfo cancelledReturn = findPathinfo(response.fundingId(), Direction.RETURN);
+        assertThat(oneWayOutbound.getStatus()).isEqualTo(PathinfoStatus.PENDING);
+        assertThat(cancelledReturn.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
+        assertSeatsMatchBusType(oneWayOutbound);
+        assertNoSeats(cancelledReturn);
+
+        // When
+        fundingService.updateFunding(
+                member.getMemberId(),
+                response.fundingId(),
+                roundUpdateRequest()
+        );
+
+        // Then
+        Pathinfo restoredOutbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
+        Pathinfo restoredReturn = findPathinfo(response.fundingId(), Direction.RETURN);
+        assertThat(restoredOutbound.getStatus()).isEqualTo(PathinfoStatus.PENDING);
+        assertThat(restoredReturn.getStatus()).isEqualTo(PathinfoStatus.PENDING);
+        assertSeatsMatchBusType(restoredOutbound);
+        assertSeatsMatchBusType(restoredReturn);
+    }
+
+    @Test
     @DisplayName("펀딩 상세 조회 - 취소된 펀딩 상세 조회 시 최종 편도 기준 노선 조회")
     void getFunding_cancelledOneWayDetail_usesFinalTripType() {
         // Given
@@ -1022,6 +1085,30 @@ class FundingServiceTest {
                 .filter(pathinfo -> pathinfo.getDirection() == direction)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private void assertSeatsMatchBusType(Pathinfo pathinfo) {
+        List<Seat> seats =
+                seatRepository.findByPathinfo_PathinfoId(pathinfo.getPathinfoId());
+
+        assertThat(seats).hasSize(pathinfo.getBusType().getCapacity());
+        assertThat(seats)
+                .extracting(Seat::getSeatNumber)
+                .containsExactlyInAnyOrderElementsOf(
+                        expectedSeatNumbers(pathinfo.getBusType())
+                );
+    }
+
+    private void assertNoSeats(Pathinfo pathinfo) {
+        assertThat(seatRepository.findByPathinfo_PathinfoId(pathinfo.getPathinfoId()))
+                .isEmpty();
+    }
+
+    private List<String> expectedSeatNumbers(BusType busType) {
+        return IntStream
+                .rangeClosed(1, busType.getCapacity())
+                .mapToObj(String::valueOf)
+                .toList();
     }
 
     private Member saveMember() {

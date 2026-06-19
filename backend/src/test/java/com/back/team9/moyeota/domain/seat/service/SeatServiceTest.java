@@ -15,6 +15,7 @@ import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,6 +46,69 @@ class SeatServiceTest {
 
     @InjectMocks
     private SeatService seatService;
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("좌석 생성 - 노선의 버스 타입 정원만큼 좌석을 생성한다")
+    void createSeatsForPathinfo_createsSeatsByBusTypeCapacity() {
+        // Given
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getBusType()).willReturn(BusType.BUS_25);
+
+        // When
+        seatService.createSeatsForPathinfo(pathinfo);
+
+        // Then
+        ArgumentCaptor<List<Seat>> captor = ArgumentCaptor.forClass(List.class);
+        verify(seatRepository).saveAll(captor.capture());
+
+        List<Seat> seats = captor.getValue();
+        assertThat(seats).hasSize(BusType.BUS_25.getCapacity());
+        assertThat(seats.get(0).getPathinfo()).isEqualTo(pathinfo);
+        assertThat(seats.get(0).getSeatNumber()).isEqualTo("1");
+        assertThat(seats.get(seats.size() - 1).getSeatNumber())
+                .isEqualTo(String.valueOf(BusType.BUS_25.getCapacity()));
+    }
+
+    @Test
+    @DisplayName("좌석 삭제 - 노선 ID 기준으로 좌석을 삭제한다")
+    void deleteSeatsForPathinfo_deletesSeatsByPathinfoId() {
+        // Given
+        Pathinfo pathinfo = mock(Pathinfo.class);
+        given(pathinfo.getPathinfoId()).willReturn(10L);
+
+        // When
+        seatService.deleteSeatsForPathinfo(pathinfo);
+
+        // Then
+        verify(seatRepository).deleteByPathinfo_PathinfoId(10L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("좌석 재생성 - 활성 노선의 기존 좌석을 삭제하고 다시 생성한다")
+    void recreateSeatsForActivePathinfos_recreatesSeatsForActivePathinfos() {
+        // Given
+        Pathinfo outbound = mock(Pathinfo.class);
+        given(outbound.getPathinfoId()).willReturn(10L);
+        given(outbound.getBusType()).willReturn(BusType.BUS_25);
+
+        given(pathinfoRepository.findByFunding_FundingIdAndStatusNot(
+                1L,
+                PathinfoStatus.CANCELLED
+        )).willReturn(List.of(outbound));
+
+        // When
+        seatService.recreateSeatsForActivePathinfos(1L);
+
+        // Then
+        verify(seatRepository).deleteByPathinfo_PathinfoId(10L);
+
+        ArgumentCaptor<List<Seat>> captor = ArgumentCaptor.forClass(List.class);
+        verify(seatRepository).saveAll(captor.capture());
+
+        assertThat(captor.getValue()).hasSize(BusType.BUS_25.getCapacity());
+    }
 
     // ==================== getSeatLayout 테스트 ====================
 
