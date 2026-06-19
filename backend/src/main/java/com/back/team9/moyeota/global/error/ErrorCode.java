@@ -73,6 +73,7 @@ public enum ErrorCode {
     SEAT_NOT_IN_PATH(HttpStatus.BAD_REQUEST,"SEA003", "해당 노선에 속하지 않는 좌석입니다."),
     ROUND_TRIP_SEAT_REQUIRED(HttpStatus.BAD_REQUEST,"SEA004", "왕복 펀딩은 가는 편과 오는 편 좌석을 모두 선택해야합니다."),
     ONE_WAY_RETURN_SEAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST,"SEA005", "편도 펀딩은 오는 편 좌석을 선택할 수 없습니다."),
+    INVALID_BUS_TYPE(HttpStatus.BAD_REQUEST,"SEA006", "지원하지 않는 버스 타입입니다."),
 
     // [PAY] 결제
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST,"PAY001", "결제 요청 금액이 일치하지 않습니다."),
