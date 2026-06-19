@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.notification.service;
 
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,7 @@ public class MailService {
             javaMailSender.send(mimeMessage);
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new BusinessException(ErrorCode.NOTIFICATION_SEND_FAILED);
         }
     }
 }
