@@ -1,8 +1,12 @@
 package com.back.team9.moyeota.domain.funding.service;
 
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
+import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
@@ -16,11 +20,13 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +42,10 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final PathinfoService pathinfoService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ParticipationRepository participationRepository;
     private final FundingValidator fundingValidator;
+    private final ChatRoomRepository chatRoomRepository;
 
     // 펀딩 생성
     @Transactional
@@ -46,10 +54,14 @@ public class FundingService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
+                request.route(),
+                request.busType(),
+                request.tripType()
+        );
         fundingValidator.validateFundingRequest(
                 request.minParticipants(),
-                request.busType(),
-                request.totalPrice()
+                request.busType()
         );
 
         LocalDate departureDate = request.route()
@@ -63,7 +75,7 @@ public class FundingService {
                 departureDate,
                 request.busType(),
                 request.minParticipants(),
-                request.totalPrice(),
+                totalPrice,
                 request.tripType()
         );
 
@@ -74,9 +86,8 @@ public class FundingService {
                 request.tripType(),
                 request.route()
         );
+        eventPublisher.publishEvent(new FundingCreatedEvent(savedFunding));
 
-        // TODO: 채팅방 생성
-        //ChatRoom chatRoom = ChatRoom.create(savedFunding);
         return new FundingCreateResponse(
                 savedFunding.getFundingId(),
                 savedFunding.getStatus(),
@@ -92,11 +103,13 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         int currentParticipants = countActiveParticipants(fundingId);
         List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponsesForDetail(funding);
+        Long chatRoomId = findChatRoomIdByFundingId(fundingId);
+
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
                 currentParticipants,
-                null,   // TODO 채팅방 ID
+                chatRoomId,
                 false,  // TODO 방장 여부
                 false   // TODO 참여 여부
         );
@@ -178,30 +191,35 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
         fundingValidator.validateUpdatable(funding);
+
+        BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
+                request.route(),
+                request.busType(),
+                request.tripType()
+        );
         int currentParticipants = countActiveParticipants(fundingId);
 
         if (currentParticipants > 0) {
-            updateFundingWithParticipants(funding, request);
+            updateFundingWithParticipants(funding, request, totalPrice);
             return;
         }
 
         fundingValidator.validateFundingRequest(
                 request.minParticipants(),
-                request.busType(),
-                request.totalPrice()
+                request.busType()
         );
 
-        updateFundingWithoutParticipants(funding, request);
+        updateFundingWithoutParticipants(funding, request, totalPrice);
 
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
-    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, BigDecimal totalPrice) {
 
         boolean changed =
                 !Objects.equals(funding.getBusType(), request.busType())
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
-                        || !Objects.equals(funding.getTotalPrice(), request.totalPrice())
+                        || !Objects.equals(funding.getTotalPrice(), totalPrice)
                         || !Objects.equals(funding.getTripType(), request.tripType())
                         || pathinfoService.isRouteChanged(
                         funding.getFundingId(),
@@ -221,7 +239,8 @@ public class FundingService {
     // 참가자 없을경우 전체 수정 허용
     private void updateFundingWithoutParticipants(
             Funding funding,
-            FundingUpdateRequest request
+            FundingUpdateRequest request,
+            BigDecimal totalPrice
     ) {
 
         LocalDate departureDate = request.route()
@@ -233,7 +252,7 @@ public class FundingService {
                 request.content(),
                 request.busType(),
                 request.minParticipants(),
-                request.totalPrice(),
+                totalPrice,
                 request.tripType(),
                 departureDate
         );
@@ -277,6 +296,12 @@ public class FundingService {
                         ParticipationRepository.FundingParticipationCount::getFundingId,
                         count -> count.getCount().intValue()
                 ));
+    }
+
+    private Long findChatRoomIdByFundingId(Long fundingId) {
+        return chatRoomRepository.findByFundingFundingId(fundingId)
+                .map(ChatRoom::getChatroomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
 }

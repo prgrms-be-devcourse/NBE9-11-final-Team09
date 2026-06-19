@@ -23,6 +23,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -66,7 +67,7 @@ class ParticipationControllerTest {
                 1L,
                 ParticipationStatus.ACTIVE,
                 ParticipationPaymentStatus.ACTIVE,
-                0,
+                BigDecimal.ZERO,
                 100L,
                 null,
                 LocalDateTime.now()

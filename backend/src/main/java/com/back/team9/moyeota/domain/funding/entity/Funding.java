@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -62,7 +63,7 @@ public class Funding {
     private TripType tripType;
 
     @Column(nullable = false)
-    private Integer totalPrice;
+    private BigDecimal totalPrice;
 
     @CreatedDate
     @Column(nullable = false)
@@ -78,7 +79,7 @@ public class Funding {
             LocalDate departureDate,
             BusType busType,
             Integer minParticipants,
-            Integer totalPrice,
+            BigDecimal totalPrice,
             TripType tripType
     ) {
         Funding funding = new Funding();
@@ -117,7 +118,7 @@ public class Funding {
             String content,
             BusType busType,
             Integer minParticipants,
-            Integer totalPrice,
+            BigDecimal totalPrice,
             TripType tripType,
             LocalDate departureDate
     ) {
