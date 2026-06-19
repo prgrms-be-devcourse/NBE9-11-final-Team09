@@ -7,6 +7,8 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
+import com.back.team9.moyeota.global.error.ErrorCode;
+import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -52,41 +54,32 @@ public class SeatFundingCreatedEventListener {
     // BUS_25 → 1A~8C (24석)
     // BUS_45 → 1A~11D (44석)
     private List<Seat> createSeats(Pathinfo pathinfo, BusType busType) {
+        // busType null 방어 코드
+        if (busType == null) {
+            throw new IllegalArgumentException("버스 타입은 null일 수 없습니다.");
+        }
 
-        List<Seat> seats = new ArrayList<>();
+        int maxRow;
+        String[] columns;
 
         if (busType == BusType.BUS_25) {
-            for (int row = 1; row <= 8; row++) {
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "A")
-                        .build());
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "B")
-                        .build());
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "C")
-                        .build());
-            }
+            // 25인승: 8행 × 3열 (A, B, C) = 24석
+            maxRow = 8;
+            columns = new String[]{"A", "B", "C"};
         } else if (busType == BusType.BUS_45) {
-            for (int row = 1; row <= 11; row++) {
+            // 45인승: 11행 × 4열 (A, B, C, D) = 44석
+            maxRow = 11;
+            columns = new String[]{"A", "B", "C", "D"};
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 버스 타입: " + busType);
+        }
+
+        List<Seat> seats = new ArrayList<>();
+        for (int row = 1; row <= maxRow; row++) {
+            for (String col : columns) {
                 seats.add(Seat.builder()
                         .pathinfo(pathinfo)
-                        .seatNumber(row + "A")
-                        .build());
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "B")
-                        .build());
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "C")
-                        .build());
-                seats.add(Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(row + "D")
+                        .seatNumber(row + col)
                         .build());
             }
         }
