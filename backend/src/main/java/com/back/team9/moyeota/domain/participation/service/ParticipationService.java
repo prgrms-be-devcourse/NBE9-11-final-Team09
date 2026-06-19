@@ -279,7 +279,6 @@ public class ParticipationService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
-        // Payment에서 Participation 꺼냄
         Participation participation = payment.getParticipation();
         Long memberId = participation.getMember().getMemberId();
 
@@ -304,5 +303,34 @@ public class ParticipationService {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
         participation.confirmPayment();
+    }
+
+    // ============================== 5. 결제 실패 시 참여 취소 ==============================
+    @Transactional
+    public void cancelByPaymentFailure(Long paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Participation participation = payment.getParticipation();
+        Long memberId = participation.getMember().getMemberId();
+
+        // 이미 취소된 경우 중복 처리 방지
+        if (participation.getStatus() == ParticipationStatus.CANCELED) {
+            return;
+        }
+
+        // Participation 취소 처리
+        // DB Seat는 처음부터 AVAILABLE이라 release() 호출 안 함
+        participation.cancel();
+
+        // Redis HOLD 해제 시도 (이미 만료됐을 수 있음 - releaseSeatHoldSafely가 실패 흡수)
+        Long outboundSeatId = participation.getOutboundSeat().getSeatId();
+        releaseSeatHoldSafely(outboundSeatId, memberId);
+
+        Seat returnSeat = participation.getReturnSeat();
+        if (returnSeat != null) {
+            releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
+        }
     }
 }
