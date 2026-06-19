@@ -58,7 +58,6 @@ class ParticipationServiceTest {
     @Mock
     private ParticipationRepository participationRepository;
 
-    @Mock
     private ParticipationService participationService;
 
     @Mock

@@ -280,6 +280,13 @@ public class ParticipationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         Participation participation = payment.getParticipation();
+
+        // 이미 결제가 완료된 경우 중복 처리 방지 (멱등성 보장)
+        if (participation.getPaymentStatus() == ParticipationPaymentStatus.ACTIVE ||
+                participation.getPaymentStatus() == ParticipationPaymentStatus.COMPLETED) {
+            return;
+        }
+
         Long memberId = participation.getMember().getMemberId();
 
         // 가는편 좌석 Redis HOLD 유효성 확인
@@ -315,8 +322,8 @@ public class ParticipationService {
         Participation participation = payment.getParticipation();
         Long memberId = participation.getMember().getMemberId();
 
-        // 이미 취소된 경우 중복 처리 방지
-        if (participation.getStatus() == ParticipationStatus.CANCELED) {
+        // 결제 대기(PENDING) 상태가 아닌 경우 취소 처리 방지
+        if (participation.getPaymentStatus() != ParticipationPaymentStatus.PENDING) {
             return;
         }
 
