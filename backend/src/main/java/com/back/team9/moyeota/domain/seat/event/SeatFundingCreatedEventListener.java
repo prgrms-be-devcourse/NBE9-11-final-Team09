@@ -56,7 +56,7 @@ public class SeatFundingCreatedEventListener {
     private List<Seat> createSeats(Pathinfo pathinfo, BusType busType) {
         // busType null 방어 코드
         if (busType == null) {
-            throw new IllegalArgumentException("버스 타입은 null일 수 없습니다.");
+            throw new BusinessException(ErrorCode.INVALID_BUS_TYPE);
         }
 
         int maxRow;
@@ -71,7 +71,7 @@ public class SeatFundingCreatedEventListener {
             maxRow = 11;
             columns = new String[]{"A", "B", "C", "D"};
         } else {
-            throw new IllegalArgumentException("지원하지 않는 버스 타입: " + busType);
+            throw new BusinessException(ErrorCode.INVALID_BUS_TYPE);
         }
 
         List<Seat> seats = new ArrayList<>();
