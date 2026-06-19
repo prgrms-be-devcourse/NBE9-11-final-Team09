@@ -1,5 +1,8 @@
 package com.back.team9.moyeota.domain.funding.service;
 
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoomStatus;
+import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.FundingCreateRequest;
 import com.back.team9.moyeota.domain.funding.dto.FundingCreateResponse;
 import com.back.team9.moyeota.domain.funding.dto.FundingSearchCondition;
@@ -9,6 +12,7 @@ import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
+import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
@@ -32,6 +36,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -67,6 +72,12 @@ class FundingServiceUnitTest {
 
     @Mock
     private PathinfoService pathinfoService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private ChatRoomRepository chatRoomRepository;
 
     @Mock
     private ParticipationRepository participationRepository;
@@ -113,6 +124,10 @@ class FundingServiceUnitTest {
                 .validateFundingRequest(20, BusType.BUS_45);
         verify(pathinfoService)
                 .createPathinfos(savedFunding, TripType.ONE_WAY, request.route());
+        ArgumentCaptor<FundingCreatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(FundingCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().funding()).isEqualTo(savedFunding);
     }
 
     @Test
@@ -129,7 +144,7 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
 
-        verifyNoInteractions(fundingRepository, pathinfoService, fundingValidator);
+        verifyNoInteractions(fundingRepository, pathinfoService, eventPublisher, fundingValidator);
     }
 
     @Test
@@ -155,7 +170,7 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
 
         verify(fundingRepository, never()).save(any());
-        verifyNoInteractions(pathinfoService);
+        verifyNoInteractions(pathinfoService, eventPublisher);
     }
 
     @Test
@@ -172,6 +187,8 @@ class FundingServiceUnitTest {
         )).willReturn(3L);
         given(pathinfoService.getPathinfoResponsesForDetail(funding))
                 .willReturn(List.of(pathinfoResponse));
+        given(chatRoomRepository.findByFundingFundingId(10L))
+                .willReturn(Optional.of(chatRoom(100L, funding)));
 
         // When
         var response = fundingService.getFunding(10L);
@@ -179,6 +196,7 @@ class FundingServiceUnitTest {
         // Then
         assertThat(response.fundingId()).isEqualTo(10L);
         assertThat(response.title()).isEqualTo("Football Match Bus");
+        assertThat(response.chatRoomId()).isEqualTo(100L);
         assertThat(response.pathinfos()).containsExactly(pathinfoResponse);
         assertThat(response.currentParticipants()).isEqualTo(3);
         assertThat(response.isHost()).isFalse();
@@ -198,6 +216,29 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
 
         verifyNoInteractions(pathinfoService);
+    }
+
+    @Test
+    @DisplayName("펀딩 상세 조회 - 채팅방이 없으면 예외")
+    void getFunding_whenChatRoomDoesNotExist_throwsException() {
+        // Given
+        Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
+
+        given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(3L);
+        given(pathinfoService.getPathinfoResponsesForDetail(funding))
+                .willReturn(List.of(pathinfoResponse()));
+        given(chatRoomRepository.findByFundingFundingId(10L))
+                .willReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> fundingService.getFunding(10L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
     }
 
     @Test
@@ -509,6 +550,15 @@ class FundingServiceUnitTest {
                 PathinfoStatus.PENDING,
                 Direction.OUTBOUND
         );
+    }
+
+    private ChatRoom chatRoom(Long chatRoomId, Funding funding) {
+        return ChatRoom.builder()
+                .chatroomId(chatRoomId)
+                .funding(funding)
+                .status(ChatRoomStatus.ACTIVE)
+                .createdAt(DEPARTURE_TIME.minusDays(1))
+                .build();
     }
 
     private Funding funding(

@@ -1,8 +1,11 @@
 package com.back.team9.moyeota.domain.funding.service;
 
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
+import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
@@ -17,6 +20,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,8 +42,10 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final PathinfoService pathinfoService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ParticipationRepository participationRepository;
     private final FundingValidator fundingValidator;
+    private final ChatRoomRepository chatRoomRepository;
 
     // 펀딩 생성
     @Transactional
@@ -80,9 +86,8 @@ public class FundingService {
                 request.tripType(),
                 request.route()
         );
+        eventPublisher.publishEvent(new FundingCreatedEvent(savedFunding));
 
-        // TODO: 채팅방 생성
-        //ChatRoom chatRoom = ChatRoom.create(savedFunding);
         return new FundingCreateResponse(
                 savedFunding.getFundingId(),
                 savedFunding.getStatus(),
@@ -98,11 +103,13 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         int currentParticipants = countActiveParticipants(fundingId);
         List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponsesForDetail(funding);
+        Long chatRoomId = findChatRoomIdByFundingId(fundingId);
+
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
                 currentParticipants,
-                null,   // TODO 채팅방 ID
+                chatRoomId,
                 false,  // TODO 방장 여부
                 false   // TODO 참여 여부
         );
@@ -289,6 +296,12 @@ public class FundingService {
                         ParticipationRepository.FundingParticipationCount::getFundingId,
                         count -> count.getCount().intValue()
                 ));
+    }
+
+    private Long findChatRoomIdByFundingId(Long fundingId) {
+        return chatRoomRepository.findByFundingFundingId(fundingId)
+                .map(ChatRoom::getChatroomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
 }

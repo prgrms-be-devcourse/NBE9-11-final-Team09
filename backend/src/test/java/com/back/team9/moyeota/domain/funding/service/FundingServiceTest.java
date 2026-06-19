@@ -1,6 +1,8 @@
 package com.back.team9.moyeota.domain.funding.service;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
+import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
@@ -70,6 +72,9 @@ class FundingServiceTest {
     @Autowired
     private SeatRepository seatRepository;
 
+    @Autowired
+    private ChatRoomRepository chatRoomRepository;
+
     @Test
     @DisplayName("편도 펀딩 생성 성공")
     void createOneWayFunding_success() {
@@ -87,6 +92,28 @@ class FundingServiceTest {
 
         assertThat(funding.getTitle()).isEqualTo(request.title());
         assertThat(pathinfos).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 시 채팅방 자동 생성 및 방장 일치")
+    void createFunding_createsChatRoomWithSameHost() {
+        // Given
+        Member member = saveMember();
+        FundingCreateRequest request = oneWayCreateRequest();
+
+        // When
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), request);
+
+        // Then
+        ChatRoom chatRoom = chatRoomRepository
+                .findByFundingFundingId(response.fundingId())
+                .orElseThrow();
+
+        assertThat(chatRoom.getFunding().getFundingId())
+                .isEqualTo(response.fundingId());
+        assertThat(chatRoom.getFunding().getMember().getMemberId())
+                .isEqualTo(member.getMemberId());
     }
 
     @Test
@@ -137,6 +164,7 @@ class FundingServiceTest {
 
         // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
+        assertThat(result.chatRoomId()).isNotNull();
         assertThat(result.title()).isEqualTo("Football Match Bus");
         assertThat(result.pathinfos()).hasSize(1);
     }
