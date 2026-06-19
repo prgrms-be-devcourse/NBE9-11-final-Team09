@@ -30,12 +30,13 @@ public class SecurityConfig {
                                 "/api/members/signup",
                                 "/api/members/email-verification/confirm",
                                 "/api/members/login",
-                                "/api/admin/login",
                                 "/swagger-ui/**",
                                 "/health",
                                 "/v3/api-docs/**",
                                 "/paytest.html"
                         ).permitAll()
+                        .requestMatchers("/api/admin/login").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

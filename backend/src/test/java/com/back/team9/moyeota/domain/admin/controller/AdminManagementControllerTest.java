@@ -9,7 +9,9 @@ import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.settlement.entity.SettlementStatus;
+import com.back.team9.moyeota.global.config.SecurityConfig;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
+import com.back.team9.moyeota.global.jwt.JwtAuthenticationFilter;
 import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
@@ -17,6 +19,9 @@ import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +48,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AdminSettlementQueryController.class,
         AdminStatisticsController.class
 })
-@Import(GlobalExceptionHandler.class)
+@Import({
+        GlobalExceptionHandler.class,
+        SecurityConfig.class,
+        JwtAuthenticationFilter.class
+})
+@ImportAutoConfiguration({
+        SecurityAutoConfiguration.class,
+        ServletWebSecurityAutoConfiguration.class
+})
 @DisplayName("관리자 운영 컨트롤러 테스트")
 class AdminManagementControllerTest {
 
@@ -102,7 +115,7 @@ class AdminManagementControllerTest {
         mockMvc.perform(get("/api/admin/members")
                         .param("page", "0")
                         .param("size", "20")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_MEMBERS_SUCCESS"))
@@ -138,7 +151,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(get("/api/admin/members/1")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_MEMBER_SUCCESS"))
@@ -170,7 +183,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(patch("/api/admin/members/1")
-                        .with(user("admin"))
+                        .with(user("admin").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -214,7 +227,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(get("/api/admin/fundings")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_FUNDINGS_SUCCESS"))
@@ -256,7 +269,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(get("/api/admin/settlements")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_SETTLEMENTS_SUCCESS"))
@@ -298,7 +311,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(get("/api/admin/settlements/1")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_SETTLEMENT_SUCCESS"))
@@ -327,7 +340,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(get("/api/admin/statistics")
-                        .with(user("admin")))
+                        .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("ADMIN_GET_STATISTICS_SUCCESS"))
@@ -357,7 +370,7 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(patch("/api/admin/fundings/10")
-                        .with(user("admin"))
+                        .with(user("admin").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -381,12 +394,22 @@ class AdminManagementControllerTest {
 
         // When / Then
         mockMvc.perform(patch("/api/admin/fundings/10")
-                        .with(user("admin"))
+                        .with(user("admin").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COM001"));
 
         verifyNoInteractions(adminFundingService);
+    }
+
+    @Test
+    @DisplayName("일반 회원은 관리자 API에 접근할 수 없다")
+    void memberCannotAccessAdminApi() throws Exception {
+        mockMvc.perform(get("/api/admin/statistics")
+                        .with(user("member").roles("MEMBER")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(adminStatisticsService);
     }
 }

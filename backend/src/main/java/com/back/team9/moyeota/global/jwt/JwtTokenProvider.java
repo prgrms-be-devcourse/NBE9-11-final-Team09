@@ -41,12 +41,12 @@ public class JwtTokenProvider {
 
     public JwtTokenResponse createTokens(Long memberId) {
         String accessToken = createToken(
-                memberId, PrincipalType.MEMBER, "MEMBER_ROLE",
+                memberId, PrincipalType.MEMBER, MEMBER_ROLE,
                 TokenType.ACCESS, accessTokenExpiration
         );
 
         String refreshToken = createToken(
-                memberId, PrincipalType.MEMBER, "MEMBER_ROLE",
+                memberId, PrincipalType.MEMBER, MEMBER_ROLE,
                 TokenType.REFRESH, refreshTokenExpiration
         );
 
@@ -104,7 +104,7 @@ public class JwtTokenProvider {
         return createToken(
                 memberId,
                 PrincipalType.MEMBER,
-                "MEMBER_ROLE",
+                MEMBER_ROLE,
                 tokenType,
                 expiration
         );
