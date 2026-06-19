@@ -73,7 +73,7 @@ public class Participation {
         return Participation.builder()
                 .funding(funding)
                 .member(member)
-                .paymentStatus(ParticipationPaymentStatus.ACTIVE)
+                .paymentStatus(ParticipationPaymentStatus.PENDING) // 참여 생성 후 보증금 결제 대기
                 .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
                 .outboundSeat(outboundSeat)

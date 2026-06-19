@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateReques
 import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
@@ -67,9 +68,16 @@ public class ParticipationService {
             throw new BusinessException(ErrorCode.DUPLICATE_PARTICIPATION);
         }
 
-        //정원 확인 - 현재 ACTIVE 참여자 수가 정원 이상이면 PTC003
+        // 정원 확인 - 모집 중 정원에 포함되는 참여자 수가 최대 정원 이상이면 PTC003
+        // PENDING(결제 대기) + ACTIVE(보증금 결제 완료)만 포함
         long currentParticipants = participationRepository
-                .countByFunding_FundingIdAndStatus(funding.getFundingId(), ParticipationStatus.ACTIVE);
+                .countByFunding_FundingIdAndPaymentStatusIn(
+                        funding.getFundingId(),
+                        List.of(
+                                ParticipationPaymentStatus.PENDING,
+                                ParticipationPaymentStatus.ACTIVE
+                        )
+                );
         if (currentParticipants >= funding.getMaxParticipants()) {
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
@@ -109,25 +117,8 @@ public class ParticipationService {
 
         participationRepository.save(participation);
 
-        //좌석 예약 확정
-        // Seat 상태를 BOOKED로 변경 (최종 동시성 방어선)
-        // 이미 BOOKED 상태면 Seat.book() 내부에서 SEAT_ALREADY_OCCUPIED(SEA002) 예외 발생
-        outboundSeat.book(participation);
-        if (returnSeat != null) {
-            returnSeat.book(participation);
-        }
-
-        // Redis HOLD 해제 - 더 이상 임시 선점 상태가 아니므로 Redis 키 삭제
-        // 각 좌석을 독립적으로 처리 - 한쪽 실패가 다른 쪽 처리를 막지 않도록 함
-        // HOLD 키는 5분 TTL이 설정되어 있어-> 삭제 실패해도 자동 만료됨
-        releaseSeatHoldSafely(outboundSeat.getSeatId(), memberId);
-
-        if (returnSeat != null) {
-            releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
-        }
-
         return ParticipationResponse.from(participation);
-    }  // ← createParticipation() 메서드 끝
+    }
 
     // 펀딩 상태 확인
     private void validateFundingStatus(Funding funding) {
