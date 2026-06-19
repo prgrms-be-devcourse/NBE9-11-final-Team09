@@ -42,9 +42,10 @@ public class MemberService {
     private final MemberRegistrationService memberRegistrationService;
 
     public void requestSignup(MemberSignupRequest request) {
-        validateSignupRequest(request);
 
         String email = normalizeEmail(request.email());
+
+        validateSignupRequest(request, email);
         validateMemberDuplicates(email, request.nickname());
 
         String verificationCode = generateVerificationCode();
@@ -97,8 +98,11 @@ public class MemberService {
         safelyDeletePendingSignup(email);
     }
 
-    private void validateSignupRequest(MemberSignupRequest request) {
-        if (!EMAIL_PATTERN.matcher(request.email()).matches()) {
+    private void validateSignupRequest(
+            MemberSignupRequest request,
+            String normalizedEmail
+    ) {
+        if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
             throw new BusinessException(ErrorCode.INVALID_EMAIL_FORMAT);
         }
 

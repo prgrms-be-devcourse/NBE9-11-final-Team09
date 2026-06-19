@@ -83,6 +83,42 @@ class MemberServiceTest {
     }
 
     @Test
+    @DisplayName("이메일 앞뒤 공백을 제거하고 소문자로 정규화하여 처리한다")
+    void requestSignupNormalizesEmailBeforeValidation() {
+        // Given
+        MemberSignupRequest request = new MemberSignupRequest(
+                " MOYEOTA@EXAMPLE.COM ",
+                "Password123!",
+                "홍길동",
+                "모여타",
+                "010-1234-5678"
+        );
+
+        when(passwordEncoder.encode(anyString()))
+                .thenReturn("encoded-value");
+
+        // When
+        memberService.requestSignup(request);
+
+        // Then
+        ArgumentCaptor<PendingSignupData> signupCaptor =
+                ArgumentCaptor.forClass(PendingSignupData.class);
+
+        verify(memberRepository)
+                .existsByEmail("moyeota@example.com");
+        verify(pendingSignupRepository)
+                .save(signupCaptor.capture());
+        verify(emailVerificationService)
+                .sendVerificationCode(
+                        eq("moyeota@example.com"),
+                        anyString()
+                );
+
+        assertThat(signupCaptor.getValue().email())
+                .isEqualTo("moyeota@example.com");
+    }
+
+    @Test
     @DisplayName("이미 가입된 이메일이면 회원가입 요청을 거부한다")
     void requestSignupWithDuplicateEmailThrowsException() {
         MemberSignupRequest request = createSignupRequest();
