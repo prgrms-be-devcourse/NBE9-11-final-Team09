@@ -5,9 +5,6 @@ spring:
   profiles:
     active: dev
 
-  config:
-    import: application-secret.yml
-
   output:
     ansi:
       enabled: always
