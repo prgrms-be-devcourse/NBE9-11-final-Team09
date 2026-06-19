@@ -25,15 +25,25 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        setError(data.message ?? "이메일 또는 비밀번호를 확인해주세요.");
+        let errorMessage = "이메일 또는 비밀번호를 확인해주세요.";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {}
+        setError(errorMessage);
+        return;
+      }
+
+      const data = await res.json();
+      const accessToken = data?.data?.accessToken;
+      if (!accessToken) {
+        setError("로그인 응답이 올바르지 않습니다.");
         return;
       }
 
       const storage = keepLogin ? localStorage : sessionStorage;
-      storage.setItem("accessToken", data.data.accessToken);
+      storage.setItem("accessToken", accessToken);
       router.push("/");
     } catch {
       setError("서버와 연결할 수 없습니다.");

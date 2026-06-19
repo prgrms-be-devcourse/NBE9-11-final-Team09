@@ -55,10 +55,13 @@ export default function SignupPage() {
         body: JSON.stringify({ email, password, name, nickname, phoneNumber }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        setRequestError(data.message ?? "인증 요청에 실패했습니다.");
+        let errorMessage = "인증 요청에 실패했습니다.";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {}
+        setRequestError(errorMessage);
         return;
       }
 
@@ -97,10 +100,13 @@ export default function SignupPage() {
         body: JSON.stringify({ email, verificationCode }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        setSubmitError(data.message ?? "인증에 실패했습니다.");
+        let errorMessage = "인증에 실패했습니다.";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {}
+        setSubmitError(errorMessage);
         return;
       }
 
