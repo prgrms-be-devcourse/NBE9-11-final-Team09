@@ -71,7 +71,7 @@ class PaymentControllerTest {
         mockMvc.perform(post("/api/payments/deposit/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L))))
+                                new PaymentConfirmRequest("test_paymentKey", new BigDecimal("50000"), 1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("보증금 결제가 완료되었습니다."))
@@ -97,7 +97,7 @@ class PaymentControllerTest {
         mockMvc.perform(post("/api/payments/balance/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new PaymentConfirmRequest("test_paymentKey", "test_orderId", new BigDecimal("50000"), 1L))))
+                                new PaymentConfirmRequest("test_paymentKey", new BigDecimal("50000"), 1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("잔액 결제가 완료되었습니다."))
