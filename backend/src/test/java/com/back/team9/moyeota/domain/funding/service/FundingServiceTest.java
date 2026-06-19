@@ -20,6 +20,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
+import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -36,8 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -90,9 +91,11 @@ class FundingServiceTest {
         // Then
         Funding funding = findFunding(response.fundingId());
         List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
+        Pathinfo outbound = findPathinfo(pathinfos, Direction.OUTBOUND);
 
         assertThat(funding.getTitle()).isEqualTo(request.title());
         assertThat(pathinfos).hasSize(1);
+        assertHostSeat(outbound, "1A", member);
     }
 
     @Test
@@ -128,7 +131,57 @@ class FundingServiceTest {
                 fundingService.createFunding(member.getMemberId(), roundCreateRequest());
 
         // Then
-        assertThat(findPathinfos(response.fundingId())).hasSize(2);
+        List<Pathinfo> pathinfos = findPathinfos(response.fundingId());
+
+        assertThat(pathinfos).hasSize(2);
+        assertHostSeat(findPathinfo(pathinfos, Direction.OUTBOUND), "1A", member);
+        assertHostSeat(findPathinfo(pathinfos, Direction.RETURN), "1B", member);
+    }
+
+    @Test
+    @DisplayName("왕복 펀딩 생성 - 방장 복귀 좌석이 없으면 예외")
+    void createFunding_whenRoundTripHasNoHostReturnSeat_throwsException() {
+        // Given
+        Member member = saveMember();
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_45,
+                20,
+                TripType.ROUND,
+                "1A",
+                null,
+                roundRoute()
+        );
+
+        // When / Then
+        assertThatThrownBy(() ->
+                fundingService.createFunding(member.getMemberId(), request)
+        )
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 - 방장 좌석번호가 존재하지 않으면 예외")
+    void createFunding_whenHostSeatDoesNotExist_throwsException() {
+        // Given
+        Member member = saveMember();
+        FundingCreateRequest request = createRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ONE_WAY,
+                "99Z",
+                null,
+                oneWayRoute()
+        );
+
+        // When / Then
+        assertThatThrownBy(() ->
+                fundingService.createFunding(member.getMemberId(), request)
+        )
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SEAT_NOT_FOUND);
     }
 
     @Test
@@ -200,12 +253,11 @@ class FundingServiceTest {
                 fundingService.createFunding(host.getMemberId(), oneWayCreateRequest());
         Funding funding = findFunding(response.fundingId());
         Pathinfo outbound = findPathinfo(response.fundingId(), Direction.OUTBOUND);
-        Seat seat = seatRepository.save(
-                Seat.builder()
-                        .pathinfo(outbound)
-                        .seatNumber("1A")
-                        .build()
-        );
+        Seat seat = seatRepository.findByPathinfo_PathinfoId(outbound.getPathinfoId())
+                .stream()
+                .filter(candidate -> candidate.getSeatNumber().equals("1B"))
+                .findFirst()
+                .orElseThrow();
         participationRepository.save(
                 Participation.create(funding, participant, seat, null)
         );
@@ -862,6 +914,8 @@ class FundingServiceTest {
         assertThat(roundReturn.getStatus()).isEqualTo(PathinfoStatus.PENDING);
         assertSeatsMatchBusType(roundOutbound);
         assertSeatsMatchBusType(roundReturn);
+        assertHostSeat(roundOutbound, "1A", member);
+        assertHostSeat(roundReturn, "1B", member);
 
         // When
         fundingService.updateFunding(
@@ -882,6 +936,7 @@ class FundingServiceTest {
         assertThat(cancelledReturn.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
         assertSeatsMatchBusType(oneWayOutbound);
         assertNoSeats(cancelledReturn);
+        assertHostSeat(oneWayOutbound, "1A", member);
 
         // When
         fundingService.updateFunding(
@@ -897,6 +952,33 @@ class FundingServiceTest {
         assertThat(restoredReturn.getStatus()).isEqualTo(PathinfoStatus.PENDING);
         assertSeatsMatchBusType(restoredOutbound);
         assertSeatsMatchBusType(restoredReturn);
+        assertHostSeat(restoredOutbound, "1A", member);
+        assertHostSeat(restoredReturn, "1B", member);
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 - 왕복으로 변경 시 방장 복귀 좌석이 없으면 예외")
+    void updateFunding_whenRoundTripHasNoHostReturnSeat_throwsException() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse response =
+                fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
+        FundingUpdateRequest request = updateRequest(
+                BusType.BUS_25,
+                10,
+                TripType.ROUND,
+                "1A",
+                null,
+                roundRoute()
+        );
+
+        // When / Then
+        assertThatThrownBy(() ->
+                fundingService.updateFunding(member.getMemberId(), response.fundingId(), request)
+        )
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
     }
 
     @Test
@@ -976,12 +1058,32 @@ class FundingServiceTest {
             TripType tripType,
             RouteRequest route
     ) {
+        return createRequest(
+                busType,
+                minParticipants,
+                tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
+                route
+        );
+    }
+
+    private FundingCreateRequest createRequest(
+            BusType busType,
+            int minParticipants,
+            TripType tripType,
+            String hostOutboundSeatNumber,
+            String hostReturnSeatNumber,
+            RouteRequest route
+    ) {
         return new FundingCreateRequest(
                 "Football Match Bus",
                 "Ride together",
                 busType,
                 minParticipants,
                 tripType,
+                hostOutboundSeatNumber,
+                hostReturnSeatNumber,
                 route
         );
     }
@@ -1010,12 +1112,32 @@ class FundingServiceTest {
             TripType tripType,
             RouteRequest route
     ) {
+        return updateRequest(
+                busType,
+                minParticipants,
+                tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
+                route
+        );
+    }
+
+    private FundingUpdateRequest updateRequest(
+            BusType busType,
+            int minParticipants,
+            TripType tripType,
+            String hostOutboundSeatNumber,
+            String hostReturnSeatNumber,
+            RouteRequest route
+    ) {
         return new FundingUpdateRequest(
                 "Updated Title",
                 "Updated Content",
                 busType,
                 minParticipants,
                 tripType,
+                hostOutboundSeatNumber,
+                hostReturnSeatNumber,
                 route
         );
     }
@@ -1104,11 +1226,42 @@ class FundingServiceTest {
                 .isEmpty();
     }
 
+    private void assertHostSeat(
+            Pathinfo pathinfo,
+            String seatNumber,
+            Member host
+    ) {
+        Seat seat = seatRepository.findByPathinfo_PathinfoId(pathinfo.getPathinfoId())
+                .stream()
+                .filter(candidate -> candidate.getSeatNumber().equals(seatNumber))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(seat.getStatus()).isEqualTo(SeatStatus.BOOKED);
+        assertThat(seat.getHostMember().getMemberId())
+                .isEqualTo(host.getMemberId());
+    }
+
     private List<String> expectedSeatNumbers(BusType busType) {
-        return IntStream
-                .rangeClosed(1, busType.getCapacity())
-                .mapToObj(String::valueOf)
-                .toList();
+        int maxRow;
+        String[] columns;
+
+        if (busType == BusType.BUS_25) {
+            maxRow = 8;
+            columns = new String[]{"A", "B", "C"};
+        } else {
+            maxRow = 11;
+            columns = new String[]{"A", "B", "C", "D"};
+        }
+
+        List<String> seatNumbers = new ArrayList<>();
+        for (int row = 1; row <= maxRow; row++) {
+            for (String column : columns) {
+                seatNumbers.add(row + column);
+            }
+        }
+
+        return seatNumbers;
     }
 
     private Member saveMember() {

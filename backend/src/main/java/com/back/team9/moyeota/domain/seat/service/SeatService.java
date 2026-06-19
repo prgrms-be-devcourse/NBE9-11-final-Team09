@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 @Service // 좌석 도메인 비즈니스 로직 담당
 @RequiredArgsConstructor
@@ -25,40 +24,6 @@ public class SeatService {
     private final SeatRepository seatRepository; // 좌석 DB 조회
     private final SeatRedisService seatRedisService; // 좌석 HOLD Redis 처리
     private final PathinfoRepository pathinfoRepository; // 노선 조회
-
-    @Transactional
-    public void createSeatsForPathinfo(Pathinfo pathinfo) {
-        List<Seat> seats = IntStream
-                .rangeClosed(1, pathinfo.getBusType().getCapacity())
-                .mapToObj(number -> Seat.builder()
-                        .pathinfo(pathinfo)
-                        .seatNumber(String.valueOf(number))
-                        .build()
-                )
-                .toList();
-
-        seatRepository.saveAll(seats);
-    }
-
-    @Transactional
-    public void deleteSeatsForPathinfo(Pathinfo pathinfo) {
-        seatRepository.deleteByPathinfo_PathinfoId(pathinfo.getPathinfoId());
-    }
-
-    @Transactional
-    public void recreateSeatsForPathinfo(Pathinfo pathinfo) {
-        deleteSeatsForPathinfo(pathinfo);
-        createSeatsForPathinfo(pathinfo);
-    }
-
-    @Transactional
-    public void recreateSeatsForActivePathinfos(Long fundingId) {
-        pathinfoRepository.findByFunding_FundingIdAndStatusNot(
-                        fundingId,
-                        PathinfoStatus.CANCELLED
-                )
-                .forEach(this::recreateSeatsForPathinfo);
-    }
 
     @Transactional(readOnly = true) // 조회 전용 트랜잭션
     public SeatLayoutResponse getSeatLayout(Long pathId, Long currentMemberId) {

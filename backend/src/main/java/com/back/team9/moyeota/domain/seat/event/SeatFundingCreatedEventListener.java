@@ -3,7 +3,11 @@ package com.back.team9.moyeota.domain.seat.event;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
@@ -42,10 +46,54 @@ public class SeatFundingCreatedEventListener {
 
         // 각 노선마다 좌석 생성
         for (Pathinfo pathinfo : pathinfos) {
-            List<Seat> seats = createSeats(pathinfo, busType);
+            List<Seat> seats = createSeatsWithHostSeat(
+                    pathinfo,
+                    pathinfo.getBusType(),
+                    event.funding().getMember(),
+                    hostSeatNumber(
+                            pathinfo,
+                            event.hostOutboundSeatNumber(),
+                            event.hostReturnSeatNumber()
+                    )
+            );
             seatRepository.saveAll(seats);
 
             log.info("좌석 생성 완료 - pathInfoId: {}, 좌석 수: {}",
+                    pathinfo.getPathinfoId(), seats.size());
+        }
+    }
+
+    @EventListener
+    @Transactional
+    public void handleFundingSeatsRecreate(FundingSeatsRecreateEvent event) {
+        Long fundingId = event.funding().getFundingId();
+
+        log.info("좌석 재생성 이벤트 수신 - fundingId: {}", fundingId);
+
+        List<Pathinfo> pathinfos = pathinfoRepository
+                .findByFunding_FundingId(fundingId);
+
+        for (Pathinfo pathinfo : pathinfos) {
+            seatRepository.deleteByPathinfo_PathinfoId(pathinfo.getPathinfoId());
+
+            if (pathinfo.getStatus() == PathinfoStatus.CANCELLED) {
+                log.info("취소 노선 좌석 삭제 완료 - pathInfoId: {}", pathinfo.getPathinfoId());
+                continue;
+            }
+
+            List<Seat> seats = createSeatsWithHostSeat(
+                    pathinfo,
+                    pathinfo.getBusType(),
+                    event.funding().getMember(),
+                    hostSeatNumber(
+                            pathinfo,
+                            event.hostOutboundSeatNumber(),
+                            event.hostReturnSeatNumber()
+                    )
+            );
+            seatRepository.saveAll(seats);
+
+            log.info("좌석 재생성 완료 - pathInfoId: {}, 좌석 수: {}",
                     pathinfo.getPathinfoId(), seats.size());
         }
     }
@@ -85,5 +133,43 @@ public class SeatFundingCreatedEventListener {
         }
 
         return seats;
+    }
+
+    private List<Seat> createSeatsWithHostSeat(
+            Pathinfo pathinfo,
+            BusType busType,
+            Member hostMember,
+            String hostSeatNumber
+    ) {
+        List<Seat> seats = createSeats(pathinfo, busType);
+        Seat hostSeat = seats.stream()
+                .filter(seat -> seat.getSeatNumber().equals(hostSeatNumber))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
+
+        hostSeat.bookByHost(hostMember);
+        return seats;
+    }
+
+    private String hostSeatNumber(
+            Pathinfo pathinfo,
+            String outboundSeatNumber,
+            String returnSeatNumber
+    ) {
+        if (pathinfo.getDirection() == Direction.OUTBOUND) {
+            if (isBlank(outboundSeatNumber)) {
+                throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
+            }
+            return outboundSeatNumber;
+        }
+
+        if (isBlank(returnSeatNumber)) {
+            throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
+        }
+        return returnSeatNumber;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

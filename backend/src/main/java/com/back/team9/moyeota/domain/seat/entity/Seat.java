@@ -1,12 +1,15 @@
 package com.back.team9.moyeota.domain.seat.entity;
 
+import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +26,10 @@ public class Seat {
     @ManyToOne(fetch = FetchType.LAZY) // 좌석을 예약한 참여자
     @JoinColumn(name = "participation_id") // participation_id FK(외래키), 예약 전은 null 가능
     private Participation participation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_member_id")
+    private Member hostMember;
 
     @ManyToOne(fetch = FetchType.LAZY) // 여러 좌석이 하나의 노선에 속함
     @JoinColumn(name = "pathinfo_id", nullable = false) // pathinfo_id FK
@@ -61,9 +68,20 @@ public class Seat {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void bookByHost(Member hostMember) {
+        if (this.status == SeatStatus.BOOKED) {
+            throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED);
+        }
+
+        this.hostMember = hostMember;
+        this.status = SeatStatus.BOOKED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     // 참여 취소 시 좌석 해제
     public void release() {
         this.participation = null;
+        this.hostMember = null;
         this.status = SeatStatus.AVAILABLE;
         this.updatedAt = LocalDateTime.now();
     }

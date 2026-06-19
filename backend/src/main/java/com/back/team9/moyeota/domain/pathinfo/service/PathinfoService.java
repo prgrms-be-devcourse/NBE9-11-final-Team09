@@ -11,7 +11,6 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
-import com.back.team9.moyeota.domain.seat.service.SeatService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ public class PathinfoService {
 
     private final PathinfoRepository pathinfoRepository;
     private final PathinfoValidator pathinfoValidator;
-    private final SeatService seatService;
 
     // 펀딩 생성 시 노선 생성
     @Transactional
@@ -49,7 +47,6 @@ public class PathinfoService {
         );
 
         pathinfoRepository.save(outbound);
-        seatService.createSeatsForPathinfo(outbound);
 
         if (tripType == TripType.ROUND) {
             Pathinfo returned = Pathinfo.create(
@@ -63,7 +60,6 @@ public class PathinfoService {
             );
 
             pathinfoRepository.save(returned);
-            seatService.createSeatsForPathinfo(returned);
         }
     }
 
@@ -135,7 +131,6 @@ public class PathinfoService {
 
         if (returned != null) {
             returned.cancel();
-            seatService.deleteSeatsForPathinfo(returned);
         }
     }
 

@@ -13,7 +13,6 @@ import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
-import com.back.team9.moyeota.domain.seat.service.SeatService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
@@ -56,9 +55,6 @@ class PathinfoServiceUnitTest {
     @Mock
     private PathinfoValidator pathinfoValidator;
 
-    @Mock
-    private SeatService seatService;
-
     @Test
     @DisplayName("노선 생성 - 편도면 가는 노선만 저장한다")
     void createPathinfos_whenOneWay_savesOutboundOnly() {
@@ -79,7 +75,6 @@ class PathinfoServiceUnitTest {
         assertThat(saved.getDirection()).isEqualTo(Direction.OUTBOUND);
         assertThat(saved.getDepartureTime()).isEqualTo(DEPARTURE_TIME);
         assertThat(saved.getBusType()).isEqualTo(BusType.BUS_45);
-        verify(seatService).createSeatsForPathinfo(saved);
     }
 
     @Test
@@ -105,8 +100,6 @@ class PathinfoServiceUnitTest {
         assertThat(saved.get(1).getDepartureTime()).isEqualTo(RETURN_TIME);
         assertThat(saved.get(1).getDepartureAddress()).isEqualTo("Seoul Stadium");
         assertThat(saved.get(1).getArrivalAddress()).isEqualTo("Incheon Terminal");
-        verify(seatService).createSeatsForPathinfo(saved.get(0));
-        verify(seatService).createSeatsForPathinfo(saved.get(1));
     }
 
     @Test
@@ -129,7 +122,6 @@ class PathinfoServiceUnitTest {
                 .isEqualTo(ErrorCode.DEPARTURE_DATE_TOO_SOON);
 
         verify(pathinfoRepository, never()).save(any());
-        verifyNoInteractions(seatService);
     }
 
     @Test
@@ -153,7 +145,6 @@ class PathinfoServiceUnitTest {
                 .isEqualTo(ErrorCode.PATHINFO_REQUIRED);
 
         verify(pathinfoRepository, never()).save(any());
-        verifyNoInteractions(seatService);
     }
 
     @Test
@@ -205,7 +196,6 @@ class PathinfoServiceUnitTest {
         assertThat(outbound.getDepartureTime()).isEqualTo(DEPARTURE_TIME);
         assertThat(captor.getValue().getDirection()).isEqualTo(Direction.RETURN);
         assertThat(captor.getValue().getStatus()).isEqualTo(PathinfoStatus.PENDING);
-        verifyNoInteractions(seatService);
     }
 
     @Test
@@ -232,7 +222,6 @@ class PathinfoServiceUnitTest {
         // Then
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.CANCELLED);
         verify(pathinfoRepository, never()).save(any());
-        verify(seatService).deleteSeatsForPathinfo(returned);
     }
 
     @Test
