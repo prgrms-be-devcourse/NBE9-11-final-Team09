@@ -13,7 +13,6 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
-import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
@@ -27,6 +26,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
+import com.back.team9.moyeota.domain.seat.service.SeatService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
@@ -85,6 +85,9 @@ class FundingServiceUnitTest {
 
     @Mock
     private FundingValidator fundingValidator;
+
+    @Mock
+    private SeatService seatService;
 
     @Test
     @DisplayName("펀딩 생성 성공")
@@ -273,10 +276,7 @@ class FundingServiceUnitTest {
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
-        ArgumentCaptor<FundingSeatsRecreateEvent> eventCaptor =
-                ArgumentCaptor.forClass(FundingSeatsRecreateEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().fundingId()).isEqualTo(10L);
+        verify(seatService).recreateSeatsForActivePathinfos(10L);
     }
 
     @Test
@@ -316,8 +316,7 @@ class FundingServiceUnitTest {
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
-        verify(eventPublisher, never())
-                .publishEvent(any(FundingSeatsRecreateEvent.class));
+        verify(seatService, never()).recreateSeatsForActivePathinfos(10L);
     }
 
     @Test

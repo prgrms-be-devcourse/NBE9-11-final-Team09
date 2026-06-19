@@ -9,14 +9,12 @@ import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
-import com.back.team9.moyeota.domain.pathinfo.event.PathinfoCancelledEvent;
-import com.back.team9.moyeota.domain.pathinfo.event.PathinfoCreatedEvent;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
+import com.back.team9.moyeota.domain.seat.service.SeatService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +27,7 @@ public class PathinfoService {
 
     private final PathinfoRepository pathinfoRepository;
     private final PathinfoValidator pathinfoValidator;
-    private final ApplicationEventPublisher eventPublisher;
+    private final SeatService seatService;
 
     // 펀딩 생성 시 노선 생성
     @Transactional
@@ -51,7 +49,7 @@ public class PathinfoService {
         );
 
         pathinfoRepository.save(outbound);
-        eventPublisher.publishEvent(new PathinfoCreatedEvent(outbound));
+        seatService.createSeatsForPathinfo(outbound);
 
         if (tripType == TripType.ROUND) {
             Pathinfo returned = Pathinfo.create(
@@ -65,7 +63,7 @@ public class PathinfoService {
             );
 
             pathinfoRepository.save(returned);
-            eventPublisher.publishEvent(new PathinfoCreatedEvent(returned));
+            seatService.createSeatsForPathinfo(returned);
         }
     }
 
@@ -137,7 +135,7 @@ public class PathinfoService {
 
         if (returned != null) {
             returned.cancel();
-            eventPublisher.publishEvent(new PathinfoCancelledEvent(returned));
+            seatService.deleteSeatsForPathinfo(returned);
         }
     }
 
