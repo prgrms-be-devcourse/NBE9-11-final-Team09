@@ -32,7 +32,8 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem("accessToken", data.data.accessToken);
+      const storage = keepLogin ? localStorage : sessionStorage;
+      storage.setItem("accessToken", data.data.accessToken);
       router.push("/");
     } catch {
       setError("서버와 연결할 수 없습니다.");

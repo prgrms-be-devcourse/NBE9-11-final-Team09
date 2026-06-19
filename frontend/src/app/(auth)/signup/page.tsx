@@ -26,6 +26,13 @@ export default function SignupPage() {
   const [requestSuccess, setRequestSuccess] = useState("");
   const [submitError, setSubmitError] = useState("");
 
+  function resetEmailVerification() {
+    setEmailSent(false);
+    setVerificationCode("");
+    setRequestSuccess("");
+    setRequestError("");
+  }
+
   const passwordValid = PASSWORD_REGEX.test(password);
   const passwordsMatch = password === passwordConfirm;
   const phoneValid = PHONE_REGEX.test(phoneNumber);
@@ -120,7 +127,7 @@ export default function SignupPage() {
                 type="email"
                 placeholder="example@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (emailSent) resetEmailVerification(); }}
                 className="flex-1 border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
               />
               <button
@@ -157,7 +164,7 @@ export default function SignupPage() {
               type="text"
               placeholder="이름 입력"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); if (emailSent) resetEmailVerification(); }}
               className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
             />
           </div>
@@ -170,7 +177,7 @@ export default function SignupPage() {
                 type="password"
                 placeholder="비밀번호 입력"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (emailSent) resetEmailVerification(); }}
                 className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
               />
               {password && !passwordValid && (
@@ -183,7 +190,7 @@ export default function SignupPage() {
                 type="password"
                 placeholder="비밀번호 재입력"
                 value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
+                onChange={(e) => { setPasswordConfirm(e.target.value); if (emailSent) resetEmailVerification(); }}
                 className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
               />
               {passwordConfirm && !passwordsMatch && (
@@ -200,7 +207,7 @@ export default function SignupPage() {
                 type="text"
                 placeholder="닉네임 입력"
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                onChange={(e) => { setNickname(e.target.value); if (emailSent) resetEmailVerification(); }}
                 className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
               />
             </div>
@@ -210,7 +217,7 @@ export default function SignupPage() {
                 type="tel"
                 placeholder="010-0000-0000"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) => { setPhoneNumber(e.target.value); if (emailSent) resetEmailVerification(); }}
                 className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
               />
               {phoneNumber && !phoneValid && (
