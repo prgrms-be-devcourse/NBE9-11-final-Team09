@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.domain.member.service;
+package com.back.team9.moyeota.domain.member.service.history;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;

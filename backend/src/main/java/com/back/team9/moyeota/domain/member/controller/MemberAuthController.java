@@ -1,9 +1,9 @@
 package com.back.team9.moyeota.domain.member.controller;
 
 import com.back.team9.moyeota.domain.member.dto.auth.*;
-import com.back.team9.moyeota.domain.member.service.MemberLoginService;
-import com.back.team9.moyeota.domain.member.service.MemberLogoutService;
-import com.back.team9.moyeota.domain.member.service.MemberService;
+import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
+import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
+import com.back.team9.moyeota.domain.member.service.auth.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;

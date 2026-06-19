@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.domain.member.service;
+package com.back.team9.moyeota.domain.member.service.auth;
 
 import com.back.team9.moyeota.domain.member.infrastructure.mail.EmailVerificationMailSender;
 import com.back.team9.moyeota.global.error.ErrorCode;

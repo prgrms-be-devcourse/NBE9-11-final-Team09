@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.domain.member.service;
+package com.back.team9.moyeota.domain.member.service.profile;
 
 import com.back.team9.moyeota.domain.member.dto.profile.MemberInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateRequest;
