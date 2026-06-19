@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -234,9 +235,9 @@ class AdminManagementControllerTest {
                         "host@example.com",
                         10L,
                         "잠실 경기 후 인천행 버스",
-                        600000,
-                        0,
-                        600000,
+                        BigDecimal.valueOf(600000),
+                        BigDecimal.valueOf(0),
+                        BigDecimal.valueOf(600000),
                         SettlementStatus.CALCULATED,
                         null,
                         LocalDateTime.of(2026, 6, 20, 23, 0),
@@ -277,9 +278,9 @@ class AdminManagementControllerTest {
                         "잠실 경기 후 인천행 버스",
                         FundingStatus.COMPLETED,
                         LocalDate.of(2026, 7, 10),
-                        600000,
-                        0,
-                        600000,
+                        BigDecimal.valueOf(600000),
+                        BigDecimal.valueOf(0),
+                        BigDecimal.valueOf(600000),
                         SettlementStatus.CALCULATED,
                         null,
                         LocalDateTime.of(2026, 6, 20, 23, 0),

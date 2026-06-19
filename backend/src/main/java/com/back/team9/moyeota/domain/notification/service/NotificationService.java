@@ -10,13 +10,8 @@ import com.back.team9.moyeota.domain.notification.entity.SendStatus;
 import com.back.team9.moyeota.domain.notification.repository.NotificationRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -65,11 +60,9 @@ public class NotificationService {
         try {
             sendMailWithRetry(member.getEmail(), title, content);
             notification.markSuccess();
-            notificationRepository.save(notification);
 
         } catch (Exception e) {
             notification.markFailed();
-            notificationRepository.save(notification);
             throw new BusinessException(ErrorCode.NOTIFICATION_SEND_FAILED);
         } finally {
             notificationRepository.save(notification);
