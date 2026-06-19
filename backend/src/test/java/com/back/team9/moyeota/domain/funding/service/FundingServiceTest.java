@@ -164,6 +164,7 @@ class FundingServiceTest {
 
         // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
+        assertThat(result.chatRoomId()).isNotNull();
         assertThat(result.title()).isEqualTo("Football Match Bus");
         assertThat(result.pathinfos()).hasSize(1);
     }
