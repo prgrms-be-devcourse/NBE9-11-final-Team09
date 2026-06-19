@@ -22,7 +22,7 @@ export default function LoginPage() {
       const res = await fetch("/api/members/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       if (!res.ok) {
@@ -117,7 +117,7 @@ export default function LoginPage() {
         </div>
 
         {/* Kakao 로그인 */}
-        <button className="w-full border border-gray-900 py-4 rounded text-sm font-bold">
+        <button type="button" className="w-full border border-gray-900 py-4 rounded text-sm font-bold">
           Kakao 로그인
         </button>
 

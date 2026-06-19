@@ -38,10 +38,10 @@ export default function SignupPage() {
   const phoneValid = PHONE_REGEX.test(phoneNumber);
 
   const canRequest =
-    !!email && !!password && passwordValid &&
+    !!email.trim() && !!password && passwordValid &&
     !!passwordConfirm && passwordsMatch &&
-    !!name && !!nickname &&
-    !!phoneNumber && phoneValid;
+    !!name.trim() && !!nickname.trim() &&
+    !!phoneNumber.trim() && phoneValid;
 
   async function handleRequestVerification() {
     setRequestError("");
@@ -52,7 +52,7 @@ export default function SignupPage() {
       const res = await fetch("/api/members/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, nickname, phoneNumber }),
+        body: JSON.stringify({ email: email.trim(), password, name: name.trim(), nickname: nickname.trim(), phoneNumber: phoneNumber.trim() }),
       });
 
       if (!res.ok) {
@@ -97,7 +97,7 @@ export default function SignupPage() {
       const res = await fetch("/api/members/email-verification/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, verificationCode }),
+        body: JSON.stringify({ email: email.trim(), verificationCode: verificationCode.trim() }),
       });
 
       if (!res.ok) {
@@ -140,7 +140,6 @@ export default function SignupPage() {
                 type="button"
                 onClick={handleRequestVerification}
                 disabled={requestLoading || !canRequest}
-                title={!canRequest ? "아래 항목을 모두 올바르게 입력해주세요." : ""}
                 className="border border-gray-900 text-gray-900 font-bold px-5 py-3 rounded text-sm whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {requestLoading ? "요청 중..." : "인증 요청"}
