@@ -12,6 +12,10 @@ spring:
     ansi:
       enabled: always
 
+  sql:
+    init:
+      mode: always
+
   mvc:
     problemdetails:
       enabled: false
