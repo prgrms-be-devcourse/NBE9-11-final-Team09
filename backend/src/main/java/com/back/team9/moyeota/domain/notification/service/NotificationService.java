@@ -33,7 +33,6 @@ public class NotificationService {
     private final MailService mailService;
     private final NotificationTemplateService templateService;
 
-    @Transactional
     public void sendMimeMessage(Long memberId,
                                 Long fundingId,
                                 NotificationType type) {
@@ -64,15 +63,40 @@ public class NotificationService {
         notificationRepository.save(notification);
 
         try {
-            mailService.send(member.getEmail(), title, content);
+            sendMailWithRetry(member.getEmail(), title, content);
             notification.markSuccess();
-
-            log.info("메일 발송 성공");
+            notificationRepository.save(notification);
 
         } catch (Exception e) {
             notification.markFailed();
-            log.info("메일 발송 실패");
-            throw e;
+            notificationRepository.save(notification);
+            throw new BusinessException(ErrorCode.NOTIFICATION_SEND_FAILED);
+        } finally {
+            notificationRepository.save(notification);
+        }
+    }
+
+    private void sendMailWithRetry(
+            String email,
+            String title,
+            String content
+    ) {
+        int retryCount = 0;
+
+        while (retryCount < 3) {
+            try {
+                mailService.send(email, title, content);
+                return;
+
+            } catch (Exception e) {
+                retryCount++;
+
+                log.warn("메일 발송 실패 ({} / 3)", retryCount);
+
+                if (retryCount >= 3) {
+                    throw e;
+                }
+            }
         }
     }
 }
