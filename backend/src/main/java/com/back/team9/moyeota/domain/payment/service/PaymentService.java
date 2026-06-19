@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.participation.repository.ParticipationRepos
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentPrepareResponse;
 import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.Payment;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -41,30 +45,29 @@ public class PaymentService {
 
     private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType) {
 
-        if (paymentRepository.findByOrderId(request.orderId()).isPresent()) {
-            throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
-        }
+        Payment pendingPayment = paymentRepository
+                .findByParticipation_ParticipationIdAndStatus(request.participationId(), PaymentStatus.PENDING)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
         if (paymentRepository.findByTossPaymentKey(request.paymentKey()).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
         }
 
-        Participation participation = participationRepository.findById(request.participationId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
-
+        Participation participation = pendingPayment.getParticipation();
         if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
         TossConfirmResponse tossResponse = tossPaymentClient.confirm(
                 request.paymentKey(),
-                request.orderId(),
+                pendingPayment.getOrderId(),
                 request.amount()
         );
 
-        Payment payment = request.toEntity(participation, tossResponse.paymentKey(), PaymentStatus.PAID, paymentType);
-        Payment savePayment = paymentWriter.save(payment);
+        pendingPayment.confirm(paymentType, tossResponse.paymentKey());
+        paymentWriter.save(pendingPayment);
 
-        return PaymentResponse.from(savePayment);
+        return PaymentResponse.from(pendingPayment);
     }
 
     @Transactional
@@ -94,14 +97,44 @@ public class PaymentService {
 
     @Transactional
     public void refundByParticipationId(Long participationId) {
-        Payment payment = paymentRepository.findByParticipation_ParticipationId(participationId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
-        if (payment.getStatus() != PaymentStatus.PAID) {
-            return;
+        List<Payment> payments = paymentRepository.findByParticipation_ParticipationId(participationId);
+        if(payments.isEmpty()){
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
 
-        tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
-        paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        for(Payment payment : payments){
+            if (payment.getStatus() != PaymentStatus.PAID) {
+                continue;
+            }
+            tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
+            paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        }
+
+    }
+
+    @Transactional
+    public PaymentPrepareResponse prepare(Long participationId, Long memberId) {
+        Participation participation = participationRepository.findById(participationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
+
+        if (!participation.getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
+
+        List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
+                PaymentStatus.PENDING);
+        paymentRepository.deleteAll(existingPendings);
+
+        String orderId = UUID.randomUUID().toString();
+        Payment payment = Payment.builder()
+                .participation(participation)
+                .orderId(orderId)
+                .amount(participation.getFinalAmount())
+                .status(PaymentStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+        paymentWriter.save(payment);
+
+        return new PaymentPrepareResponse(orderId);
     }
 }
