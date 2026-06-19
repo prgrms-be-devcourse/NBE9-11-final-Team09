@@ -12,9 +12,11 @@ import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentSt
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
+import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
@@ -40,6 +42,7 @@ import java.util.List;
 public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
+    private final PaymentRepository paymentRepository;
     private final FundingRepository fundingRepository;
     private final MemberRepository memberRepository;
     private final SeatRepository seatRepository;
@@ -134,7 +137,7 @@ public class ParticipationService {
         }
     }
 
-     // 좌석별로 독립 처리하여, 한 좌석의 실패가 다른 좌석 처리를 막지 않음
+    // 좌석별로 독립 처리하여, 한 좌석의 실패가 다른 좌석 처리를 막지 않음
     private void releaseSeatHoldSafely(Long seatId, Long memberId) {
         boolean released = seatRedisService.releaseSeat(seatId, memberId);
         if (!released) {
@@ -267,5 +270,39 @@ public class ParticipationService {
         return participations.stream()
                 .map(ParticipationListResponse::from)
                 .toList();
+    }
+
+    // ============================== 4. 결제 완료 후 좌석 확정 ==============================
+    @Transactional
+    public void confirmAfterPayment(Long paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        // Payment에서 Participation 꺼냄
+        Participation participation = payment.getParticipation();
+        Long memberId = participation.getMember().getMemberId();
+
+        // 가는편 좌석 Redis HOLD 유효성 확인
+        Long outboundSeatId = participation.getOutboundSeat().getSeatId();
+        if (!seatRedisService.isHeldBy(outboundSeatId, memberId)) {
+            throw new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED);
+        }
+
+        // 왕복인 경우 오는편 좌석도 확인
+        Seat returnSeat = participation.getReturnSeat();
+        if (returnSeat != null && !seatRedisService.isHeldBy(returnSeat.getSeatId(), memberId)) {
+            throw new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED);
+        }
+
+        // HOLD 유효 → 좌석 BOOKED 확정 + Redis HOLD 해제
+        participation.getOutboundSeat().book(participation);
+        releaseSeatHoldSafely(outboundSeatId, memberId);
+
+        if (returnSeat != null) {
+            returnSeat.book(participation);
+            releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
+        }
+        participation.confirmPayment();
     }
 }

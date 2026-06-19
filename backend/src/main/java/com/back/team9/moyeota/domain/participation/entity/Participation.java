@@ -82,6 +82,12 @@ public class Participation {
                 .build();
     }
 
+    // 결제 완료 후 좌석 확정 시 호출
+    public void confirmPayment() {
+        this.paymentStatus = ParticipationPaymentStatus.ACTIVE;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     //참여 취소 시 호출되는 비즈니스 메서드
     //환불 가능 여부(출발 -10일 기준) 판단은 Service 계층에서 먼저 검증 후 호출해야 함
     // 이 메서드는 "취소 가능"이 확정된 이후의 상태 변경만 담당
