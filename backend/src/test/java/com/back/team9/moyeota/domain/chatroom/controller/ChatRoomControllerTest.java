@@ -6,12 +6,18 @@ import com.back.team9.moyeota.domain.chatroom.dto.MessageResponse;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoomStatus;
 import com.back.team9.moyeota.domain.chatroom.service.ChatMessageService;
 import com.back.team9.moyeota.domain.chatroom.service.ChatRoomService;
+import com.back.team9.moyeota.global.jwt.JwtAuthenticationFilter;
+import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,7 +31,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(
+        value = ChatRoomController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = JwtAuthenticationFilter.class
+        )
+)
 @AutoConfigureMockMvc(addFilters = false)
 class ChatRoomControllerTest {
     @Autowired
