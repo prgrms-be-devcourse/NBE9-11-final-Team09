@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.participation.repository;
 
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,6 +28,12 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     // 특정 상태의 참여자 수 조회
     long countByFunding_FundingIdAndStatus(Long fundingId, ParticipationStatus status);
 
+    // 취소되지 않은 참여자 수 조회
+    long countByFunding_FundingIdAndPaymentStatusIn(
+            Long fundingId,
+            List<ParticipationPaymentStatus> paymentStatuses
+    );
+
     // 펀딩 목록의 각 펀딩 참여자 수 조회
     @Query("""
         select p.funding.fundingId as fundingId,
@@ -36,10 +43,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
           and p.status = :status
         group by p.funding.fundingId
         """)
-    List<FundingParticipationCount> countByFundingIdsAndStatus(
-            List<Long> fundingIds,
-            ParticipationStatus status
-    );
+    List<FundingParticipationCount> countByFundingIdsAndStatus(List<Long> fundingIds, ParticipationStatus status);
 
     // 참가자 수 인터페이스
     interface FundingParticipationCount {
