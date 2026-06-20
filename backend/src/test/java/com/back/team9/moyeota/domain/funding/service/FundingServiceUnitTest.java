@@ -325,7 +325,54 @@ class FundingServiceUnitTest {
     }
 
     @Test
-    @DisplayName("펀딩 수정 - 펀딩이 없으면 예외")
+    @DisplayName("펀딩 수정 - 참가자가 있으면 방장 좌석 없이 제목과 내용만 수정한다")
+    void updateFunding_whenHasParticipants_allowsTitleAndContentWithoutHostSeat() {
+        // Given
+        Funding funding = funding(
+                10L,
+                member(1L),
+                FundingStatus.RECRUITING,
+                BusType.BUS_45,
+                BigDecimal.valueOf(726000)
+        );
+        FundingUpdateRequest request = new FundingUpdateRequest(
+                "Updated Title",
+                "Updated Content",
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                null,
+                null,
+                route()
+        );
+
+        given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(1L);
+        given(pathinfoService.isRouteChanged(
+                10L,
+                TripType.ONE_WAY,
+                request.route()
+        )).willReturn(false);
+
+        // When
+        fundingService.updateFunding(1L, 10L, request);
+
+        // Then
+        assertThat(funding.getTitle()).isEqualTo("Updated Title");
+        assertThat(funding.getContent()).isEqualTo("Updated Content");
+        verify(fundingValidator).validateHost(funding, 1L);
+        verify(fundingValidator).validateUpdatable(funding);
+        verify(fundingValidator, never()).validateFundingRequest(any(), any());
+        verify(pathinfoService, never()).updatePathinfos(any(), any(), any());
+        verify(pathinfoService, never()).syncBusType(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(FundingSeatsRecreateEvent.class));
+    }
+
+    @Test
+    @DisplayName("????섏젙 - ??⑹씠 ?놁쑝硫??덉쇅")
     void updateFunding_whenFundingDoesNotExist_throwsException() {
         // Given
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());

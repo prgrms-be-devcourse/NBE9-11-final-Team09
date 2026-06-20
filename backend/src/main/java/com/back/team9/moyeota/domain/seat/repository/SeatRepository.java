@@ -15,7 +15,10 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     // findByPathinfo_PathinfoId → pathinfo 필드의 pathinfoId로 조회
     List<Seat> findByPathinfo_PathinfoId(Long pathinfoId);
 
-    @Modifying
+    @Modifying(
+            flushAutomatically = true,
+            clearAutomatically = true
+    )
     @Query("""
             DELETE FROM Seat s
             WHERE s.pathinfo.pathinfoId = :pathinfoId

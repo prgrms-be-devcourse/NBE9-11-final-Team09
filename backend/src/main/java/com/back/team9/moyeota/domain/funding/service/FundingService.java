@@ -201,11 +201,6 @@ public class FundingService {
         Funding funding = findFundingById(fundingId);
         fundingValidator.validateHost(funding, memberId);
         fundingValidator.validateUpdatable(funding);
-        validateHostSeatRequest(
-                request.tripType(),
-                request.hostOutboundSeatNumber(),
-                request.hostReturnSeatNumber()
-        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -262,6 +257,13 @@ public class FundingService {
                 .departureTime()
                 .toLocalDate();
         boolean shouldRecreateSeats = isSeatStructureChanged(funding, request);
+        if (shouldRecreateSeats) {
+            validateHostSeatRequest(
+                    request.tripType(),
+                    request.hostOutboundSeatNumber(),
+                    request.hostReturnSeatNumber()
+            );
+        }
 
         funding.update(
                 request.title(),

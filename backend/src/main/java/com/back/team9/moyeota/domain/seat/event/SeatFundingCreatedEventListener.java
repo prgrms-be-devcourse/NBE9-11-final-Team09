@@ -13,6 +13,7 @@ import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -28,6 +29,7 @@ import java.util.List;
 public class SeatFundingCreatedEventListener {
     private final PathinfoRepository pathinfoRepository;
     private final SeatRepository seatRepository;
+    private final EntityManager entityManager;
 
     @EventListener
     @Transactional
@@ -51,7 +53,7 @@ public class SeatFundingCreatedEventListener {
                     pathinfo.getBusType(),
                     event.funding().getMember(),
                     hostSeatNumber(
-                            pathinfo,
+                            pathinfo.getDirection(),
                             event.hostOutboundSeatNumber(),
                             event.hostReturnSeatNumber()
                     )
@@ -67,6 +69,7 @@ public class SeatFundingCreatedEventListener {
     @Transactional
     public void handleFundingSeatsRecreate(FundingSeatsRecreateEvent event) {
         Long fundingId = event.funding().getFundingId();
+        Long hostMemberId = event.funding().getMember().getMemberId();
 
         log.info("좌석 재생성 이벤트 수신 - fundingId: {}", fundingId);
 
@@ -74,19 +77,26 @@ public class SeatFundingCreatedEventListener {
                 .findByFunding_FundingId(fundingId);
 
         for (Pathinfo pathinfo : pathinfos) {
-            seatRepository.deleteByPathinfo_PathinfoId(pathinfo.getPathinfoId());
+            Long pathinfoId = pathinfo.getPathinfoId();
+            PathinfoStatus status = pathinfo.getStatus();
+            BusType busType = pathinfo.getBusType();
+            Direction direction = pathinfo.getDirection();
 
-            if (pathinfo.getStatus() == PathinfoStatus.CANCELLED) {
+            seatRepository.deleteByPathinfo_PathinfoId(pathinfoId);
+
+            if (status == PathinfoStatus.CANCELLED) {
                 log.info("취소 노선 좌석 삭제 완료 - pathInfoId: {}", pathinfo.getPathinfoId());
                 continue;
             }
 
+            Pathinfo seatPathinfo = pathinfoRepository.getReferenceById(pathinfoId);
+            Member hostMember = entityManager.getReference(Member.class, hostMemberId);
             List<Seat> seats = createSeatsWithHostSeat(
-                    pathinfo,
-                    pathinfo.getBusType(),
-                    event.funding().getMember(),
+                    seatPathinfo,
+                    busType,
+                    hostMember,
                     hostSeatNumber(
-                            pathinfo,
+                            direction,
                             event.hostOutboundSeatNumber(),
                             event.hostReturnSeatNumber()
                     )
@@ -152,11 +162,11 @@ public class SeatFundingCreatedEventListener {
     }
 
     private String hostSeatNumber(
-            Pathinfo pathinfo,
+            Direction direction,
             String outboundSeatNumber,
             String returnSeatNumber
     ) {
-        if (pathinfo.getDirection() == Direction.OUTBOUND) {
+        if (direction == Direction.OUTBOUND) {
             if (isBlank(outboundSeatNumber)) {
                 throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
             }
