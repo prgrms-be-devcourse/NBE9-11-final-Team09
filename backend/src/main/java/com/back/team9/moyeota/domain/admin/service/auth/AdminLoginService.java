@@ -45,6 +45,12 @@ public class AdminLoginService {
             );
         }
 
+        if (admin.getRole() == null) {
+            throw new BusinessException(
+                    ErrorCode.ADMIN_PERMISSION_REQUIRED
+            );
+        }
+
         JwtAccessTokenResponse token =
                 jwtTokenProvider.createAdminAccessToken(
                         admin.getAdminId(),
