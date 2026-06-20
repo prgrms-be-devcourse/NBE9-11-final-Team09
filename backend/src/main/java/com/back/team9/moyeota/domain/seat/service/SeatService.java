@@ -31,6 +31,7 @@ public class SeatService {
         // 노선 존재 여부 확인
         Pathinfo pathinfo = pathinfoRepository.findById(pathId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
+        validateUsablePathinfo(pathinfo);
 
         // 해당 노선의 전체 좌석 DB 조회
         List<Seat> seats = seatRepository.findByPathinfo_PathinfoId(pathId);
@@ -127,5 +128,12 @@ public class SeatService {
                 SeatDisplayStatus.HOLD,
                 true
         );
+    }
+
+    private void validateUsablePathinfo(Pathinfo pathinfo) {
+        if (pathinfo.getStatus() == PathinfoStatus.COMPLETED
+                || pathinfo.getStatus() == PathinfoStatus.CANCELLED) {
+            throw new BusinessException(ErrorCode.PATH_INVALID_STATUS);
+        }
     }
 }

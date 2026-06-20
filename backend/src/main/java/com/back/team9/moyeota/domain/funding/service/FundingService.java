@@ -5,7 +5,9 @@ import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
@@ -53,6 +55,11 @@ public class FundingService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        validateHostSeatRequest(
+                request.tripType(),
+                request.hostOutboundSeatNumber(),
+                request.hostReturnSeatNumber()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -86,7 +93,11 @@ public class FundingService {
                 request.tripType(),
                 request.route()
         );
-        eventPublisher.publishEvent(new FundingCreatedEvent(savedFunding));
+        eventPublisher.publishEvent(new FundingCreatedEvent(
+                savedFunding,
+                request.hostOutboundSeatNumber(),
+                request.hostReturnSeatNumber()
+        ));
 
         return new FundingCreateResponse(
                 savedFunding.getFundingId(),
@@ -115,7 +126,6 @@ public class FundingService {
         );
     }
 
-    // TODO: 펀딩 목록 조회 참가자 수 연동
     // 펀딩 목록 조회(핕터링)
     @Transactional(readOnly = true)
     public PageResponse<FundingListResponse> getFundingList(
@@ -246,6 +256,14 @@ public class FundingService {
         LocalDate departureDate = request.route()
                 .departureTime()
                 .toLocalDate();
+        boolean shouldRecreateSeats = isSeatStructureChanged(funding, request);
+        if (shouldRecreateSeats) {
+            validateHostSeatRequest(
+                    request.tripType(),
+                    request.hostOutboundSeatNumber(),
+                    request.hostReturnSeatNumber()
+            );
+        }
 
         funding.update(
                 request.title(),
@@ -266,6 +284,16 @@ public class FundingService {
                 funding.getFundingId(),
                 funding.getBusType()
         );
+
+        if (shouldRecreateSeats) {
+            eventPublisher.publishEvent(
+                    new FundingSeatsRecreateEvent(
+                            funding,
+                            request.hostOutboundSeatNumber(),
+                            request.hostReturnSeatNumber()
+                    )
+            );
+        }
 
     }
 
@@ -302,6 +330,32 @@ public class FundingService {
         return chatRoomRepository.findByFundingFundingId(fundingId)
                 .map(ChatRoom::getChatroomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private boolean isSeatStructureChanged(
+            Funding funding,
+            FundingUpdateRequest request
+    ) {
+        return !Objects.equals(funding.getBusType(), request.busType())
+                || !Objects.equals(funding.getTripType(), request.tripType());
+    }
+
+    private void validateHostSeatRequest(
+            TripType tripType,
+            String hostOutboundSeatNumber,
+            String hostReturnSeatNumber
+    ) {
+        if (isBlank(hostOutboundSeatNumber)) {
+            throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
+        }
+
+        if (tripType == TripType.ROUND && isBlank(hostReturnSeatNumber)) {
+            throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
 }

@@ -3,12 +3,17 @@ package com.back.team9.moyeota.domain.seat.event;
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -24,6 +29,7 @@ import java.util.List;
 public class SeatFundingCreatedEventListener {
     private final PathinfoRepository pathinfoRepository;
     private final SeatRepository seatRepository;
+    private final EntityManager entityManager;
 
     @EventListener
     @Transactional
@@ -42,10 +48,62 @@ public class SeatFundingCreatedEventListener {
 
         // 각 노선마다 좌석 생성
         for (Pathinfo pathinfo : pathinfos) {
-            List<Seat> seats = createSeats(pathinfo, busType);
+            List<Seat> seats = createSeatsWithHostSeat(
+                    pathinfo,
+                    pathinfo.getBusType(),
+                    event.funding().getMember(),
+                    hostSeatNumber(
+                            pathinfo.getDirection(),
+                            event.hostOutboundSeatNumber(),
+                            event.hostReturnSeatNumber()
+                    )
+            );
             seatRepository.saveAll(seats);
 
             log.info("좌석 생성 완료 - pathInfoId: {}, 좌석 수: {}",
+                    pathinfo.getPathinfoId(), seats.size());
+        }
+    }
+
+    @EventListener
+    @Transactional
+    public void handleFundingSeatsRecreate(FundingSeatsRecreateEvent event) {
+        Long fundingId = event.funding().getFundingId();
+        Long hostMemberId = event.funding().getMember().getMemberId();
+
+        log.info("좌석 재생성 이벤트 수신 - fundingId: {}", fundingId);
+
+        List<Pathinfo> pathinfos = pathinfoRepository
+                .findByFunding_FundingId(fundingId);
+
+        for (Pathinfo pathinfo : pathinfos) {
+            Long pathinfoId = pathinfo.getPathinfoId();
+            PathinfoStatus status = pathinfo.getStatus();
+            BusType busType = pathinfo.getBusType();
+            Direction direction = pathinfo.getDirection();
+
+            seatRepository.deleteByPathinfo_PathinfoId(pathinfoId);
+
+            if (status == PathinfoStatus.CANCELLED) {
+                log.info("취소 노선 좌석 삭제 완료 - pathInfoId: {}", pathinfo.getPathinfoId());
+                continue;
+            }
+
+            Pathinfo seatPathinfo = pathinfoRepository.getReferenceById(pathinfoId);
+            Member hostMember = entityManager.getReference(Member.class, hostMemberId);
+            List<Seat> seats = createSeatsWithHostSeat(
+                    seatPathinfo,
+                    busType,
+                    hostMember,
+                    hostSeatNumber(
+                            direction,
+                            event.hostOutboundSeatNumber(),
+                            event.hostReturnSeatNumber()
+                    )
+            );
+            seatRepository.saveAll(seats);
+
+            log.info("좌석 재생성 완료 - pathInfoId: {}, 좌석 수: {}",
                     pathinfo.getPathinfoId(), seats.size());
         }
     }
@@ -85,5 +143,43 @@ public class SeatFundingCreatedEventListener {
         }
 
         return seats;
+    }
+
+    private List<Seat> createSeatsWithHostSeat(
+            Pathinfo pathinfo,
+            BusType busType,
+            Member hostMember,
+            String hostSeatNumber
+    ) {
+        List<Seat> seats = createSeats(pathinfo, busType);
+        Seat hostSeat = seats.stream()
+                .filter(seat -> seat.getSeatNumber().equals(hostSeatNumber))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
+
+        hostSeat.bookByHost(hostMember);
+        return seats;
+    }
+
+    private String hostSeatNumber(
+            Direction direction,
+            String outboundSeatNumber,
+            String returnSeatNumber
+    ) {
+        if (direction == Direction.OUTBOUND) {
+            if (isBlank(outboundSeatNumber)) {
+                throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
+            }
+            return outboundSeatNumber;
+        }
+
+        if (isBlank(returnSeatNumber)) {
+            throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
+        }
+        return returnSeatNumber;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
