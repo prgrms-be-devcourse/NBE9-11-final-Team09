@@ -165,4 +165,11 @@ public class PaymentService {
 
         return new PaymentPrepareResponse(orderId);
     }
+
+    @Transactional
+    public void expirePayment(Payment payment) {
+        payment.expire();
+        paymentWriter.save(payment);
+        participationService.cancelByPaymentFailure(payment.getPaymentId());
+    }
 }

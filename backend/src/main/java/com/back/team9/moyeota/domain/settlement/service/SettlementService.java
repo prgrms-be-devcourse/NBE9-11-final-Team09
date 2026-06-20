@@ -64,10 +64,11 @@ public class SettlementService {
 
         Settlement saved;
         try {
-            saved = settlementRepository.save(settlement);
+            saved = settlementRepository.saveAndFlush(settlement);
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
-        }        return SettlementResponse.from(saved);
+        }
+        return SettlementResponse.from(saved);
     }
 
     @Transactional(readOnly = true)

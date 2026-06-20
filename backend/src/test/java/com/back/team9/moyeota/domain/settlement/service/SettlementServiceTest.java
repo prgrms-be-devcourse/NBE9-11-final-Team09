@@ -107,7 +107,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
-        given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
+        given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
         SettlementResponse response = settlementService.create(request, 1L);
@@ -123,7 +123,7 @@ class SettlementServiceTest {
 
         // Then - 실제 save에 전달된 Settlement 값 검증
         ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
-        verify(settlementRepository).save(captor.capture());
+        verify(settlementRepository).saveAndFlush(captor.capture());
         Settlement captured = captor.getValue();
         assertThat(captured.getPlatformFee()).isEqualByComparingTo(new BigDecimal("10000"));
         assertThat(captured.getHostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
@@ -164,7 +164,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
         given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
-        given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
+        given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
         SettlementResponse response = settlementService.create(request, 1L);
@@ -173,7 +173,7 @@ class SettlementServiceTest {
         assertThat(response.paybackHold()).isTrue();
 
         ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
-        verify(settlementRepository).save(captor.capture());
+        verify(settlementRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getPaybackHold()).isTrue();
     }
 

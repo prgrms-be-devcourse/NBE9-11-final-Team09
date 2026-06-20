@@ -1,10 +1,9 @@
 package com.back.team9.moyeota.domain.payment.scheduler;
 
-import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
-import com.back.team9.moyeota.domain.payment.service.PaymentWriter;
+import com.back.team9.moyeota.domain.payment.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,23 +19,20 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class PendingPaymentGcSchedulerTest {
 
     @Mock private PaymentRepository paymentRepository;
-    @Mock private PaymentWriter paymentWriter;
+    @Mock private PaymentService paymentService;
     @Mock private Clock clock;
-    @Mock private ParticipationService participationService;
 
     @InjectMocks
     private PendingPaymentGcScheduler scheduler;
@@ -61,20 +57,19 @@ class PendingPaymentGcSchedulerTest {
     }
 
     @Test
-    @DisplayName("GC 스케줄러 - PENDING 결제 존재 시 FAILED 전환 및 참여 취소 호출")
-    void expireStuckPendingPayments_정상케이스_FAILED전환후참여취소() {
+    @DisplayName("GC 스케줄러 - PENDING 결제 존재 시 expirePayment 호출")
+    void expireStuckPendingPayments_정상케이스_expirePayment호출() {
         Payment payment = pendingPayment(1L);
         given(paymentRepository.findAllByStatusAndCreatedAtBefore(eq(PaymentStatus.PENDING), any(LocalDateTime.class)))
                 .willReturn(List.of(payment));
 
         scheduler.expireStuckPendingPayments();
 
-        verify(paymentWriter).save(payment);
-        verify(participationService).cancelByPaymentFailure(1L);
+        verify(paymentService).expirePayment(payment);
     }
 
     @Test
-    @DisplayName("GC 스케줄러 - 여러 PENDING 결제 존재 시 각각 처리")
+    @DisplayName("GC 스케줄러 - 여러 PENDING 결제 존재 시 각각 expirePayment 호출")
     void expireStuckPendingPayments_복수건_각각처리() {
         Payment payment1 = pendingPayment(1L);
         Payment payment2 = pendingPayment(2L);
@@ -83,10 +78,8 @@ class PendingPaymentGcSchedulerTest {
 
         scheduler.expireStuckPendingPayments();
 
-        verify(paymentWriter).save(payment1);
-        verify(paymentWriter).save(payment2);
-        verify(participationService).cancelByPaymentFailure(1L);
-        verify(participationService).cancelByPaymentFailure(2L);
+        verify(paymentService).expirePayment(payment1);
+        verify(paymentService).expirePayment(payment2);
     }
 
     @Test
@@ -97,8 +90,7 @@ class PendingPaymentGcSchedulerTest {
 
         scheduler.expireStuckPendingPayments();
 
-        verify(paymentWriter, never()).save(any());
-        verify(participationService, never()).cancelByPaymentFailure(anyLong());
+        verify(paymentService, never()).expirePayment(any());
     }
 
     @Test
@@ -109,28 +101,26 @@ class PendingPaymentGcSchedulerTest {
         given(paymentRepository.findAllByStatusAndCreatedAtBefore(eq(PaymentStatus.PENDING), any(LocalDateTime.class)))
                 .willReturn(List.of(payment1, payment2));
         willThrow(new RuntimeException("DB 오류"))
-                .given(paymentWriter).save(payment1);
+                .given(paymentService).expirePayment(payment1);
 
         scheduler.expireStuckPendingPayments();
 
-        verify(paymentWriter).save(payment1);
-        verify(participationService, never()).cancelByPaymentFailure(1L);
-
-        verify(paymentWriter).save(payment2);
-        verify(participationService).cancelByPaymentFailure(2L);
+        verify(paymentService).expirePayment(payment1);
+        verify(paymentService).expirePayment(payment2);
     }
 
     @Test
-    @DisplayName("GC 스케줄러 - expire() 후 status가 FAILED로 변경됨")
-    void expireStuckPendingPayments_expire호출후FAILED상태() {
-        Payment payment = pendingPayment(1L);
+    @DisplayName("GC 스케줄러 - 30분 기준 threshold로 조회함")
+    void expireStuckPendingPayments_30분기준threshold조회() {
         given(paymentRepository.findAllByStatusAndCreatedAtBefore(eq(PaymentStatus.PENDING), any(LocalDateTime.class)))
-                .willReturn(List.of(payment));
+                .willReturn(List.of());
 
         scheduler.expireStuckPendingPayments();
 
-        verify(paymentWriter).save(payment);
-        assert payment.getStatus() == PaymentStatus.FAILED;
-        assert payment.getUpdatedAt() != null;
+        LocalDateTime expectedThreshold = LocalDateTime.now(clock).minusMinutes(30);
+        verify(paymentRepository).findAllByStatusAndCreatedAtBefore(
+                eq(PaymentStatus.PENDING),
+                eq(expectedThreshold)
+        );
     }
 }
