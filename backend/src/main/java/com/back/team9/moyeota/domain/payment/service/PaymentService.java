@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,8 @@ public class PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final PaymentWriter paymentWriter;
     private final ParticipationRepository participationRepository;
+    private final Clock clock;
+    private final ParticipationService participationService;
 
 
     @Transactional
@@ -67,6 +71,20 @@ public class PaymentService {
         pendingPayment.confirm(paymentType, tossResponse.paymentKey());
         paymentWriter.save(pendingPayment);
 
+        try {
+            participationService.confirmAfterPayment(pendingPayment.getPaymentId());
+        } catch (BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.SEAT_HOLD_EXPIRED) {
+                pendingPayment.startRefund();
+                paymentWriter.save(pendingPayment);
+                tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
+                pendingPayment.completeRefund();
+                paymentWriter.save(pendingPayment);
+                participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
+            }
+            throw e;
+        }
+
         return PaymentResponse.from(pendingPayment);
     }
 
@@ -79,19 +97,24 @@ public class PaymentService {
         if (!payment.getParticipation().getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
-        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+        if (payment.getStatus() == PaymentStatus.REFUNDED|| payment.getStatus() == PaymentStatus.REFUND_PENDING) {
             throw new BusinessException(ErrorCode.ALREADY_REFUNDED);
         }
         if (payment.getStatus() != PaymentStatus.PAID) {
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
+        payment.startRefund();
+        paymentWriter.save(payment);
+
         tossPaymentClient.cancel(
                 payment.getTossPaymentKey(),
                 request.cancelReason()
         );
 
-        Payment updatedPayment = paymentWriter.update(payment, PaymentStatus.REFUNDED);
+        payment.completeRefund();
+        Payment updatedPayment = paymentWriter.save(payment);
+
         return PaymentResponse.from(updatedPayment);
     }
 
@@ -106,8 +129,13 @@ public class PaymentService {
             if (payment.getStatus() != PaymentStatus.PAID) {
                 continue;
             }
+            payment.startRefund();
+            paymentWriter.save(payment);
+
             tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
-            paymentWriter.update(payment, PaymentStatus.REFUNDED);
+
+            payment.completeRefund();
+            paymentWriter.save(payment);
         }
 
     }
@@ -131,7 +159,7 @@ public class PaymentService {
                 .orderId(orderId)
                 .amount(participation.getFinalAmount())
                 .status(PaymentStatus.PENDING)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(clock))
                 .build();
         paymentWriter.save(payment);
 
