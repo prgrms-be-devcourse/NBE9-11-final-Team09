@@ -17,7 +17,7 @@ import java.util.Map;
 @Service //좌석 HOLD 관련 Redis 작업 전담
 @RequiredArgsConstructor
 public class SeatRedisService {
-    private final StringRedisTemplate redisTemplate; // edis 문자열 저장/조회
+    private final StringRedisTemplate redisTemplate; // Redis 문자열 저장/조회
 
     private static final String SEAT_KEY_PREFIX = "seat:"; // Redis Key 접두사
     private static final Duration HOLD_DURATION = Duration.ofSeconds(300); // HOLD 5분 유지
@@ -84,6 +84,23 @@ public class SeatRedisService {
         }
     }
 
+    // 좌석 선점 유효성 확인 (특정 멤버가 해당 좌석을 HOLD 중인지 확인)
+    public boolean isHeldBy(Long seatId, Long memberId) {
+        String key = generateKey(seatId);
+
+        try {
+            // Redis에서 현재 HOLD 중인 멤버 ID 조회
+            String value = redisTemplate.opsForValue().get(key);
+
+            // value가 null이면 HOLD 없음 다른 memberId면 다른 사람이 선점 중
+            return String.valueOf(memberId).equals(value);
+
+        } catch (Exception e) {
+            log.warn("Redis 장애 발생 - 좌석 선점 유효성 확인 실패. seatId={}, memberId={}", seatId, memberId, e);
+            return false;
+        }
+    }
+
     // 여러 좌석의 선점 유저 ID를 한 번에 조회 (N+1 최적화)
     public Map<Long, Long> getHoldMemberIds(List<Long> seatIds) {
         // 조회할 좌석이 없으면 빈 Map 반환
@@ -112,7 +129,11 @@ public class SeatRedisService {
                 String val = values.get(i);
                 // value가 존재하면 HOLD 중인 좌석
                 if (val != null) {
-                    holdMap.put(seatIds.get(i), Long.parseLong(val));
+                    try {
+                        holdMap.put(seatIds.get(i), Long.parseLong(val));
+                    } catch (NumberFormatException e) {
+                        log.warn("Redis HOLD 값 변환 실패. seatId={}, value={}", seatIds.get(i), val);
+                    }
                 }
             }
             return holdMap;
@@ -123,3 +144,5 @@ public class SeatRedisService {
         }
     }
 }
+
+
