@@ -13,6 +13,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
@@ -59,14 +60,15 @@ class JwtAuthenticationFilterTest {
 
         request.addHeader("Authorization", "Bearer access-token");
 
-        when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
-                .thenReturn(Optional.of(1L));
         when(jwtTokenResolver.findToken(request))
                 .thenReturn(Optional.of("access-token"));
-        when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
-                .thenReturn(Optional.of(1L));
-        when(jwtTokenProvider.getJti("access-token"))
-                .thenReturn("access-jti");
+        when(jwtTokenProvider.findAuthenticationInfo("access-token"))
+                .thenReturn(Optional.of(new JwtAuthenticationInfo(
+                        1L,
+                        PrincipalType.MEMBER,
+                        "MEMBER",
+                        "access-jti"
+                )));
         when(jwtBlacklistService.isBlacklisted("access-jti"))
                 .thenReturn(false);
 
@@ -85,6 +87,52 @@ class JwtAuthenticationFilterTest {
         assertThat(authentication).isNotNull();
         assertThat(authentication.getPrincipal()).isEqualTo(1L);
         assertThat(authentication.isAuthenticated()).isTrue();
+        assertThat(authentication.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly("ROLE_MEMBER");
+
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("유효한 관리자 Access Token이면 관리자 권한을 등록한다")
+    void validAdminAccessTokenSetsAdminAuthorities() throws Exception {
+        // Given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        request.addHeader("Authorization", "Bearer admin-access-token");
+
+        when(jwtTokenResolver.findToken(request))
+                .thenReturn(Optional.of("admin-access-token"));
+        when(jwtTokenProvider.findAuthenticationInfo(
+                "admin-access-token"
+        )).thenReturn(Optional.of(new JwtAuthenticationInfo(
+                1L,
+                PrincipalType.ADMIN,
+                "SUPER_ADMIN",
+                "admin-access-jti"
+        )));
+        when(jwtBlacklistService.isBlacklisted("admin-access-jti"))
+                .thenReturn(false);
+
+        // When
+        jwtAuthenticationFilter.doFilter(
+                request,
+                response,
+                filterChain
+        );
+
+        // Then
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        assertThat(authentication).isNotNull();
+        assertThat(authentication.getPrincipal()).isEqualTo(1L);
+        assertThat(authentication.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly("ROLE_ADMIN", "ROLE_SUPER_ADMIN");
 
         verify(filterChain).doFilter(request, response);
     }
@@ -124,10 +172,10 @@ class JwtAuthenticationFilterTest {
 
         request.addHeader("Authorization", "Bearer invalid-token");
 
-        when(jwtTokenProvider.findMemberIdFromAccessToken("invalid-token"))
-                .thenReturn(Optional.empty());
         when(jwtTokenResolver.findToken(request))
                 .thenReturn(Optional.of("invalid-token"));
+        when(jwtTokenProvider.findAuthenticationInfo("invalid-token"))
+                .thenReturn(Optional.empty());
 
         // When
         jwtAuthenticationFilter.doFilter(
@@ -155,10 +203,13 @@ class JwtAuthenticationFilterTest {
 
         when(jwtTokenResolver.findToken(request))
                 .thenReturn(Optional.of("access-token"));
-        when(jwtTokenProvider.findMemberIdFromAccessToken("access-token"))
-                .thenReturn(Optional.of(1L));
-        when(jwtTokenProvider.getJti("access-token"))
-                .thenReturn("access-jti");
+        when(jwtTokenProvider.findAuthenticationInfo("access-token"))
+                .thenReturn(Optional.of(new JwtAuthenticationInfo(
+                        1L,
+                        PrincipalType.MEMBER,
+                        "MEMBER",
+                        "access-jti"
+                )));
         when(jwtBlacklistService.isBlacklisted("access-jti"))
                 .thenReturn(true);
 
