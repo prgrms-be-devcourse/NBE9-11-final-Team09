@@ -2,10 +2,12 @@ package com.back.team9.moyeota.domain.admin.controller.auth;
 
 import com.back.team9.moyeota.domain.admin.dto.auth.AdminLoginResponse;
 import com.back.team9.moyeota.domain.admin.service.auth.AdminLoginService;
+import com.back.team9.moyeota.domain.admin.service.auth.AdminLogoutService;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -33,6 +37,9 @@ class AdminAuthControllerTest {
 
     @MockitoBean
     private AdminLoginService adminLoginService;
+
+    @MockitoBean
+    private AdminLogoutService adminLogoutService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
@@ -108,5 +115,45 @@ class AdminAuthControllerTest {
                 .andExpect(jsonPath("$.code").value("COM001"));
 
         verifyNoInteractions(adminLoginService);
+    }
+
+    @Test
+    @DisplayName("관리자 로그아웃에 성공하면 Access Token을 폐기한다")
+    void logoutWithValidAccessTokenReturnsSuccess() throws Exception {
+        // Given
+        when(jwtTokenResolver.findToken(
+                any(HttpServletRequest.class)
+        )).thenReturn(Optional.of("admin-access-token"));
+
+        // When / Then
+        mockMvc.perform(post("/api/admin/logout")
+                        .header(
+                                "Authorization",
+                                "Bearer admin-access-token"
+                        ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("ADMIN_LOGOUT_SUCCESS"))
+                .andExpect(jsonPath("$.msg")
+                        .value("관리자 로그아웃에 성공했습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(adminLogoutService).logout("admin-access-token");
+    }
+
+    @Test
+    @DisplayName("Access Token이 없으면 관리자 로그아웃에 실패한다")
+    void logoutWithoutAccessTokenReturnsUnauthorized() throws Exception {
+        // Given
+        when(jwtTokenResolver.findToken(
+                any(HttpServletRequest.class)
+        )).thenReturn(Optional.empty());
+
+        // When / Then
+        mockMvc.perform(post("/api/admin/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("COM006"));
+
+        verifyNoInteractions(adminLogoutService);
     }
 }
