@@ -39,6 +39,8 @@ public enum ErrorCode {
     INVALID_USER_STATUS_CHANGE(HttpStatus.BAD_REQUEST,"ADM005", "올바르지 않은 회원 상태 변경 요청입니다."),
     ADMIN_FUNDING_ALREADY_CANCELLED(HttpStatus.CONFLICT, "ADM006", "이미 취소된 펀딩입니다."),
     ADMIN_FUNDING_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "ADM007", "현재 상태에서는 펀딩을 강제 취소할 수 없습니다."),
+    ADMIN_INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "ADM008", "관리자 아이디 또는 비밀번호가 올바르지 않습니다."),
+    ADMIN_SUSPENDED(HttpStatus.FORBIDDEN, "ADM009", "정지된 관리자 계정입니다."),
 
     // [FND] 펀딩
     FUNDING_NOT_FOUND(HttpStatus.NOT_FOUND,"FND001", "존재하지 않는 펀딩입니다."),

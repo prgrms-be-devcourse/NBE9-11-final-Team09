@@ -35,6 +35,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/paytest.html"
                         ).permitAll()
+                        .requestMatchers("/api/admin/login").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

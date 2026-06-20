@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -31,16 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             jwtTokenResolver.findToken(request)
-                    .ifPresent(token ->
-                            jwtTokenProvider.findMemberIdFromAccessToken(token)
-                                    .filter(memberId -> !jwtBlacklistService
-                                            .isBlacklisted(
-                                                    jwtTokenProvider.getJti(token)
-                                            ))
-                                    .ifPresent(memberId ->
-                                            authenticate(request, memberId)
-                                    )
-                    );
+                    .flatMap(jwtTokenProvider::findAuthenticationInfo)
+                    .filter(info -> !jwtBlacklistService.isBlacklisted(
+                            info.jti()
+                    ))
+                    .ifPresent(info -> authenticate(request, info));
         }
 
         filterChain.doFilter(request, response);
@@ -48,13 +44,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticate(
             HttpServletRequest request,
-            Long memberId
+            JwtAuthenticationInfo info
     ) {
+        List<SimpleGrantedAuthority> authorities =
+                createAuthorities(info);
+
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        memberId,
+                        info.principalId(),
                         null,
-                        List.of()
+                        authorities
                 );
 
         authentication.setDetails(
@@ -66,5 +65,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
+    }
+
+    private List<SimpleGrantedAuthority> createAuthorities(
+            JwtAuthenticationInfo info
+    ) {
+        if (info.principalType() == PrincipalType.MEMBER) {
+            return List.of(
+                    new SimpleGrantedAuthority("ROLE_MEMBER")
+            );
+        }
+
+        return List.of(
+                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                new SimpleGrantedAuthority("ROLE_" + info.role())
+        );
     }
 }
