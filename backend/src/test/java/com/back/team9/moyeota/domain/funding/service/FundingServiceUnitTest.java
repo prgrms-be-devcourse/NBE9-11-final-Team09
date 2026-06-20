@@ -372,7 +372,7 @@ class FundingServiceUnitTest {
     }
 
     @Test
-    @DisplayName("????섏젙 - ??⑹씠 ?놁쑝硫??덉쇅")
+    @DisplayName("펀딩 수정 - 펀딩이 없으면 예외")
     void updateFunding_whenFundingDoesNotExist_throwsException() {
         // Given
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
