@@ -74,6 +74,7 @@ public enum ErrorCode {
     ROUND_TRIP_SEAT_REQUIRED(HttpStatus.BAD_REQUEST,"SEA004", "왕복 펀딩은 가는 편과 오는 편 좌석을 모두 선택해야합니다."),
     ONE_WAY_RETURN_SEAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST,"SEA005", "편도 펀딩은 오는 편 좌석을 선택할 수 없습니다."),
     INVALID_BUS_TYPE(HttpStatus.BAD_REQUEST,"SEA006", "지원하지 않는 버스 타입입니다."),
+    SEAT_HOLD_EXPIRED(HttpStatus.CONFLICT,"SEA007", "좌석 선점 시간이 만료되었습니다. 다시 선택해주세요."),
 
     // [PAY] 결제
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST,"PAY001", "결제 요청 금액이 일치하지 않습니다."),
@@ -86,6 +87,7 @@ public enum ErrorCode {
     BALANCE_PAYMENT_EXPIRED(HttpStatus.BAD_REQUEST,"PAY008", "잔액 결제 기한이 만료되었습니다."),
     ALREADY_REFUNDED(HttpStatus.CONFLICT, "PAY009", "이미 환불된 결제입니다."),
     PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PAY010", "해당 결제에 대한 접근 권한이 없습니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAY011", "존재하지 않는 결제입니다."),
 
     // [STL] 정산
     SETTLEMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST,"STL001", "이미 방장 페이백이 완료된 펀딩입니다."),

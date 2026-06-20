@@ -73,13 +73,19 @@ public class Participation {
         return Participation.builder()
                 .funding(funding)
                 .member(member)
-                .paymentStatus(ParticipationPaymentStatus.ACTIVE)
+                .paymentStatus(ParticipationPaymentStatus.PENDING) // 참여 생성 후 보증금 결제 대기
                 .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
                 .outboundSeat(outboundSeat)
                 .returnSeat(returnSeat)
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    // 결제 완료 후 좌석 확정 시 호출
+    public void confirmPayment() {
+        this.paymentStatus = ParticipationPaymentStatus.ACTIVE;
+        this.updatedAt = LocalDateTime.now();
     }
 
     //참여 취소 시 호출되는 비즈니스 메서드
