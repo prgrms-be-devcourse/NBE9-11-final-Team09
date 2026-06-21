@@ -129,8 +129,12 @@ export default function SeatMap({ busType, seats, onSeatClick }: SeatMapProps) {
                     <span>선택 가능</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-gray-500 rounded" />
+                    <div className="w-4 h-4 bg-black rounded" />
                     <span>선택한 좌석</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-gray-500 rounded" />
+                    <span>다른 사람 선점 중</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-4 h-4 bg-gray-300 rounded" />

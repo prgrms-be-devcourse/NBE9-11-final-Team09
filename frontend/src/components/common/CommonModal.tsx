@@ -13,7 +13,7 @@ export default function CommonModal({
                                     }: CommonModalProps) {
     return (
         <div
-            className="absolute inset-0 bg-black/30 flex items-center justify-center z-50 rounded-xl"
+            className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
             onClick={onClose} // 배경 클릭 시 닫기
         >
             {/* 모달 박스 */}

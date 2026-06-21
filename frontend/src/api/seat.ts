@@ -3,10 +3,12 @@ import { ApiResponse, SeatLayout, Seat } from "@/types/seat";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 // TODO: 로그인 구현 확인 후 토큰 저장 방식 맞춰서 수정 필요
-//       현재는 localStorage 기준으로 임시 작성
-//       쿠키 방식이면 credentials: "include"로 변경
+//       typeof window 체크: Next.js SSR 환경에서 localStorage 접근 시 에러 방지
 function getAuthHeader(): HeadersInit {
-    const token = localStorage.getItem("accessToken");
+    const token =
+        typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : null;
     return {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),

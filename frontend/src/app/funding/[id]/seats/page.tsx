@@ -76,10 +76,10 @@ export default function SeatsPage() {
 
     // 좌석 클릭 핸들러
     async function handleSeatClick(seat: Seat) {
-        // BOOKED → 아무 반응 없음
+        // BOOKED → 아무 반응 없음 (맨 먼저 체크!)
         if (seat.status === "BOOKED") return;
 
-        // HOLD (다른 사람 선점 중) → 팝업
+        // HOLD (다른 사람 선점 중) → 팝업 (두 번째 체크!)
         if (seat.status === "HOLD" && !seat.mySeat) {
             setModal({
                 title: "선택 불가",
@@ -93,16 +93,14 @@ export default function SeatsPage() {
             try {
                 await releaseSeat(seat.seatId);
                 setSeatLayout((prev) =>
-                    prev
-                        ? {
-                            ...prev,
-                            seats: prev.seats.map((s) =>
-                                s.seatId === seat.seatId
-                                    ? { ...s, status: "AVAILABLE" as const, mySeat: false }
-                                    : s
-                            ),
-                        }
-                        : prev
+                    prev ? {
+                        ...prev,
+                        seats: prev.seats.map((s) =>
+                            s.seatId === seat.seatId
+                                ? { ...s, status: "AVAILABLE" as const, mySeat: false }
+                                : s
+                        ),
+                    } : prev
                 );
                 if (step === "outbound") setSelectedSeat(null);
                 else setReturnSeat(null);
@@ -112,19 +110,41 @@ export default function SeatsPage() {
             return;
         }
 
+        // 기존에 선택한 좌석이 있다면 먼저 해제
+        const currentSelected = step === "outbound" ? selectedSeat : returnSeat;
+        if (currentSelected) {
+            try {
+                await releaseSeat(currentSelected.seatId);
+                setSeatLayout((prev) =>
+                    prev ? {
+                        ...prev,
+                        seats: prev.seats.map((s) =>
+                            s.seatId === currentSelected.seatId
+                                ? { ...s, status: "AVAILABLE" as const, mySeat: false }
+                                : s
+                        ),
+                    } : prev
+                );
+                if (step === "outbound") setSelectedSeat(null);
+                else setReturnSeat(null);
+            } catch (_err) {
+                setModal({ title: "오류", message: "기존 좌석 선점 해제에 실패했습니다." });
+                return;
+            }
+        }
+
+        // AVAILABLE → 선점 시도
         try {
             const updatedSeat = await holdSeat(seat.seatId);
             setSeatLayout((prev) =>
-                prev
-                    ? {
-                        ...prev,
-                        seats: prev.seats.map((s) =>
-                            s.seatId === seat.seatId
-                                ? { ...s, status: "HOLD" as const, mySeat: true }
-                                : s
-                        ),
-                    }
-                    : prev
+                prev ? {
+                    ...prev,
+                    seats: prev.seats.map((s) =>
+                        s.seatId === seat.seatId
+                            ? { ...s, status: "HOLD" as const, mySeat: true }
+                            : s
+                    ),
+                } : prev
             );
             if (step === "outbound") setSelectedSeat(updatedSeat);
             else setReturnSeat(updatedSeat);
@@ -139,6 +159,7 @@ export default function SeatsPage() {
             }
         }
     }
+
 
     // 결제하기 버튼 클릭 핸들러
     function handlePaymentClick() {
