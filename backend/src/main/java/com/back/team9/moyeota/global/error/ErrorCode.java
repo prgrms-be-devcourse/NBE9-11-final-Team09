@@ -30,6 +30,7 @@ public enum ErrorCode {
     VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "USR011", "인증코드가 만료되었습니다."),
     INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "USR012", "이메일 또는 비밀번호가 올바르지 않습니다."),
     USER_SUSPENDED(HttpStatus.FORBIDDEN, "USR013", "정지된 계정입니다."),
+    SIGNUP_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "USR014", "회원가입 요청 정보를 찾을 수 없습니다."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
