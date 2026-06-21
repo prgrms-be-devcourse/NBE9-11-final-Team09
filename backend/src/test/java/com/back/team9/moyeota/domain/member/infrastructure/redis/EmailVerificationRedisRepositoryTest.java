@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -18,11 +19,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import tools.jackson.databind.ObjectMapper;
-
 @ExtendWith(MockitoExtension.class)
-@DisplayName("회원가입 대기 Redis 저장소 테스트")
-class PendingSignupRedisRepositoryTest {
+@DisplayName("이메일 인증 Redis 저장소 테스트")
+class EmailVerificationRedisRepositoryTest {
 
     @Mock
     private StringRedisTemplate redisTemplate;
@@ -31,85 +30,71 @@ class PendingSignupRedisRepositoryTest {
     private ValueOperations<String, String> valueOperations;
 
     private ObjectMapper objectMapper;
-    private PendingSignupRedisRepository repository;
+    private EmailVerificationRedisRepository repository;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-
-        repository = new PendingSignupRedisRepository(
+        repository = new EmailVerificationRedisRepository(
                 redisTemplate,
                 objectMapper
         );
     }
 
     @Test
-    @DisplayName("가입 대기 정보를 TTL 30분으로 저장한다")
-    void saveStoresPendingSignupWithTtl() {
-        PendingSignupData signupData = createSignupData();
+    @DisplayName("인증정보를 TTL 30분으로 저장한다")
+    void saveStoresVerificationDataWithTtl() {
+        EmailVerificationData data =
+                new EmailVerificationData("encoded-code");
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-        when(redisTemplate.opsForValue())
-                .thenReturn(valueOperations);
-
-        repository.save(signupData);
+        repository.save("moyeota@example.com", data);
 
         verify(valueOperations).set(
-                eq("member:signup:moyeota@example.com"),
+                eq("member:email-verification:moyeota@example.com"),
                 anyString(),
                 eq(Duration.ofMinutes(30))
         );
     }
 
     @Test
-    @DisplayName("이메일로 가입 대기 정보를 조회한다")
-    void findByEmailReturnsPendingSignup() throws Exception {
-        PendingSignupData signupData = createSignupData();
-        String value = objectMapper.writeValueAsString(signupData);
-
-        when(redisTemplate.opsForValue())
-                .thenReturn(valueOperations);
+    @DisplayName("이메일로 인증정보를 조회한다")
+    void findByEmailReturnsVerificationData() throws Exception {
+        EmailVerificationData data =
+                new EmailVerificationData("encoded-code");
+        String value = objectMapper.writeValueAsString(data);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(
-                "member:signup:moyeota@example.com"
+                "member:email-verification:moyeota@example.com"
         )).thenReturn(value);
 
-        Optional<PendingSignupData> result =
+        Optional<EmailVerificationData> result =
                 repository.findByEmail("moyeota@example.com");
 
-        assertThat(result).contains(signupData);
+        assertThat(result).contains(data);
     }
 
     @Test
-    @DisplayName("가입 대기 정보가 없으면 빈 값을 반환한다")
+    @DisplayName("인증정보가 없으면 빈 값을 반환한다")
     void findByEmailReturnsEmptyWhenDataDoesNotExist() {
-        when(redisTemplate.opsForValue())
-                .thenReturn(valueOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(
-                "member:signup:moyeota@example.com"
+                "member:email-verification:moyeota@example.com"
         )).thenReturn(null);
 
-        Optional<PendingSignupData> result =
+        Optional<EmailVerificationData> result =
                 repository.findByEmail("moyeota@example.com");
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("이메일을 정규화하여 가입 대기 정보를 삭제한다")
+    @DisplayName("이메일을 정규화하여 인증정보를 삭제한다")
     void deleteByEmailDeletesNormalizedKey() {
         repository.deleteByEmail(" MOYEOTA@EXAMPLE.COM ");
 
         verify(redisTemplate).delete(
-                "member:signup:moyeota@example.com"
-        );
-    }
-
-    private PendingSignupData createSignupData() {
-        return new PendingSignupData(
-                "moyeota@example.com",
-                "encoded-password",
-                "홍길동",
-                "모여타요",
-                "010-1234-5678"
+                "member:email-verification:moyeota@example.com"
         );
     }
 }
