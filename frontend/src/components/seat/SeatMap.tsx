@@ -21,7 +21,7 @@ function BUS25Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
     return (
         <div className="flex flex-col gap-2">
             {/* 운전석 */}
-            <div className="flex justify-end mb-2">
+            <div className="flex justify-start mb-2">
                 <div className="w-10 h-10 border-2 border-dashed border-gray-400 rounded flex items-center justify-center text-xs text-gray-400">
                     운전석
                 </div>
@@ -117,7 +117,7 @@ function BUS45Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
 // busType에 따라 25인승 or 45인승 배치도 렌더링
 export default function SeatMap({ busType, seats, onSeatClick }: SeatMapProps) {
     return (
-        <div className="border-2 border-gray-300 rounded-xl p-6 bg-white">
+        <div className="border-2 border-gray-300 rounded-xl p-6 bg-white relative">
             <h3 className="text-sm font-semibold mb-4">
                 탑승 좌석 선택 ({busType === "BUS_25" ? "25인승 우등형" : "45인승 일반형"})
             </h3>
@@ -129,7 +129,7 @@ export default function SeatMap({ busType, seats, onSeatClick }: SeatMapProps) {
                     <span>선택 가능</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-black rounded" />
+                    <div className="w-4 h-4 bg-gray-500 rounded" />
                     <span>선택한 좌석</span>
                 </div>
                 <div className="flex items-center gap-1">

@@ -30,22 +30,49 @@ export default function SeatsPage() {
     const finalAmount = 25000;           // 최종 결제 금액 (임시) - FundingDetailResponse.minPrice ~ maxPrice 범위로 교체 예정
     const pathId = fundingId;            // TODO: 펀딩 상세 API에서 pathId 받아야 함
 
-    // 좌석 배치도 조회
-    useEffect(() => {
-        async function fetchSeatLayout() {
-            try {
-                setLoading(true);
-                const data = await getSeatLayout(pathId);
-                setSeatLayout(data);
-            } catch (_err) {
-                setError("좌석 정보를 불러오는데 실패했습니다.");
-            } finally {
-                setLoading(false);
-            }
-        }
 
-        void fetchSeatLayout();
-    }, [pathId]);
+    // =============================================
+// 임시 mock 데이터 (API 연동 전 UI 확인용)
+// TODO: API 연동 후 아래 useEffect로 교체
+// =============================================
+    useEffect(() => {
+        const mockData: SeatLayout = {
+            pathId: 1,
+            busType: "BUS_25",
+            seats: [
+                { seatId: 1, seatNumber: "1A", status: "AVAILABLE", mySeat: false },
+                { seatId: 2, seatNumber: "1B", status: "BOOKED", mySeat: false },
+                { seatId: 3, seatNumber: "1C", status: "AVAILABLE", mySeat: false },
+                { seatId: 4, seatNumber: "2A", status: "AVAILABLE", mySeat: false },
+                { seatId: 5, seatNumber: "2B", status: "HOLD", mySeat: false },
+                { seatId: 6, seatNumber: "2C", status: "AVAILABLE", mySeat: false },
+                { seatId: 7, seatNumber: "3A", status: "AVAILABLE", mySeat: false },
+                { seatId: 8, seatNumber: "3B", status: "AVAILABLE", mySeat: false },
+                { seatId: 9, seatNumber: "3C", status: "AVAILABLE", mySeat: false },
+                { seatId: 10, seatNumber: "4A", status: "AVAILABLE", mySeat: false },
+                { seatId: 11, seatNumber: "4B", status: "AVAILABLE", mySeat: false },
+                { seatId: 12, seatNumber: "4C", status: "AVAILABLE", mySeat: false },
+                { seatId: 13, seatNumber: "5A", status: "AVAILABLE", mySeat: false },
+                { seatId: 14, seatNumber: "5B", status: "AVAILABLE", mySeat: false },
+                { seatId: 15, seatNumber: "5C", status: "AVAILABLE", mySeat: false },
+                { seatId: 16, seatNumber: "6A", status: "AVAILABLE", mySeat: false },
+                { seatId: 17, seatNumber: "6B", status: "AVAILABLE", mySeat: false },
+                { seatId: 18, seatNumber: "6C", status: "AVAILABLE", mySeat: false },
+                { seatId: 19, seatNumber: "7A", status: "AVAILABLE", mySeat: false },
+                { seatId: 20, seatNumber: "7B", status: "AVAILABLE", mySeat: false },
+                { seatId: 21, seatNumber: "7C", status: "AVAILABLE", mySeat: false },
+                { seatId: 22, seatNumber: "8A", status: "AVAILABLE", mySeat: false },
+                { seatId: 23, seatNumber: "8B", status: "AVAILABLE", mySeat: false },
+                { seatId: 24, seatNumber: "8C", status: "AVAILABLE", mySeat: false },
+            ],
+        };
+
+        // setTimeout으로 감싸서 동기 setState 에러 방지
+        setTimeout(() => {
+            setSeatLayout(mockData);
+            setLoading(false);
+        }, 0);
+    }, []);
 
     // 좌석 클릭 핸들러
     async function handleSeatClick(seat: Seat) {

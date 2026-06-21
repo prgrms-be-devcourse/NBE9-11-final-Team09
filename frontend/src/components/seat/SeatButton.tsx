@@ -17,7 +17,7 @@ function getSeatStyle(status: SeatDisplayStatus, mySeat: boolean): string {
             return "bg-white text-black border border-gray-400 cursor-pointer hover:bg-gray-100";
         case "HOLD":
             // 다른 사람이 선점 중 → 회색 배경, 클릭 시 팝업
-            return "bg-gray-300 text-gray-500 cursor-pointer";
+            return "bg-gray-500 text-white cursor-pointer";
         case "BOOKED":
             // 예매 완료 → 회색 배경, 클릭 불가
             return "bg-gray-300 text-gray-500 cursor-not-allowed";
@@ -31,7 +31,7 @@ export default function SeatButton({ seat, onSeatClick }: SeatButtonProps) {
     return (
         <button
             className={`
-        w-10 h-10 rounded text-sm font-medium
+        w-14 h-14 rounded text-sm font-medium
         flex items-center justify-center
         ${getSeatStyle(seat.status, seat.mySeat)}
       `}
