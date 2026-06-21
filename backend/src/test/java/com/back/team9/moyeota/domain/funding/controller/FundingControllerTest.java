@@ -112,6 +112,8 @@ class FundingControllerTest {
                         BusType.BUS_45,
                         20,
                         TripType.ONE_WAY,
+                        "1A",
+                        null,
                         oneWayRoute()
                 );
 
@@ -153,6 +155,24 @@ class FundingControllerTest {
                 null,
                 oneWayRoute()
         );
+
+        performCreateBadRequest(request);
+    }
+
+    @Test
+    @DisplayName("펀딩 생성 방장 출발 좌석 미입력 400 반환")
+    void createFunding_whenHostOutboundSeatNumberIsBlank_returnsBadRequest() throws Exception {
+        FundingCreateRequest request =
+                new FundingCreateRequest(
+                        "Football Match Bus",
+                        "Ride together",
+                        BusType.BUS_45,
+                        20,
+                        TripType.ONE_WAY,
+                        "",
+                        null,
+                        oneWayRoute()
+                );
 
         performCreateBadRequest(request);
     }
@@ -281,6 +301,8 @@ class FundingControllerTest {
                         BusType.BUS_25,
                         10,
                         TripType.ONE_WAY,
+                        "1A",
+                        null,
                         oneWayRoute()
                 );
 
@@ -455,6 +477,8 @@ class FundingControllerTest {
                 busType,
                 minParticipants,
                 tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
                 route
         );
     }
@@ -480,6 +504,8 @@ class FundingControllerTest {
                 busType,
                 minParticipants,
                 tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
                 route
         );
     }

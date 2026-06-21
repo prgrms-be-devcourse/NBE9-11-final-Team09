@@ -13,6 +13,7 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
+import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
@@ -128,6 +129,8 @@ class FundingServiceUnitTest {
                 ArgumentCaptor.forClass(FundingCreatedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().funding()).isEqualTo(savedFunding);
+        assertThat(eventCaptor.getValue().hostOutboundSeatNumber()).isEqualTo("1A");
+        assertThat(eventCaptor.getValue().hostReturnSeatNumber()).isNull();
     }
 
     @Test
@@ -272,6 +275,12 @@ class FundingServiceUnitTest {
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
+        ArgumentCaptor<FundingSeatsRecreateEvent> eventCaptor =
+                ArgumentCaptor.forClass(FundingSeatsRecreateEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().funding()).isEqualTo(funding);
+        assertThat(eventCaptor.getValue().hostOutboundSeatNumber()).isEqualTo("1A");
+        assertThat(eventCaptor.getValue().hostReturnSeatNumber()).isNull();
     }
 
     @Test
@@ -311,6 +320,55 @@ class FundingServiceUnitTest {
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
+        verify(eventPublisher, never())
+                .publishEvent(any(FundingSeatsRecreateEvent.class));
+    }
+
+    @Test
+    @DisplayName("펀딩 수정 - 참가자가 있으면 방장 좌석 없이 제목과 내용만 수정한다")
+    void updateFunding_whenHasParticipants_allowsTitleAndContentWithoutHostSeat() {
+        // Given
+        Funding funding = funding(
+                10L,
+                member(1L),
+                FundingStatus.RECRUITING,
+                BusType.BUS_45,
+                BigDecimal.valueOf(726000)
+        );
+        FundingUpdateRequest request = new FundingUpdateRequest(
+                "Updated Title",
+                "Updated Content",
+                BusType.BUS_45,
+                20,
+                TripType.ONE_WAY,
+                null,
+                null,
+                route()
+        );
+
+        given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.countByFunding_FundingIdAndStatus(
+                10L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(1L);
+        given(pathinfoService.isRouteChanged(
+                10L,
+                TripType.ONE_WAY,
+                request.route()
+        )).willReturn(false);
+
+        // When
+        fundingService.updateFunding(1L, 10L, request);
+
+        // Then
+        assertThat(funding.getTitle()).isEqualTo("Updated Title");
+        assertThat(funding.getContent()).isEqualTo("Updated Content");
+        verify(fundingValidator).validateHost(funding, 1L);
+        verify(fundingValidator).validateUpdatable(funding);
+        verify(fundingValidator, never()).validateFundingRequest(any(), any());
+        verify(pathinfoService, never()).updatePathinfos(any(), any(), any());
+        verify(pathinfoService, never()).syncBusType(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(FundingSeatsRecreateEvent.class));
     }
 
     @Test
@@ -492,6 +550,8 @@ class FundingServiceUnitTest {
                 busType,
                 minParticipants,
                 tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
                 route()
         );
     }
@@ -517,6 +577,8 @@ class FundingServiceUnitTest {
                 busType,
                 minParticipants,
                 tripType,
+                "1A",
+                tripType == TripType.ROUND ? "1B" : null,
                 route
         );
     }
