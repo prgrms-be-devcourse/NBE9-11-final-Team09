@@ -131,6 +131,9 @@ class AdminLogoutServiceTest {
         adminLogoutService.logout(accessToken);
 
         // Then
-        verifyNoInteractions(jwtBlacklistService);
+        verify(jwtBlacklistService).blacklist(
+                "admin-access-jti",
+                0L
+        );
     }
 }

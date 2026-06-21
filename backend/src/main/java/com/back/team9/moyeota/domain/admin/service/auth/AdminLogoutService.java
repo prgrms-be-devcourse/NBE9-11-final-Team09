@@ -29,10 +29,6 @@ public class AdminLogoutService {
         long remainingExpiration =
                 jwtTokenProvider.getRemainingExpiration(accessToken);
 
-        if (remainingExpiration <= 0) {
-            return;
-        }
-
         jwtBlacklistService.blacklist(
                 authenticationInfo.jti(),
                 remainingExpiration
