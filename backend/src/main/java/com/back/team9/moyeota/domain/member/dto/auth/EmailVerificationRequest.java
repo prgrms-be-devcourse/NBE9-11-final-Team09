@@ -1,4 +1,8 @@
 package com.back.team9.moyeota.domain.member.dto.auth;
 
-public class EmailVerificationRequest {
+import jakarta.validation.constraints.NotBlank;
+
+public record EmailVerificationRequest(
+        @NotBlank String email
+) {
 }

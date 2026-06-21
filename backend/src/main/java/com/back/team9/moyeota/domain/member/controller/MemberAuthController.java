@@ -45,8 +45,20 @@ public class MemberAuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(
                         "USR_SIGNUP_REQUEST_SUCCESS",
-                        "인증 메일이 발송되었습니다."
+                        "회원가입 요청이 접수되었습니다."
                 ));
+    }
+
+    @PostMapping("/email-verification/request")
+    public ResponseEntity<ApiResponse<Void>> requestEmailVerification(
+            @Valid @RequestBody EmailVerificationRequest request
+    ) {
+        memberService.requestEmailVerification(request);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                "USR_EMAIL_VERIFICATION_SEND_SUCCESS",
+                "인증 메일이 발송되었습니다."
+        ));
     }
 
     @PostMapping("/email-verification/confirm")
