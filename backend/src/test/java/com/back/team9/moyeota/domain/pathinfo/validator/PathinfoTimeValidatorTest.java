@@ -52,4 +52,16 @@ class PathinfoTimeValidatorTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DEPARTURE_DATE_TOO_SOON);
     }
+
+    @Test
+    @DisplayName("출발일 검증 - 출발 시간이 없으면 예외")
+    void validateDepartureDate_whenDepartureTimeIsNull_throwsException() {
+        // When / Then
+        assertThatThrownBy(() ->
+                pathinfoTimeValidator.validateDepartureDate(null)
+        )
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PATH_CONFIGURATION);
+    }
 }

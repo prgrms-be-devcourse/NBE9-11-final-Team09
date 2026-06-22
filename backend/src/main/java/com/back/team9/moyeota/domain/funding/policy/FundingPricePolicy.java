@@ -47,6 +47,15 @@ public class FundingPricePolicy {
             BusType busType,
             TripType tripType
     ) {
+        if (route == null) {
+            throw new BusinessException(ErrorCode.PATHINFO_REQUIRED);
+        }
+
+        if (busType == null
+                || tripType == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
         BigDecimal oneWayPrice = getOneWayPrice(
                 route.departureRegion(),
                 route.arrivalRegion(),
@@ -63,6 +72,12 @@ public class FundingPricePolicy {
             Region arrivalRegion,
             BusType busType
     ) {
+        if (departureRegion == null
+                || arrivalRegion == null
+                || busType == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
         if (departureRegion == arrivalRegion) {
             throw new BusinessException(ErrorCode.SAME_DEPARTURE_ARRIVAL);
         }

@@ -15,6 +15,10 @@ public class PathinfoTimeValidator {
     private final Clock clock;
 
     public void validateDepartureDate(LocalDateTime departureTime) {
+        if (departureTime == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
         if (departureTime.isBefore(LocalDateTime.now(clock).plusDays(14))) {
             throw new BusinessException(
                     ErrorCode.DEPARTURE_DATE_TOO_SOON

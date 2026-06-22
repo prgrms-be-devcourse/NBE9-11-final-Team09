@@ -52,6 +52,13 @@ public final class PathinfoValidator {
             throw new BusinessException(ErrorCode.PATHINFO_REQUIRED);
         }
 
+        if (tripType == null
+                || route.departureTime() == null
+                || route.departureRegion() == null
+                || route.arrivalRegion() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
         validateRegion(
                 route.departureRegion(),
                 route.arrivalRegion()

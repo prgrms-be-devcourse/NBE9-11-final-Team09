@@ -60,6 +60,7 @@ public class Funding {
     private Boolean paybackHold;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TripType tripType;
 
     @Column(nullable = false)
