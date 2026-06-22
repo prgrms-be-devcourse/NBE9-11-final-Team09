@@ -6,7 +6,9 @@ import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +35,23 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             Long fundingId,
             List<ParticipationPaymentStatus> paymentStatuses
     );
-
+    // 출발 24시간 전 기준으로 payment_status = ACTIVE인 참여자 조회( NO_SHOW 처리 대상)
+    @Query("""
+        SELECT p FROM Participation p
+        JOIN FETCH p.outboundSeat os
+        JOIN FETCH os.pathinfo pi
+        LEFT JOIN FETCH p.returnSeat rs
+        WHERE pi.departureTime > :now
+          AND pi.departureTime <= :deadline
+          AND p.paymentStatus = :paymentStatus
+          AND p.status = :status
+""")
+    List<Participation> findNoShowTargets(
+            @Param("now") LocalDateTime now,
+            @Param("deadline") LocalDateTime deadline,
+            @Param("paymentStatus") ParticipationPaymentStatus paymentStatus,
+            @Param("status") ParticipationStatus status
+    );
     // 펀딩 목록의 각 펀딩 참여자 수 조회
     @Query("""
         select p.funding.fundingId as fundingId,
