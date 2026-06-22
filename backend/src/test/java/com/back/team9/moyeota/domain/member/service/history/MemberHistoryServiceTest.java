@@ -195,15 +195,15 @@ class MemberHistoryServiceTest {
     void getMyFundingsReturnsPagedFundingHistory() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        
+
         MemberFundingSummary fundingSummary =
                 mock(MemberFundingSummary.class);
 
         when(fundingSummary.getFundingId()).thenReturn(10L);
         when(fundingSummary.getFundingTitle())
-                .thenReturn("강남 → 구미 합승 모집");
+                .thenReturn("강남 → 부산 합승 모집");
         when(fundingSummary.getDepartureDate())
-                .thenReturn(LocalDate.of(2026, 6, 9));
+                .thenReturn(LocalDate.of(2026, 7, 10));
         when(fundingSummary.getCurrentParticipants()).thenReturn(15L);
         when(fundingSummary.getMaxParticipants()).thenReturn(45);
         when(fundingSummary.getStatus())
