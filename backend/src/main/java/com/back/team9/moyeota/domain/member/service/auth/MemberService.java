@@ -28,6 +28,8 @@ public class MemberService {
 
     private static final int MAX_VERIFICATION_ATTEMPTS = 5;
 
+    private final EmailVerificationCodeHasher verificationCodeHasher;
+
     private static final String CODE_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -93,7 +95,7 @@ public class MemberService {
 
         EmailVerificationData verificationData =
                 new EmailVerificationData(
-                        passwordEncoder.encode(verificationCode)
+                        verificationCodeHasher.hash(verificationCode)
                 );
 
         verificationRepository.save(email, verificationData);
@@ -126,7 +128,7 @@ public class MemberService {
                                 ErrorCode.VERIFICATION_CODE_EXPIRED
                         ));
 
-        if (!passwordEncoder.matches(
+        if (!verificationCodeHasher.matches(
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )) {
