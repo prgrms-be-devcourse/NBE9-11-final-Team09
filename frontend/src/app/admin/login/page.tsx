@@ -43,37 +43,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="relative grid min-h-screen overflow-hidden bg-[#101b29] lg:grid-cols-[1.05fr_0.95fr]">
-      <section className="relative hidden overflow-hidden p-16 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute -left-20 -top-20 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
-        <div className="absolute bottom-10 right-0 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
-        <Link href="/" className="relative flex items-center gap-3 text-xl font-black">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400 text-[#101b29]">
-            M
-          </span>
-          모여타 Admin
-        </Link>
-        <div className="relative max-w-xl">
-          <p className="text-sm font-bold tracking-[0.28em] text-cyan-300">
-            OPERATIONS CENTER
-          </p>
-          <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight">
-            이동의 모든 순간을
-            <br />안전하게 관리합니다.
-          </h1>
-          <p className="mt-6 max-w-lg text-base leading-7 text-slate-300">
-            회원과 펀딩, 정산 현황을 한눈에 확인하고 서비스 운영에 필요한
-            조치를 빠르게 수행하세요.
-          </p>
-        </div>
-        <p className="relative text-xs text-slate-500">
-          Authorized administrators only
-        </p>
-      </section>
-
-      <section className="flex items-center justify-center bg-[#f6f8fb] px-6 py-12 sm:px-12">
-        <div className="w-full max-w-md">
-          <div className="mb-10 lg:hidden">
+    <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-6 py-12 sm:px-12">
+      <section className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-10">
+        <div className="w-full">
+          <div className="mb-10">
             <Link href="/" className="flex items-center gap-3 text-xl font-black">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#173452] text-white">
                 M
