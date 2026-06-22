@@ -25,7 +25,7 @@ async function request<T>(path: string, init: RequestInit = {}) {
   const token = getFundingAccessToken();
   const headers = new Headers(init.headers);
 
-  if (!(init.body instanceof FormData) && !headers.has("Content-Type")) {
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

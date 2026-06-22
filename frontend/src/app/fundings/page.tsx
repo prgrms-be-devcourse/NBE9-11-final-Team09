@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { getFundingList, type FundingListParams } from "@/lib/fundingApi";
 import { useFundingLoggedIn } from "@/lib/fundingAuth";
 import {
-  busTypeLabels,
   formatDateTime,
   formatMoney,
   getParticipantRatio,
@@ -309,13 +308,6 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded bg-gray-100 px-2 py-1">
               {statusLabels[funding.status]}
-            </span>
-            <span className="rounded bg-gray-100 px-2 py-1">
-              {
-                busTypeLabels[
-                  funding.maxParticipants === 23 ? "BUS_25" : "BUS_45"
-                ]
-              }
             </span>
           </div>
           <h2 className="mt-3 text-xl font-bold">{funding.title}</h2>
