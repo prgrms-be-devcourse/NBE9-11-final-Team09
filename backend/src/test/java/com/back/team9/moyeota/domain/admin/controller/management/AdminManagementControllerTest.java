@@ -217,7 +217,7 @@ class AdminManagementControllerTest {
                         BusType.BUS_45,
                         FundingStatus.RECRUITING,
                         20,
-                        44,
+                        43,
                         18L,
                         LocalDateTime.of(2026, 6, 1, 10, 0)
                 )),

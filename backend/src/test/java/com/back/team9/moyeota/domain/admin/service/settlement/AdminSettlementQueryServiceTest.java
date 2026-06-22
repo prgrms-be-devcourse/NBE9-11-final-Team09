@@ -159,7 +159,7 @@ class AdminSettlementQueryServiceTest {
                 .busType(BusType.BUS_45)
                 .status(FundingStatus.COMPLETED)
                 .minParticipants(20)
-                .maxParticipants(44)
+                .maxParticipants(43)
                 .totalPrice(BigDecimal.valueOf(600000))
                 .paybackHold(false)
                 .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))

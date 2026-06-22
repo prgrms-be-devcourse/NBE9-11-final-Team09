@@ -192,9 +192,14 @@ class FundingServiceUnitTest {
                 .willReturn(List.of(pathinfoResponse));
         given(chatRoomRepository.findByFundingFundingId(10L))
                 .willReturn(Optional.of(chatRoom(100L, funding)));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndStatus(
+                10L,
+                1L,
+                ParticipationStatus.ACTIVE
+        )).willReturn(true);
 
         // When
-        var response = fundingService.getFunding(10L);
+        var response = fundingService.getFunding(10L, 1L);
 
         // Then
         assertThat(response.fundingId()).isEqualTo(10L);
@@ -202,8 +207,8 @@ class FundingServiceUnitTest {
         assertThat(response.chatRoomId()).isEqualTo(100L);
         assertThat(response.pathinfos()).containsExactly(pathinfoResponse);
         assertThat(response.currentParticipants()).isEqualTo(3);
-        assertThat(response.isHost()).isFalse();
-        assertThat(response.isJoined()).isFalse();
+        assertThat(response.isHost()).isTrue();
+        assertThat(response.isJoined()).isTrue();
     }
 
     @Test
@@ -213,7 +218,7 @@ class FundingServiceUnitTest {
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> fundingService.getFunding(999L))
+        assertThatThrownBy(() -> fundingService.getFunding(999L, null))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
@@ -238,7 +243,7 @@ class FundingServiceUnitTest {
                 .willReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> fundingService.getFunding(10L))
+        assertThatThrownBy(() -> fundingService.getFunding(10L, null))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);

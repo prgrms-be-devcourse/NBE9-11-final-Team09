@@ -34,6 +34,12 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             List<ParticipationPaymentStatus> paymentStatuses
     );
 
+    boolean existsByFunding_FundingIdAndMember_MemberIdAndStatus(
+            Long fundingId,
+            Long memberId,
+            ParticipationStatus status
+    );
+
     // 펀딩 목록의 각 펀딩 참여자 수 조회
     @Query("""
         select p.funding.fundingId as fundingId,
