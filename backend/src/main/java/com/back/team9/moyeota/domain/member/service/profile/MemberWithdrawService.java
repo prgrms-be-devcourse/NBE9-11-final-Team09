@@ -11,12 +11,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class MemberWithdrawService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     @Transactional
     public void withdraw(
@@ -28,7 +32,7 @@ public class MemberWithdrawService {
         validateActiveMember(member);
         validatePassword(member, request.password());
 
-        member.withdraw();
+        member.withdraw(LocalDateTime.now(clock));
     }
 
     private Member getMember(Long memberId) {

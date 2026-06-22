@@ -43,7 +43,11 @@ public class Member {
 
     private LocalDateTime updatedAt;
 
-    public void updateProfile(String nickname, String phoneNumber) {
+    public void updateProfile(
+            String nickname,
+            String phoneNumber,
+            LocalDateTime updatedAt
+    ) {
         if (nickname != null) {
             this.nickname = nickname;
         }
@@ -52,11 +56,11 @@ public class Member {
             this.phoneNumber = phoneNumber;
         }
 
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = updatedAt;
     }
 
-    public void withdraw() {
+    public void withdraw(LocalDateTime updatedAt) {
         this.status = MemberStatus.WITHDRAWN;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = updatedAt;
     }
 }
