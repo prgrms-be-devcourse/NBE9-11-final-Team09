@@ -33,35 +33,27 @@ export default function MembersPanel({
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const loadMembers = useCallback(async () => {
+  const loadMembers = useCallback(async (active = { current: true }) => {
+    if (active.current) setLoading(true);
+
     try {
-      setMembers(await getAdminMembers(page));
+      const data = await getAdminMembers(page);
+      if (active.current) setMembers(data);
     } catch (error) {
-      onError(error);
+      if (active.current) onError(error);
     } finally {
-      setLoading(false);
+      if (active.current) setLoading(false);
     }
   }, [onError, page]);
 
   useEffect(() => {
-    let ignored = false;
-
-    getAdminMembers(page)
-      .then((result) => {
-        if (!ignored) setMembers(result);
-      })
-      .catch((error) => {
-        if (!ignored) onError(error);
-      })
-      .finally(() => {
-        if (!ignored) setLoading(false);
-      });
+    const active = { current: true };
+    void Promise.resolve().then(() => loadMembers(active));
 
     return () => {
-      ignored = true;
+      active.current = false;
     };
-  }, [onError, page]);
-
+  }, [loadMembers]);
   async function openDetail(memberId: number) {
     setDetailLoading(true);
     try {

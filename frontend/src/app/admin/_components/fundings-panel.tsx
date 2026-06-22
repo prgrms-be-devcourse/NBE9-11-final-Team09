@@ -32,35 +32,27 @@ export default function FundingsPanel({
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const loadFundings = useCallback(async () => {
+  const loadFundings = useCallback(async (active = { current: true }) => {
+    if (active.current) setLoading(true);
+
     try {
-      setFundings(await getAdminFundings(page));
+      const data = await getAdminFundings(page);
+      if (active.current) setFundings(data);
     } catch (error) {
-      onError(error);
+      if (active.current) onError(error);
     } finally {
-      setLoading(false);
+      if (active.current) setLoading(false);
     }
   }, [onError, page]);
 
   useEffect(() => {
-    let ignored = false;
-
-    getAdminFundings(page)
-      .then((result) => {
-        if (!ignored) setFundings(result);
-      })
-      .catch((error) => {
-        if (!ignored) onError(error);
-      })
-      .finally(() => {
-        if (!ignored) setLoading(false);
-      });
+    const active = { current: true };
+    void Promise.resolve().then(() => loadFundings(active));
 
     return () => {
-      ignored = true;
+      active.current = false;
     };
-  }, [onError, page]);
-
+  }, [loadFundings]);
   async function handleCancel() {
     if (!cancelTarget || !reason.trim()) return;
     setProcessing(true);

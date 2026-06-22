@@ -9,11 +9,15 @@ import {
 import type { AdminSection } from "@/types/admin";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import FundingsPanel from "./_components/fundings-panel";
 import MembersPanel from "./_components/members-panel";
 import OverviewPanel from "./_components/overview-panel";
 import SettlementsPanel from "./_components/settlements-panel";
+
+const EMPTY_SUBSCRIBE = () => () => {};
+const GET_CLIENT_SNAPSHOT = () => true;
+const GET_SERVER_SNAPSHOT = () => false;
 
 const NAV_ITEMS: { id: AdminSection; label: string; short: string }[] = [
   { id: "overview", label: "대시보드", short: "D" },
@@ -28,6 +32,11 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [notice, setNotice] = useState<{ message: string; error: boolean } | null>(null);
+  const mounted = useSyncExternalStore(
+    EMPTY_SUBSCRIBE,
+    GET_CLIENT_SNAPSHOT,
+    GET_SERVER_SNAPSHOT,
+  );
 
   const moveToLogin = useCallback(() => {
     clearAdminSession();
@@ -68,6 +77,10 @@ export default function AdminDashboard() {
       setLoggingOut(false);
       router.replace("/admin/login");
     }
+  }
+
+  if (!mounted || !getAdminAccessToken()) {
+    return null;
   }
 
   return (
