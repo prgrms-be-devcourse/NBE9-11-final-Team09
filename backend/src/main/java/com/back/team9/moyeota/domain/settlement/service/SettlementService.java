@@ -12,11 +12,13 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Service
@@ -25,6 +27,7 @@ public class SettlementService {
 
     private final SettlementRepository settlementRepository;
     private final FundingRepository fundingRepository;
+    private final Clock clock;
 
     @Value("${platform.fee-rate}")
     private BigDecimal platformFeeRate;
@@ -56,10 +59,15 @@ public class SettlementService {
                 .hostPaybackAmount(hostPaybackAmount)
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(funding.getPaybackHold())
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(clock))
                 .build();
 
-        Settlement saved = settlementRepository.save(settlement);
+        Settlement saved;
+        try {
+            saved = settlementRepository.saveAndFlush(settlement);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
+        }
         return SettlementResponse.from(saved);
     }
 
