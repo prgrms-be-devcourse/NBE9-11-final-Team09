@@ -133,9 +133,11 @@ public class JwtTokenProvider {
 
     public long getRemainingExpiration(String token) {
         try {
-            long remaining = getClaims(token)
-                    .getExpiration()
-                    .getTime() - clock.millis();
+            Date expiration = getClaims(token).getExpiration();
+            if (expiration == null) {
+                return 0;
+            }
+            long remaining = expiration.getTime() - clock.millis();
 
             return Math.max(remaining, 0);
         } catch (JwtException | IllegalArgumentException exception) {
