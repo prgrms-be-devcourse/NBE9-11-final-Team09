@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.payment.service;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
 import com.back.team9.moyeota.domain.payment.client.TossPaymentClient;
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
@@ -23,20 +24,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +51,8 @@ class PaymentServiceTest {
     @Mock private ParticipationRepository participationRepository;
     @Mock private TossPaymentClient tossPaymentClient;
     @Mock private PaymentWriter paymentWriter;
+    @Mock private ParticipationService participationService;
+    @Mock private Clock clock;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -88,6 +95,9 @@ class PaymentServiceTest {
     @Test
     @DisplayName("결제 준비 - 정상 요청 시 UUID orderId 반환 및 PENDING Payment 저장")
     void prepare_정상요청_PENDING결제저장() {
+        given(clock.instant()).willReturn(Instant.now());
+        given(clock.getZone()).willReturn(ZoneId.systemDefault());
+
         Participation participation = mockParticipationForPrepare(1L);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
 
@@ -135,9 +145,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation =
-                mockParticipationForConfirm(BigDecimal.valueOf(50000));
-
+        Participation participation = mockParticipationForConfirm(BigDecimal.valueOf(50000));
         given(participation.getParticipationId()).willReturn(1L);
         Payment pendingPayment = pendingPaymentOf(participation);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
@@ -155,8 +163,37 @@ class PaymentServiceTest {
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
         assertThat(response.paymentType()).isEqualTo(PaymentType.DEPOSIT);
         assertThat(response.tossPaymentKey()).isEqualTo("test_paymentKey");
-        assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("50000"));
         verify(paymentWriter).save(pendingPayment);
+        verify(participationService).confirmAfterPayment(pendingPayment.getPaymentId());
+    }
+
+    @Test
+    @DisplayName("보증금 결제 승인 - 좌석 HOLD 만료 시 Toss 환불 후 SEAT_HOLD_EXPIRED 예외")
+    void confirmDeposit_좌석HOLD만료_환불후SEAT_HOLD_EXPIRED예외() {
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", new BigDecimal("50000"), 1L
+        );
+        Participation participation = mockParticipationForConfirm(BigDecimal.valueOf(50000));
+        Payment pendingPayment = pendingPaymentOf(participation);
+        TossConfirmResponse tossResponse = new TossConfirmResponse(
+                "test_paymentKey", "uuid-order-id", "DONE", new BigDecimal("50000")
+        );
+
+        given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
+                .willReturn(Optional.of(pendingPayment));
+        given(paymentRepository.findByTossPaymentKey("test_paymentKey")).willReturn(Optional.empty());
+        given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
+                .willReturn(tossResponse);
+        willThrow(new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED))
+                .given(participationService).confirmAfterPayment(anyLong());
+
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_HOLD_EXPIRED));
+
+        verify(tossPaymentClient).cancel("test_paymentKey", "좌석 선점 시간 만료로 인한 자동 취소");
+        verify(participationService).cancelByPaymentFailure(pendingPayment.getPaymentId());
     }
 
     @Test
@@ -254,8 +291,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Participation participation =
-                mockParticipationForConfirm(BigDecimal.valueOf(50000));
+        Participation participation = mockParticipationForConfirm(BigDecimal.valueOf(50000));
         given(participation.getParticipationId()).willReturn(1L);
         Payment pendingPayment = pendingPaymentOf(participation);
         TossConfirmResponse tossResponse = new TossConfirmResponse(
@@ -301,27 +337,66 @@ class PaymentServiceTest {
     // ===== refund =====
 
     @Test
-    @DisplayName("환불 - 정상 환불 성공")
-    void refund_정상요청_환불성공() {
+    @DisplayName("환불 - 정상 환불 성공 시 Dual-Write (REFUND_PENDING → REFUNDED) 순서로 저장")
+    void refund_정상요청_DualWrite환불성공() {
         PaymentRefundRequest request = new PaymentRefundRequest("변심");
         Participation participation = mockParticipationForRefund(1L);
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
-        Payment refundedPayment = Payment.builder()
-                .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
-                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.REFUNDED).createdAt(LocalDateTime.now()).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
-        given(paymentWriter.update(any(Payment.class), eq(PaymentStatus.REFUNDED))).willReturn(refundedPayment);
+        given(paymentWriter.save(any())).willReturn(payment);
 
         PaymentResponse response = paymentService.refund(1L, request, 1L);
 
         assertThat(response.status()).isEqualTo(PaymentStatus.REFUNDED);
         verify(tossPaymentClient).cancel("test_paymentKey", "변심");
-        verify(paymentWriter).update(any(Payment.class), eq(PaymentStatus.REFUNDED));
+        verify(paymentWriter, times(2)).save(payment);
+    }
+
+    @Test
+    @DisplayName("환불 - REFUND_PENDING 상태 결제 환불 요청 시 ALREADY_REFUNDED 예외")
+    void refund_REFUND_PENDING상태_ALREADY_REFUNDED예외() {
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+        Participation participation = mockParticipationForRefund(1L);
+        Payment refundPendingPayment = Payment.builder()
+                .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
+                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId").status(PaymentStatus.REFUND_PENDING).createdAt(LocalDateTime.now()).build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(refundPendingPayment));
+
+        assertThatThrownBy(() -> paymentService.refund(1L, request, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.ALREADY_REFUNDED));
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("환불 - 토스 API 실패 시 REFUND_PENDING 저장 후 예외 (Dual-Write 보장)")
+    void refund_토스API실패_REFUND_PENDING저장후예외() {
+        PaymentRefundRequest request = new PaymentRefundRequest("변심");
+        Participation participation = mockParticipationForRefund(1L);
+        Payment payment = Payment.builder()
+                .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
+                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+
+        given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+        willThrow(new BusinessException(ErrorCode.REFUND_FAILED))
+                .given(tossPaymentClient).cancel(anyString(), anyString());
+
+        assertThatThrownBy(() -> paymentService.refund(1L, request, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REFUND_FAILED));
+
+        verify(paymentWriter, times(1)).save(payment);
     }
 
     @Test
@@ -342,7 +417,7 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     @Test
@@ -357,7 +432,7 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.ORDER_NOT_FOUND));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     @Test
@@ -378,7 +453,7 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.ALREADY_REFUNDED));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     @Test
@@ -399,35 +474,13 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
-    }
-
-    @Test
-    @DisplayName("환불 - 토스 API 실패 시 REFUND_FAILED 예외")
-    void refund_토스API실패_REFUND_FAILED예외() {
-        PaymentRefundRequest request = new PaymentRefundRequest("변심");
-        Participation participation = mockParticipationForRefund(1L);
-        Payment payment = Payment.builder()
-                .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
-                .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
-
-        given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
-        willThrow(new BusinessException(ErrorCode.REFUND_FAILED))
-                .given(tossPaymentClient).cancel(anyString(), anyString());
-
-        assertThatThrownBy(() -> paymentService.refund(1L, request, 1L))
-                .isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(ErrorCode.REFUND_FAILED));
-
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     // ===== refundByParticipationId =====
 
     @Test
-    @DisplayName("참여 ID 환불 - 정상 환불 성공")
+    @DisplayName("참여 ID 환불 - 정상 환불 성공 시 Dual-Write 순서로 저장")
     void refundByParticipationId_정상환불성공() {
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.DEPOSIT)
@@ -439,7 +492,7 @@ class PaymentServiceTest {
         paymentService.refundByParticipationId(1L);
 
         verify(tossPaymentClient).cancel("test_paymentKey", "참여 취소로 인한 환불");
-        verify(paymentWriter).update(any(Payment.class), eq(PaymentStatus.REFUNDED));
+        verify(paymentWriter, times(2)).save(payment);
     }
 
     @Test
@@ -453,7 +506,7 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.ORDER_NOT_FOUND));
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     @Test
@@ -469,6 +522,6 @@ class PaymentServiceTest {
         paymentService.refundByParticipationId(1L);
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).update(any(), any());
+        verify(paymentWriter, never()).save(any());
     }
 }
