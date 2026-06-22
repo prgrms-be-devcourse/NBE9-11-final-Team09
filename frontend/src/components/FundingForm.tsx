@@ -53,15 +53,59 @@ export default function FundingForm({
   const [payload, setPayload] = useState<FundingPayload>(
     initialValue ?? defaultPayload
   );
+  const [originalPayload] = useState<FundingPayload>(
+    initialValue ?? defaultPayload
+  );
   const [error, setError] = useState("");
 
   const routeLocked = mode === "edit" && textOnly;
-  const seatRequired = mode === "create" || !textOnly;
   const maxParticipants = MAX_PARTICIPANTS_BY_BUS_TYPE[payload.busType];
   const isRoundTrip = payload.tripType === "ROUND";
+  const busTypeChanged =
+    mode === "edit" && payload.busType !== originalPayload.busType;
+  const changedFromOneWayToRound =
+    mode === "edit" &&
+    originalPayload.tripType === "ONE_WAY" &&
+    payload.tripType === "ROUND";
+  const outboundSeatRequired = mode === "create" || (!textOnly && busTypeChanged);
+  const returnSeatRequired =
+    payload.tripType === "ROUND" &&
+    (mode === "create" ||
+      (!textOnly && (busTypeChanged || changedFromOneWayToRound)));
+  const canEditOutboundSeat = mode === "create" || (!textOnly && busTypeChanged);
+  const canEditReturnSeat =
+    mode === "create" ||
+    (!textOnly && (busTypeChanged || changedFromOneWayToRound));
   const seatSelectorGridClass = isRoundTrip
     ? "grid grid-cols-2 gap-4"
     : "grid gap-5";
+
+  function getRestoredOutboundSeat(busType: FundingPayload["busType"]) {
+    if (mode === "edit" && busType === originalPayload.busType) {
+      return originalPayload.hostOutboundSeatNumber;
+    }
+
+    return "";
+  }
+
+  function getRestoredReturnSeat(
+    busType: FundingPayload["busType"],
+    tripType: FundingPayload["tripType"]
+  ) {
+    if (tripType !== "ROUND") {
+      return null;
+    }
+
+    if (
+      mode === "edit" &&
+      busType === originalPayload.busType &&
+      originalPayload.tripType === "ROUND"
+    ) {
+      return originalPayload.hostReturnSeatNumber ?? "";
+    }
+
+    return "";
+  }
 
   const canSubmit = useMemo(() => {
     if (!payload.title.trim()) {
@@ -87,20 +131,22 @@ export default function FundingForm({
       return false;
     }
 
-    if (seatRequired && !payload.hostOutboundSeatNumber.trim()) {
+    if (outboundSeatRequired && !payload.hostOutboundSeatNumber.trim()) {
       return false;
     }
 
-    if (
-      seatRequired &&
-      payload.tripType === "ROUND" &&
-      !payload.hostReturnSeatNumber?.trim()
-    ) {
+    if (returnSeatRequired && !payload.hostReturnSeatNumber?.trim()) {
       return false;
     }
 
     return true;
-  }, [maxParticipants, payload, routeLocked, seatRequired]);
+  }, [
+    maxParticipants,
+    outboundSeatRequired,
+    payload,
+    returnSeatRequired,
+    routeLocked,
+  ]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -180,9 +226,16 @@ export default function FundingForm({
                       current.minParticipants,
                       nextMaxParticipants
                     ),
-                    hostOutboundSeatNumber: "",
+                    hostOutboundSeatNumber:
+                      mode === "edit"
+                        ? getRestoredOutboundSeat(busType)
+                        : "",
                     hostReturnSeatNumber:
-                      current.tripType === "ROUND" ? "" : null,
+                      mode === "edit"
+                        ? getRestoredReturnSeat(busType, current.tripType)
+                        : current.tripType === "ROUND"
+                          ? ""
+                          : null,
                   }));
                 }}
                 className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
@@ -224,21 +277,32 @@ export default function FundingForm({
               이동 방식
               <select
                 value={payload.tripType}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const tripType = event.target.value as FundingPayload["tripType"];
+
                   setPayload((current) => ({
                     ...current,
-                    tripType: event.target.value as FundingPayload["tripType"],
+                    tripType,
+                    hostOutboundSeatNumber:
+                      mode === "edit"
+                        ? getRestoredOutboundSeat(current.busType) ||
+                          current.hostOutboundSeatNumber
+                        : current.hostOutboundSeatNumber,
                     hostReturnSeatNumber:
-                      event.target.value === "ROUND" ? "" : null,
+                      mode === "edit"
+                        ? getRestoredReturnSeat(current.busType, tripType)
+                        : tripType === "ROUND"
+                          ? ""
+                          : null,
                     route: {
                       ...current.route,
                       returnTime:
-                        event.target.value === "ROUND"
+                        tripType === "ROUND"
                           ? current.route.returnTime ?? ""
                           : null,
                     },
-                  }))
-                }
+                  }));
+                }}
                 className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
               >
                 {Object.entries(tripTypeLabels).map(([value, label]) => (
@@ -365,6 +429,7 @@ export default function FundingForm({
               title="가는 편 좌석"
               busType={payload.busType}
               selectedSeatNumber={payload.hostOutboundSeatNumber}
+              disabled={!canEditOutboundSeat}
               onChange={(seatNumber) =>
                 setPayload((current) => ({
                   ...current,
@@ -377,6 +442,7 @@ export default function FundingForm({
                 title="오는 편 좌석"
                 busType={payload.busType}
                 selectedSeatNumber={payload.hostReturnSeatNumber ?? ""}
+                disabled={!canEditReturnSeat}
                 onChange={(seatNumber) =>
                   setPayload((current) => ({
                     ...current,
@@ -435,11 +501,13 @@ function HostSeatSelector({
   title,
   busType,
   selectedSeatNumber,
+  disabled = false,
   onChange,
 }: {
   title: string;
   busType: FundingPayload["busType"];
   selectedSeatNumber: string;
+  disabled?: boolean;
   onChange: (seatNumber: string) => void;
 }) {
   const seats = useMemo(
@@ -455,12 +523,21 @@ function HostSeatSelector({
           {selectedSeatNumber || "미선택"}
         </p>
       </div>
-      <div className="max-w-full overflow-hidden rounded-lg">
+      <div
+        className={`max-w-full overflow-hidden rounded-lg ${
+          disabled ? "pointer-events-none opacity-55" : ""
+        }`}
+        onClickCapture={(event) => event.preventDefault()}
+      >
         <div className="[&_.border-dashed]:!h-7 [&_.border-dashed]:!w-7 [&_.gap-1]:!gap-0.5 [&_.gap-2]:!gap-1 [&_.mb-6]:!mb-2 [&_.mt-6]:!mt-2 [&_.mt-8]:!mt-2 [&_.p-6]:!p-2 [&_.p-8]:!p-2 [&_.text-sm]:!text-xs [&_.text-xs]:!text-[9px] [&_.w-20]:!w-5 [&_button]:!h-7 [&_button]:!w-7 [&_button]:!text-[9px]">
           <SeatMap
             busType={busType}
             seats={seats}
-            onSeatClick={(seat) => onChange(seat.seatNumber)}
+            onSeatClick={(seat) => {
+              if (!disabled) {
+                onChange(seat.seatNumber);
+              }
+            }}
           />
         </div>
       </div>
