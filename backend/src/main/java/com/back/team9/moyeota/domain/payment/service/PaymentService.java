@@ -82,10 +82,10 @@ public class PaymentService {
         } catch (BusinessException e) {
             if (e.getErrorCode() == ErrorCode.SEAT_HOLD_EXPIRED) {
                 pendingPayment.startRefund();
-                paymentWriter.save(pendingPayment);
+                paymentWriter.saveRefundStatus(pendingPayment);
                 tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
                 pendingPayment.completeRefund();
-                paymentWriter.save(pendingPayment);
+                paymentWriter.saveRefundStatus(pendingPayment);
                 participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
             }
             throw e;

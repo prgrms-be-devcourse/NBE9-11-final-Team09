@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 
 import java.time.Clock;
@@ -270,7 +271,7 @@ public class ParticipationService {
     }
 
     // ============================== 4. 결제 완료 후 좌석 확정 ==============================
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void confirmAfterPayment(Long paymentId) {
 
         Payment payment = paymentRepository.findById(paymentId)
@@ -310,7 +311,7 @@ public class ParticipationService {
     }
 
     // ============================== 5. 결제 실패 시 참여 취소 ==============================
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cancelByPaymentFailure(Long paymentId) {
 
         Payment payment = paymentRepository.findById(paymentId)
