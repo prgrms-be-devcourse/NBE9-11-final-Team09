@@ -12,11 +12,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AdminMemberService {
 
     private final AdminMemberQueryRepository memberRepository;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminMemberListResponse> getMembers(Pageable pageable) {
@@ -49,7 +53,7 @@ public class AdminMemberService {
             throw new BusinessException(ErrorCode.ADMIN_TARGET_ALREADY_WITHDRAWN);
         }
 
-        member.withdraw();
+        member.withdraw(LocalDateTime.now(clock));
 
         return AdminMemberWithdrawResponse.from(member);
     }
