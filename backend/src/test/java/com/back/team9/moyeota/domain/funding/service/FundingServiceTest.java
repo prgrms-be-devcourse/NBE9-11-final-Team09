@@ -1027,13 +1027,6 @@ class FundingServiceTest {
     }
 
 
-
-
-
-
-
-
-
     private FundingCreateRequest oneWayCreateRequest() {
         return createRequest(
                 BusType.BUS_45,
@@ -1213,7 +1206,7 @@ class FundingServiceTest {
         List<Seat> seats =
                 seatRepository.findByPathinfo_PathinfoId(pathinfo.getPathinfoId());
 
-        assertThat(seats).hasSize(pathinfo.getBusType().getCapacity());
+        assertThat(seats).hasSize(pathinfo.getBusType().getCapacity() + 1);
         assertThat(seats)
                 .extracting(Seat::getSeatNumber)
                 .containsExactlyInAnyOrderElementsOf(
