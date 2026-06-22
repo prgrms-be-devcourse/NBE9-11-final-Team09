@@ -44,7 +44,9 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse confirmBalance(PaymentConfirmRequest request) {
-        return confirmPayment(request, PaymentType.BALANCE);
+        PaymentResponse response = confirmPayment(request, PaymentType.BALANCE);
+        participationService.completeBalancePayment(response.paymentId());
+        return response;
     }
 
     private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType) {

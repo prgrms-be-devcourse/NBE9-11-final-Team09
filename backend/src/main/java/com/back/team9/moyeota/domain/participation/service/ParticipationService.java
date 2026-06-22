@@ -246,10 +246,7 @@ public class ParticipationService {
     // ============================== 3. 참여자 목록 조회 ==============================
     // 참여자 목록 조회 (방장용)
     @Transactional(readOnly = true)
-    public List<ParticipationListResponse> getParticipations(
-            Long memberId, //요청자(방장) ID
-            Long fundingId //조회할 펀딩 ID
-    ) {
+    public List<ParticipationListResponse> getParticipations(Long memberId, Long fundingId) {
 
         // 펀딩 조회 - 존재하지 않으면 FND001
         Funding funding = fundingRepository.findById(fundingId)
@@ -339,5 +336,28 @@ public class ParticipationService {
         if (returnSeat != null) {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
+    }
+
+    // ============================== 6. 잔액 결제 완료 시 COMPLETED 전환 ==============================
+    @Transactional
+    public void completeBalancePayment(Long paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Participation participation = payment.getParticipation();
+
+        // 이미 COMPLETED인 경우 중복 처리 방지 (멱등성 보장)
+        if (participation.getPaymentStatus() == ParticipationPaymentStatus.COMPLETED) {
+            return;
+        }
+
+        // ACTIVE 상태인 경우에만 COMPLETED로 전환
+        if (participation.getPaymentStatus() != ParticipationPaymentStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.INVALID_PARTICIPATION_STATUS);
+        }
+
+        // 잔액 결제 완료 → COMPLETED로 전환
+        participation.completePayment();
     }
 }

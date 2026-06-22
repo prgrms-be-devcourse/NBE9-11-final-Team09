@@ -67,7 +67,7 @@ public enum ErrorCode {
     FUNDING_CANCELLED(HttpStatus.BAD_REQUEST, "PTC004", "취소된 펀딩입니다."),
     ALREADY_CANCELED_PARTICIPATION(HttpStatus.BAD_REQUEST, "PTC005", "이미 취소된 참여입니다."),
     PARTICIPATION_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PTC006", "출발 7일 전부터는 참여를 취소할 수 없습니다."),
-
+    INVALID_PARTICIPATION_STATUS(HttpStatus.BAD_REQUEST, "PTC007", "현재 참여 상태에서는 해당 작업을 수행할 수 없습니다."),
 
     // [SEA] 좌석
     SEAT_NOT_FOUND(HttpStatus.NOT_FOUND,"SEA001", "존재하지 않는 좌석입니다."),
