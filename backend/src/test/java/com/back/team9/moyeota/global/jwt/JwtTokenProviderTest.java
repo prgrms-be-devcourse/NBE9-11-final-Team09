@@ -21,7 +21,7 @@ class JwtTokenProviderTest {
             Instant.parse("2026-06-22T00:00:00Z"),
             ZoneId.of("Asia/Seoul")
     );
-    
+
     private JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach

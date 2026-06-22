@@ -14,7 +14,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.BeforeEach;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -26,11 +30,27 @@ import static org.mockito.Mockito.*;
 @DisplayName("회원 프로필 서비스 테스트")
 class MemberProfileServiceTest {
 
+    private static final Instant FIXED_INSTANT =
+            Instant.parse("2026-06-22T00:00:00Z");
+    private static final ZoneId FIXED_ZONE =
+            ZoneId.of("Asia/Seoul");
+    private static final LocalDateTime FIXED_DATE_TIME =
+            LocalDateTime.ofInstant(FIXED_INSTANT, FIXED_ZONE);
+
+    @Mock
+    private Clock clock;
+
     @Mock
     private MemberRepository memberRepository;
 
     @InjectMocks
     private MemberProfileService memberProfileService;
+
+    @BeforeEach
+    void setUpClock() {
+        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+        lenient().when(clock.getZone()).thenReturn(FIXED_ZONE);
+    }
 
     @Test
     @DisplayName("회원 ID로 내 정보를 조회한다")
@@ -90,10 +110,12 @@ class MemberProfileServiceTest {
         // Then
         assertThat(response.nickname()).isEqualTo("변경닉네임");
         assertThat(response.phoneNumber()).isEqualTo("010-9999-8888");
-        assertThat(response.updatedAt()).isNotNull();
-
+        assertThat(response.updatedAt())
+                .isEqualTo(FIXED_DATE_TIME);
         assertThat(member.getNickname()).isEqualTo("변경닉네임");
         assertThat(member.getPhoneNumber()).isEqualTo("010-9999-8888");
+        assertThat(member.getUpdatedAt())
+                .isEqualTo(FIXED_DATE_TIME);
     }
 
     @Test
