@@ -77,7 +77,7 @@ public class ChatMessageServiceTest {
                 .willReturn(savedMessage);
 
         // when
-        Message result = chatMessageService.sendMessage(request);
+        Message result = chatMessageService.sendMessage(request,1L);
 
         // then
         assertThat(result.getMessageId()).isEqualTo(1L);
@@ -103,7 +103,7 @@ public class ChatMessageServiceTest {
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> chatMessageService.sendMessage(request)
+                () -> chatMessageService.sendMessage(request,1L)
         );
 
         assertThat(exception.getErrorCode())
@@ -127,7 +127,7 @@ public class ChatMessageServiceTest {
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> chatMessageService.sendMessage(request)
+                () -> chatMessageService.sendMessage(request,1L)
         );
 
         assertThat(exception.getErrorCode())

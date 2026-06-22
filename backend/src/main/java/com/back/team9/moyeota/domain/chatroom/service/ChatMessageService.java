@@ -28,10 +28,10 @@ public class ChatMessageService {
     private final ChatRoomService chatRoomService;
 
 
-    public Message sendMessage(ChatMessageRequest request){
+    public Message sendMessage(ChatMessageRequest request, Long memberId){
         ChatRoom room = chatRoomService.getRoomById(request.getChatRoomId());
 
-        Member member = memberRepository.findById(request.getSenderId())
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Message message = Message.builder()
