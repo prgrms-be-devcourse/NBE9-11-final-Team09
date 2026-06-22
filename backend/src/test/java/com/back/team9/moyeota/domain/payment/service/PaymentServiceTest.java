@@ -1,6 +1,8 @@
 package com.back.team9.moyeota.domain.payment.service;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.participation.service.ParticipationService;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -39,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -53,13 +57,20 @@ class PaymentServiceTest {
     @Mock private PaymentWriter paymentWriter;
     @Mock private ParticipationService participationService;
     @Mock private Clock clock;
+    @Mock private NotificationService notificationService;
 
     @InjectMocks
     private PaymentService paymentService;
 
     private Participation mockParticipationForConfirm(BigDecimal finalAmount) {
+        Member member = mock(Member.class);
+        lenient().when(member.getMemberId()).thenReturn(1L);
+        Funding funding = mock(Funding.class);
+        lenient().when(funding.getFundingId()).thenReturn(1L);
         Participation participation = mock(Participation.class);
         given(participation.getFinalAmount()).willReturn(finalAmount);
+        lenient().when(participation.getMember()).thenReturn(member);
+        lenient().when(participation.getFunding()).thenReturn(funding);
         return participation;
     }
 
@@ -281,6 +292,30 @@ class PaymentServiceTest {
                         .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));
 
         verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("보증금 결제 승인 - 알림 발송 실패해도 결제는 성공")
+    void confirmDeposit_알림발송실패_결제성공() {
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", new BigDecimal("50000"), 1L
+        );
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
+        Payment pendingPayment = pendingPaymentOf(participation);
+        TossConfirmResponse tossResponse = new TossConfirmResponse(
+                "test_paymentKey", "uuid-order-id", "DONE", new BigDecimal("50000")
+        );
+
+        given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
+                .willReturn(Optional.of(pendingPayment));
+        given(paymentRepository.findByTossPaymentKey("test_paymentKey")).willReturn(Optional.empty());
+        given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
+                .willReturn(tossResponse);
+        willThrow(new RuntimeException("알림 발송 실패"))
+                .given(notificationService).sendMimeMessage(any(), any(), any());
+
+        assertThatCode(() -> paymentService.confirmDeposit(request))
+                .doesNotThrowAnyException();
     }
 
     // ===== confirmBalance =====
