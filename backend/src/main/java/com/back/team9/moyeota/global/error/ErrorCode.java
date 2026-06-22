@@ -31,6 +31,7 @@ public enum ErrorCode {
     INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "USR012", "이메일 또는 비밀번호가 올바르지 않습니다."),
     USER_SUSPENDED(HttpStatus.FORBIDDEN, "USR013", "정지된 계정입니다."),
     SIGNUP_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "USR014", "회원가입 요청 정보를 찾을 수 없습니다."),
+    VERIFICATION_ATTEMPTS_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "USR015", "인증 시도 횟수를 초과했습니다. 인증코드를 다시 요청해주세요."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),

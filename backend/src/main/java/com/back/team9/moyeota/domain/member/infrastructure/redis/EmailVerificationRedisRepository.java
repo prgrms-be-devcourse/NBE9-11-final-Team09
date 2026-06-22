@@ -22,6 +22,9 @@ public class EmailVerificationRedisRepository {
     private static final String KEY_PREFIX =
             "member:email-verification:";
 
+    private static final String ATTEMPT_KEY_PREFIX =
+            "member:email-verification-attempts:";
+
     private static final Duration VERIFICATION_TTL =
             Duration.ofMinutes(30);
 
@@ -42,8 +45,40 @@ public class EmailVerificationRedisRepository {
                     value,
                     VERIFICATION_TTL
             );
+
+            redisTemplate.opsForValue().set(
+                    generateAttemptKey(email),
+                    "0",
+                    VERIFICATION_TTL
+            );
         } catch (JacksonException | DataAccessException exception) {
             log.error("이메일 인증 정보 Redis 저장 실패", exception);
+
+            throw new BusinessException(
+                    ErrorCode.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    public long incrementFailedAttempts(String email) {
+        try {
+            Long failedAttempts = redisTemplate
+                    .opsForValue()
+                    .increment(generateAttemptKey(email));
+
+            if (failedAttempts == null) {
+                throw new BusinessException(
+                        ErrorCode.INTERNAL_SERVER_ERROR
+                );
+            }
+
+            return failedAttempts;
+        } catch (DataAccessException exception) {
+            log.error(
+                    "이메일 인증 실패 횟수 증가 실패",
+                    exception
+            );
+
             throw new BusinessException(
                     ErrorCode.INTERNAL_SERVER_ERROR
             );
@@ -74,9 +109,15 @@ public class EmailVerificationRedisRepository {
 
     public void deleteByEmail(String email) {
         try {
-            redisTemplate.delete(generateKey(email));
+            redisTemplate.delete(
+                    java.util.List.of(
+                            generateKey(email),
+                            generateAttemptKey(email)
+                    )
+            );
         } catch (DataAccessException exception) {
             log.error("이메일 인증 정보 Redis 삭제 실패", exception);
+
             throw new BusinessException(
                     ErrorCode.INTERNAL_SERVER_ERROR
             );
@@ -85,6 +126,11 @@ public class EmailVerificationRedisRepository {
 
     private String generateKey(String email) {
         return KEY_PREFIX
+                + email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String generateAttemptKey(String email) {
+        return ATTEMPT_KEY_PREFIX
                 + email.trim().toLowerCase(Locale.ROOT);
     }
 }

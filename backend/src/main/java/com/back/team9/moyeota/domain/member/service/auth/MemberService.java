@@ -26,6 +26,8 @@ public class MemberService {
 
     private static final int VERIFICATION_CODE_LENGTH = 6;
 
+    private static final int MAX_VERIFICATION_ATTEMPTS = 5;
+
     private static final String CODE_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -101,7 +103,7 @@ public class MemberService {
                     email,
                     verificationCode
             );
-        } catch (BusinessException exception) {
+        } catch (RuntimeException exception) {
             safelyDeleteVerification(email);
             throw exception;
         }
@@ -128,6 +130,17 @@ public class MemberService {
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )) {
+            long failedAttempts =
+                    verificationRepository.incrementFailedAttempts(email);
+
+            if (failedAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+                safelyDeleteVerification(email);
+
+                throw new BusinessException(
+                        ErrorCode.VERIFICATION_ATTEMPTS_EXCEEDED
+                );
+            }
+
             throw new BusinessException(
                     ErrorCode.INVALID_VERIFICATION_CODE
             );
