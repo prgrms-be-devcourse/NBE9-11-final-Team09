@@ -1004,4 +1004,79 @@ class ParticipationServiceTest {
         verify(participationRepository, never()).findByFunding_FundingId(any());
     }
 
+    @Test
+    @DisplayName("잔액 결제 완료 - ACTIVE 상태에서 COMPLETED로 정상 전환")
+    void completeBalancePayment_ACTIVE상태_COMPLETED전환_성공() {
+        // Given
+        Long participationId = 100L;
+
+        Participation participation = mock(Participation.class);
+        given(participation.getPaymentStatus()).willReturn(ParticipationPaymentStatus.ACTIVE);
+
+        given(participationRepository.findById(participationId))
+                .willReturn(Optional.of(participation));
+
+        // When
+        participationService.completeBalancePayment(participationId);
+
+        // Then
+        verify(participation).completePayment();
+    }
+
+    @Test
+    @DisplayName("잔액 결제 완료 - 이미 COMPLETED 상태면 멱등성 보장 (중복 처리 방지)")
+    void completeBalancePayment_이미COMPLETED상태_멱등성보장() {
+        // Given
+        Long participationId = 100L;
+
+        Participation participation = mock(Participation.class);
+        given(participation.getPaymentStatus()).willReturn(ParticipationPaymentStatus.COMPLETED);
+
+        given(participationRepository.findById(participationId))
+                .willReturn(Optional.of(participation));
+
+        // When
+        participationService.completeBalancePayment(participationId);
+
+        // Then
+        verify(participation, never()).completePayment();
+    }
+
+    @Test
+    @DisplayName("잔액 결제 완료 - PENDING 상태에서 시도 시 INVALID_PARTICIPATION_STATUS 예외 발생")
+    void completeBalancePayment_PENDING상태_INVALID_PARTICIPATION_STATUS예외() {
+        // Given
+        Long participationId = 100L;
+
+        Participation participation = mock(Participation.class);
+        given(participation.getPaymentStatus()).willReturn(ParticipationPaymentStatus.PENDING);
+
+        given(participationRepository.findById(participationId))
+                .willReturn(Optional.of(participation));
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.completeBalancePayment(participationId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_PARTICIPATION_STATUS));
+
+        verify(participation, never()).completePayment();
+    }
+
+    @Test
+    @DisplayName("잔액 결제 완료 - 존재하지 않는 참여 PARTICIPATION_NOT_FOUND 예외 발생")
+    void completeBalancePayment_존재하지않는참여_PARTICIPATION_NOT_FOUND예외() {
+        // Given
+        Long participationId = 999L;
+
+        given(participationRepository.findById(participationId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> participationService.completeBalancePayment(participationId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PARTICIPATION_NOT_FOUND));
+    }
+
 }
