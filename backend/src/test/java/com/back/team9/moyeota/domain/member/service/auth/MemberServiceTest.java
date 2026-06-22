@@ -50,6 +50,9 @@ class MemberServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private EmailVerificationCodeHasher verificationCodeHasher;
+
     @InjectMocks
     private MemberService memberService;
 
@@ -142,8 +145,8 @@ class MemberServiceTest {
         PendingSignupData signupData = createPendingSignupData();
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
-        when(passwordEncoder.encode(anyString()))
-                .thenReturn("encoded-code");
+        when(verificationCodeHasher.hash(anyString()))
+                .thenReturn("hashed-code");
 
         memberService.requestEmailVerification(request);
 
@@ -167,7 +170,7 @@ class MemberServiceTest {
         );
 
         assertThat(dataCaptor.getValue().verificationCodeHash())
-                .isEqualTo("encoded-code");
+                .isEqualTo("hashed-code");
         assertThat(codeCaptor.getValue()).hasSize(6);
     }
 
@@ -197,8 +200,8 @@ class MemberServiceTest {
                 new BusinessException(ErrorCode.EMAIL_SEND_FAILED);
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
-        when(passwordEncoder.encode(anyString()))
-                .thenReturn("encoded-code");
+        when(verificationCodeHasher.hash(anyString()))
+                .thenReturn("hashed-code");
         doThrow(mailException).when(emailVerificationService)
                 .sendVerificationCode(eq(request.email()), anyString());
 
@@ -225,7 +228,7 @@ class MemberServiceTest {
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(verificationData));
-        when(passwordEncoder.matches(
+        when(verificationCodeHasher.matches(
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )).thenReturn(true);
@@ -259,7 +262,7 @@ class MemberServiceTest {
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(verificationData));
-        when(passwordEncoder.matches(
+        when(verificationCodeHasher.matches(
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )).thenReturn(false);
@@ -317,7 +320,7 @@ class MemberServiceTest {
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(verificationData));
-        when(passwordEncoder.matches(
+        when(verificationCodeHasher.matches(
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )).thenReturn(true);
@@ -353,7 +356,7 @@ class MemberServiceTest {
         when(verificationRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(verificationData));
 
-        when(passwordEncoder.matches(
+        when(verificationCodeHasher.matches(
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )).thenReturn(false);
