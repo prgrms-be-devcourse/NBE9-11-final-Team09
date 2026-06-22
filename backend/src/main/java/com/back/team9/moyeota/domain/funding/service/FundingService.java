@@ -60,6 +60,10 @@ public class FundingService {
                 request.hostOutboundSeatNumber(),
                 request.hostReturnSeatNumber()
         );
+        pathinfoService.validatePathinfoRequest(
+                request.tripType(),
+                request.route()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -210,17 +214,23 @@ public class FundingService {
         FundingValidator.validateHost(funding, memberId);
         FundingValidator.validateUpdatable(funding);
 
+        int currentParticipants = countActiveParticipants(fundingId);
+
+        if (currentParticipants > 0) {
+            updateFundingWithParticipants(funding, request);
+            return;
+        }
+
+        pathinfoService.validatePathinfoRequest(
+                request.tripType(),
+                request.route()
+        );
+
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
                 request.busType(),
                 request.tripType()
         );
-        int currentParticipants = countActiveParticipants(fundingId);
-
-        if (currentParticipants > 0) {
-            updateFundingWithParticipants(funding, request, totalPrice);
-            return;
-        }
 
         FundingValidator.validateFundingRequest(
                 request.minParticipants(),
@@ -232,12 +242,11 @@ public class FundingService {
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
-    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, BigDecimal totalPrice) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
 
         boolean changed =
                 !Objects.equals(funding.getBusType(), request.busType())
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
-                        || !Objects.equals(funding.getTotalPrice(), totalPrice)
                         || !Objects.equals(funding.getTripType(), request.tripType())
                         || pathinfoService.isRouteChanged(
                         funding.getFundingId(),

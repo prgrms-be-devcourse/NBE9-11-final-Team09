@@ -28,6 +28,14 @@ public class PathinfoService {
     private final PathinfoRepository pathinfoRepository;
     private final PathinfoTimeValidator pathinfoTimeValidator;
 
+    public void validatePathinfoRequest(
+            TripType tripType,
+            RouteRequest route
+    ) {
+        PathinfoValidator.validateTripType(tripType, route);
+        pathinfoTimeValidator.validateDepartureDate(route.departureTime());
+    }
+
     // 펀딩 생성 시 노선 생성
     @Transactional
     public void createPathinfos(
@@ -35,8 +43,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        PathinfoValidator.validateTripType(tripType, route);
-        pathinfoTimeValidator.validateDepartureDate(route.departureTime());
+        validatePathinfoRequest(tripType, route);
 
         Pathinfo outbound = Pathinfo.create(
                 funding,
@@ -74,8 +81,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        PathinfoValidator.validateTripType(tripType, route);
-        pathinfoTimeValidator.validateDepartureDate(route.departureTime());
+        validatePathinfoRequest(tripType, route);
 
         Pathinfo outbound = pathinfoRepository
                 .findByFunding_FundingIdAndDirection(

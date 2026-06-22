@@ -117,6 +117,8 @@ class FundingServiceUnitTest {
                 .isEqualTo(BusType.BUS_45.getCapacity());
 
         verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
+        verify(pathinfoService)
                 .createPathinfos(savedFunding, TripType.ONE_WAY, request.route());
         ArgumentCaptor<FundingCreatedEvent> eventCaptor =
                 ArgumentCaptor.forClass(FundingCreatedEvent.class);
@@ -163,7 +165,9 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
 
         verify(fundingRepository, never()).save(any());
-        verifyNoInteractions(pathinfoService, eventPublisher);
+        verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -264,6 +268,8 @@ class FundingServiceUnitTest {
         assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(495000));
 
         verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
+        verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
         ArgumentCaptor<FundingSeatsRecreateEvent> eventCaptor =
@@ -331,7 +337,7 @@ class FundingServiceUnitTest {
                 TripType.ONE_WAY,
                 null,
                 null,
-                route()
+                route(Region.INCHEON, Region.BUSAN)
         );
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
@@ -351,6 +357,7 @@ class FundingServiceUnitTest {
         // Then
         assertThat(funding.getTitle()).isEqualTo("Updated Title");
         assertThat(funding.getContent()).isEqualTo("Updated Content");
+        verify(pathinfoService, never()).validatePathinfoRequest(any(), any());
         verify(pathinfoService, never()).updatePathinfos(any(), any(), any());
         verify(pathinfoService, never()).syncBusType(any(), any());
         verify(eventPublisher, never()).publishEvent(any(FundingSeatsRecreateEvent.class));
