@@ -12,8 +12,10 @@ import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,9 +29,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminSettlementController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, AdminSettlementControllerTest.MethodSecurityTestConfig.class})
 @WithMockUser(roles = "ADMIN")
 class AdminSettlementControllerTest {
+
+    // @PreAuthorize 메서드 레벨 인가를 @WebMvcTest 슬라이스에서 활성화 (HttpSecurity 불필요)
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityTestConfig {
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -146,5 +154,21 @@ class AdminSettlementControllerTest {
 
         mockMvc.perform(patch("/api/admin/settlements/1/reject"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("페이백 승인 - ADMIN 권한 없는 사용자 요청 시 403")
+    @WithMockUser(roles = "USER")
+    void approve_권한없음_403() throws Exception {
+        mockMvc.perform(patch("/api/admin/settlements/1/approve"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("페이백 거절 - ADMIN 권한 없는 사용자 요청 시 403")
+    @WithMockUser(roles = "USER")
+    void reject_권한없음_403() throws Exception {
+        mockMvc.perform(patch("/api/admin/settlements/1/reject"))
+                .andExpect(status().isForbidden());
     }
 }
