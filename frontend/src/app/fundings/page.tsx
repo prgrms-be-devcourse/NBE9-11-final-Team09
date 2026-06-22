@@ -313,7 +313,7 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
             <span className="rounded bg-gray-100 px-2 py-1">
               {
                 busTypeLabels[
-                  funding.maxParticipants === 24 ? "BUS_25" : "BUS_45"
+                  funding.maxParticipants === 23 ? "BUS_25" : "BUS_45"
                 ]
               }
             </span>

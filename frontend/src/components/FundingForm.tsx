@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import SeatMap from "@/components/seat/SeatMap";
 import {
   busTypeLabels,
   normalizePayload,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/fundingFormat";
 import type { FundingPayload } from "@/types/funding";
 import { REGIONS } from "@/types/funding";
+import type { Seat } from "@/types/seat";
 
 type FundingFormProps = {
   initialValue?: FundingPayload;
@@ -17,6 +19,11 @@ type FundingFormProps = {
   submitting?: boolean;
   onSubmit: (payload: FundingPayload) => Promise<void>;
 };
+
+const MAX_PARTICIPANTS_BY_BUS_TYPE = {
+  BUS_25: 23,
+  BUS_45: 43,
+} as const;
 
 const defaultPayload: FundingPayload = {
   title: "",
@@ -50,8 +57,11 @@ export default function FundingForm({
 
   const routeLocked = mode === "edit" && textOnly;
   const seatRequired = mode === "create" || !textOnly;
-  const seatColumns = payload.busType === "BUS_25" ? ["A", "B", "C"] : ["A", "B", "C", "D"];
-  const seatRows = payload.busType === "BUS_25" ? 8 : 11;
+  const maxParticipants = MAX_PARTICIPANTS_BY_BUS_TYPE[payload.busType];
+  const isRoundTrip = payload.tripType === "ROUND";
+  const seatSelectorGridClass = isRoundTrip
+    ? "grid grid-cols-2 gap-4"
+    : "grid gap-5";
 
   const canSubmit = useMemo(() => {
     if (!payload.title.trim()) {
@@ -73,6 +83,10 @@ export default function FundingForm({
       return false;
     }
 
+    if (payload.minParticipants < 1 || payload.minParticipants > maxParticipants) {
+      return false;
+    }
+
     if (seatRequired && !payload.hostOutboundSeatNumber.trim()) {
       return false;
     }
@@ -85,8 +99,8 @@ export default function FundingForm({
       return false;
     }
 
-    return payload.minParticipants > 0;
-  }, [payload, routeLocked, seatRequired]);
+    return true;
+  }, [maxParticipants, payload, routeLocked, seatRequired]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -149,17 +163,28 @@ export default function FundingForm({
       <fieldset disabled={routeLocked} className="grid gap-8 disabled:opacity-60">
         <section className="grid gap-4">
           <h2 className="text-lg font-semibold">운행 조건</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 md:items-start">
             <label className="grid gap-2 text-sm font-medium text-gray-700">
               버스
               <select
                 value={payload.busType}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const busType = event.target.value as FundingPayload["busType"];
+                  const nextMaxParticipants =
+                    MAX_PARTICIPANTS_BY_BUS_TYPE[busType];
+
                   setPayload((current) => ({
                     ...current,
-                    busType: event.target.value as FundingPayload["busType"],
-                  }))
-                }
+                    busType,
+                    minParticipants: Math.min(
+                      current.minParticipants,
+                      nextMaxParticipants
+                    ),
+                    hostOutboundSeatNumber: "",
+                    hostReturnSeatNumber:
+                      current.tripType === "ROUND" ? "" : null,
+                  }));
+                }}
                 className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
               >
                 {Object.entries(busTypeLabels).map(([value, label]) => (
@@ -168,21 +193,32 @@ export default function FundingForm({
                   </option>
                 ))}
               </select>
+              <span className="min-h-4 text-xs text-transparent" aria-hidden="true">
+                -
+              </span>
             </label>
             <label className="grid gap-2 text-sm font-medium text-gray-700">
               최소 인원
               <input
                 type="number"
                 min={1}
+                max={maxParticipants}
                 value={payload.minParticipants}
                 onChange={(event) =>
                   setPayload((current) => ({
                     ...current,
-                    minParticipants: Number(event.target.value),
+                    minParticipants: clamp(
+                      Number(event.target.value),
+                      1,
+                      maxParticipants
+                    ),
                   }))
                 }
                 className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
               />
+              <span className="min-h-4 text-xs text-gray-500">
+                최대 참가자 {maxParticipants}명
+              </span>
             </label>
             <label className="grid gap-2 text-sm font-medium text-gray-700">
               이동 방식
@@ -211,6 +247,9 @@ export default function FundingForm({
                   </option>
                 ))}
               </select>
+              <span className="min-h-4 text-xs text-transparent" aria-hidden="true">
+                -
+              </span>
             </label>
           </div>
         </section>
@@ -256,52 +295,32 @@ export default function FundingForm({
             )}
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
-              출발 지역
-              <select
-                value={payload.route.departureRegion}
-                onChange={(event) =>
-                  setPayload((current) => ({
-                    ...current,
-                    route: {
-                      ...current.route,
-                      departureRegion: event.target
-                        .value as FundingPayload["route"]["departureRegion"],
-                    },
-                  }))
-                }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-              >
-                {REGIONS.map((region) => (
-                  <option key={region} value={region}>
-                    {regionLabels[region]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
-              도착 지역
-              <select
-                value={payload.route.arrivalRegion}
-                onChange={(event) =>
-                  setPayload((current) => ({
-                    ...current,
-                    route: {
-                      ...current.route,
-                      arrivalRegion: event.target
-                        .value as FundingPayload["route"]["arrivalRegion"],
-                    },
-                  }))
-                }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-              >
-                {REGIONS.map((region) => (
-                  <option key={region} value={region}>
-                    {regionLabels[region]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <RegionSelect
+              label="출발 지역"
+              value={payload.route.departureRegion}
+              onChange={(departureRegion) =>
+                setPayload((current) => ({
+                  ...current,
+                  route: {
+                    ...current.route,
+                    departureRegion,
+                  },
+                }))
+              }
+            />
+            <RegionSelect
+              label="도착 지역"
+              value={payload.route.arrivalRegion}
+              onChange={(arrivalRegion) =>
+                setPayload((current) => ({
+                  ...current,
+                  route: {
+                    ...current.route,
+                    arrivalRegion,
+                  },
+                }))
+              }
+            />
             <label className="grid gap-2 text-sm font-medium text-gray-700">
               출발 주소
               <input
@@ -341,12 +360,11 @@ export default function FundingForm({
 
         <section className="grid gap-4">
           <h2 className="text-lg font-semibold">방장 좌석</h2>
-          <div className="grid gap-5 md:grid-cols-2">
-            <SeatPicker
+          <div className={seatSelectorGridClass}>
+            <HostSeatSelector
               title="가는 편 좌석"
-              value={payload.hostOutboundSeatNumber}
-              rows={seatRows}
-              columns={seatColumns}
+              busType={payload.busType}
+              selectedSeatNumber={payload.hostOutboundSeatNumber}
               onChange={(seatNumber) =>
                 setPayload((current) => ({
                   ...current,
@@ -355,11 +373,10 @@ export default function FundingForm({
               }
             />
             {payload.tripType === "ROUND" && (
-              <SeatPicker
+              <HostSeatSelector
                 title="오는 편 좌석"
-                value={payload.hostReturnSeatNumber ?? ""}
-                rows={seatRows}
-                columns={seatColumns}
+                busType={payload.busType}
+                selectedSeatNumber={payload.hostReturnSeatNumber ?? ""}
                 onChange={(seatNumber) =>
                   setPayload((current) => ({
                     ...current,
@@ -385,59 +402,100 @@ export default function FundingForm({
   );
 }
 
-function SeatPicker({
-  title,
+function RegionSelect({
+  label,
   value,
-  rows,
-  columns,
+  onChange,
+}: {
+  label: string;
+  value: FundingPayload["route"]["departureRegion"];
+  onChange: (value: FundingPayload["route"]["departureRegion"]) => void;
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-medium text-gray-700">
+      {label}
+      <select
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value as FundingPayload["route"]["departureRegion"])
+        }
+        className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+      >
+        {REGIONS.map((region) => (
+          <option key={region} value={region}>
+            {regionLabels[region]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function HostSeatSelector({
+  title,
+  busType,
+  selectedSeatNumber,
   onChange,
 }: {
   title: string;
-  value: string;
-  rows: number;
-  columns: string[];
+  busType: FundingPayload["busType"];
+  selectedSeatNumber: string;
   onChange: (seatNumber: string) => void;
 }) {
+  const seats = useMemo(
+    () => createHostSeatMapSeats(busType, selectedSeatNumber),
+    [busType, selectedSeatNumber]
+  );
+
   return (
-    <div className="grid gap-3 rounded border border-gray-200 p-4">
+    <div className="grid min-w-0 gap-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-gray-800">{title}</p>
         <p className="rounded bg-gray-100 px-2 py-1 text-sm font-bold text-gray-900">
-          {value || "미선택"}
+          {selectedSeatNumber || "미선택"}
         </p>
       </div>
-      <div className="grid gap-2">
-        {Array.from({ length: rows }, (_, index) => index + 1).map((row) => (
-          <div
-            key={row}
-            className={`grid gap-2 ${columns.length === 3 ? "grid-cols-[1fr_1fr_12px_1fr]" : "grid-cols-[1fr_1fr_12px_1fr_1fr]"}`}
-          >
-            {columns.map((column, columnIndex) => {
-              const seatNumber = `${row}${column}`;
-              const selected = value === seatNumber;
-              const needsAisle =
-                (columns.length === 3 && columnIndex === 2) ||
-                (columns.length === 4 && columnIndex === 2);
-
-              return (
-                <button
-                  key={seatNumber}
-                  type="button"
-                  onClick={() => onChange(seatNumber)}
-                  className={`h-10 rounded border text-sm font-semibold transition ${
-                    selected
-                      ? "border-gray-950 bg-gray-950 text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-700"
-                  } ${needsAisle ? "col-start-auto" : ""}`}
-                  style={needsAisle ? { gridColumnStart: columnIndex + 2 } : undefined}
-                >
-                  {seatNumber}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+      <div className="max-w-full overflow-hidden rounded-lg">
+        <div className="[&_.border-dashed]:!h-7 [&_.border-dashed]:!w-7 [&_.gap-1]:!gap-0.5 [&_.gap-2]:!gap-1 [&_.mb-6]:!mb-2 [&_.mt-6]:!mt-2 [&_.mt-8]:!mt-2 [&_.p-6]:!p-2 [&_.p-8]:!p-2 [&_.text-sm]:!text-xs [&_.text-xs]:!text-[9px] [&_.w-20]:!w-5 [&_button]:!h-7 [&_button]:!w-7 [&_button]:!text-[9px]">
+          <SeatMap
+            busType={busType}
+            seats={seats}
+            onSeatClick={(seat) => onChange(seat.seatNumber)}
+          />
+        </div>
       </div>
     </div>
   );
+}
+
+function createHostSeatMapSeats(
+  busType: FundingPayload["busType"],
+  selectedSeatNumber: string
+): Seat[] {
+  const rows = busType === "BUS_25" ? 8 : 11;
+  const columns = busType === "BUS_25" ? ["A", "B", "C"] : ["A", "B", "C", "D"];
+  const seats: Seat[] = [];
+
+  for (let row = 1; row <= rows; row += 1) {
+    for (const column of columns) {
+      const seatNumber = `${row}${column}`;
+
+      seats.push({
+        seatId: seats.length + 1,
+        seatNumber,
+        status: "AVAILABLE",
+        mySeat: seatNumber === selectedSeatNumber,
+      });
+    }
+  }
+
+  return seats;
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (Number.isNaN(value)) {
+    return min;
+  }
+
+  return Math.min(max, Math.max(min, value));
 }
