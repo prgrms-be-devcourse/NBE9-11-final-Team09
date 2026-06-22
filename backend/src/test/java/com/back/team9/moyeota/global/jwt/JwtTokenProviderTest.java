@@ -5,6 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +17,11 @@ class JwtTokenProviderTest {
 
     private static final long ACCESS_EXPIRATION = 3_600_000;
     private static final long REFRESH_EXPIRATION = 1_209_600_000;
-
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            Instant.parse("2026-06-22T00:00:00Z"),
+            ZoneId.of("Asia/Seoul")
+    );
+    
     private JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
@@ -27,7 +34,8 @@ class JwtTokenProviderTest {
         jwtTokenProvider = new JwtTokenProvider(
                 secret,
                 ACCESS_EXPIRATION,
-                REFRESH_EXPIRATION
+                REFRESH_EXPIRATION,
+                FIXED_CLOCK
         );
     }
 
