@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Seat, SeatLayout } from "@/types/seat";
-import { getSeatLayout, holdSeat, releaseSeat } from "@/api/seat";
+import { getSeatLayout, holdSeat } from "@/api/seat";
 import SeatMap from "@/components/seat/SeatMap";
 import SeatInfoPanel from "@/components/seat/SeatInfoPanel";
 import CommonModal from "@/components/common/CommonModal";
@@ -86,51 +86,6 @@ export default function SeatsPage() {
                 message: "이미 다른 사람이 선점한 좌석입니다. 새로고침 후 다시 시도해주세요.",
             });
             return;
-        }
-
-        // 내가 선점한 좌석 클릭 → 취소
-        if (seat.mySeat) {
-            try {
-                await releaseSeat(seat.seatId);
-                setSeatLayout((prev) =>
-                    prev ? {
-                        ...prev,
-                        seats: prev.seats.map((s) =>
-                            s.seatId === seat.seatId
-                                ? { ...s, status: "AVAILABLE" as const, mySeat: false }
-                                : s
-                        ),
-                    } : prev
-                );
-                if (step === "outbound") setSelectedSeat(null);
-                else setReturnSeat(null);
-            } catch (_err) {
-                setModal({ title: "오류", message: "좌석 취소에 실패했습니다." });
-            }
-            return;
-        }
-
-        // 기존에 선택한 좌석이 있다면 먼저 해제
-        const currentSelected = step === "outbound" ? selectedSeat : returnSeat;
-        if (currentSelected) {
-            try {
-                await releaseSeat(currentSelected.seatId);
-                setSeatLayout((prev) =>
-                    prev ? {
-                        ...prev,
-                        seats: prev.seats.map((s) =>
-                            s.seatId === currentSelected.seatId
-                                ? { ...s, status: "AVAILABLE" as const, mySeat: false }
-                                : s
-                        ),
-                    } : prev
-                );
-                if (step === "outbound") setSelectedSeat(null);
-                else setReturnSeat(null);
-            } catch (_err) {
-                setModal({ title: "오류", message: "기존 좌석 선점 해제에 실패했습니다." });
-                return;
-            }
         }
 
         // AVAILABLE → 선점 시도

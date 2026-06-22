@@ -48,15 +48,3 @@ export async function holdSeat(seatId: number): Promise<Seat> {
     const result: ApiResponse<Seat> = await response.json();
     return result.data;
 }
-
-// 좌석 홀딩 취소
-export async function releaseSeat(seatId: number): Promise<void> {
-    const response = await fetch(`${BASE_URL}/seats/${seatId}/hold`, {
-        method: "DELETE",
-        headers: getAuthHeader(),
-    });
-
-    if (!response.ok) {
-        throw new Error("좌석 홀딩 취소에 실패했습니다.");
-    }
-}
