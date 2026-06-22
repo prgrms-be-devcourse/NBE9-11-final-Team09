@@ -24,14 +24,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -44,6 +48,9 @@ class SettlementServiceTest {
     @Mock
     private FundingRepository fundingRepository;
 
+    @Mock
+    private Clock clock;
+
     @InjectMocks
     private SettlementService settlementService;
 
@@ -52,6 +59,8 @@ class SettlementServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(clock.instant()).thenReturn(Instant.now());
+        lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
         ReflectionTestUtils.setField(settlementService, "platformFeeRate", new BigDecimal("0.10"));
 
         hostMember = Member.builder()
@@ -98,7 +107,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
-        given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
+        given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
         SettlementResponse response = settlementService.create(request, 1L);
@@ -114,7 +123,7 @@ class SettlementServiceTest {
 
         // Then - 실제 save에 전달된 Settlement 값 검증
         ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
-        verify(settlementRepository).save(captor.capture());
+        verify(settlementRepository).saveAndFlush(captor.capture());
         Settlement captured = captor.getValue();
         assertThat(captured.getPlatformFee()).isEqualByComparingTo(new BigDecimal("10000"));
         assertThat(captured.getHostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
@@ -155,7 +164,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
         given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
-        given(settlementRepository.save(any(Settlement.class))).willReturn(savedSettlement);
+        given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
         SettlementResponse response = settlementService.create(request, 1L);
@@ -164,7 +173,7 @@ class SettlementServiceTest {
         assertThat(response.paybackHold()).isTrue();
 
         ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
-        verify(settlementRepository).save(captor.capture());
+        verify(settlementRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getPaybackHold()).isTrue();
     }
 

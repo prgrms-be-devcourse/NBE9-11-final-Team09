@@ -56,4 +56,17 @@ public class Payment {
         this.status = PaymentStatus.PAID;
         this.updatedAt = LocalDateTime.now();
     }
+    public void startRefund() {
+        this.status = PaymentStatus.REFUND_PENDING;
+        this.updatedAt = LocalDateTime.now();
+    }
+    public void completeRefund() {
+        this.status = PaymentStatus.REFUNDED;
+        this.updatedAt = LocalDateTime.now();
+    }
+    public void expire() {
+        this.status = PaymentStatus.FAILED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }
