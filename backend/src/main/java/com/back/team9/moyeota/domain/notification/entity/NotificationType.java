@@ -6,5 +6,6 @@ public enum NotificationType {
     PAYMENT_DEADLINE, //데드라인
     FUNDING_FAILED, //펀딩 실패
     DEPARTURE_REMINDER, //출발 일정
-    EMERGENCY_NOTICE //긴급 알람
+    EMERGENCY_NOTICE, //긴급 알람
+    PAYMENT_COMPLETED //결제 완료
 }

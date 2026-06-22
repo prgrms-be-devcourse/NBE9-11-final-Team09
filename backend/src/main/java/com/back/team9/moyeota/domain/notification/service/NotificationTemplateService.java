@@ -14,6 +14,7 @@ public class NotificationTemplateService {
             case FUNDING_FAILED -> "펀딩 실패";
             case DEPARTURE_REMINDER -> "출발 알림";
             case EMERGENCY_NOTICE -> "긴급 공지";
+            case PAYMENT_COMPLETED -> "결제 완료";
         };
     }
 
@@ -74,6 +75,15 @@ public class NotificationTemplateService {
                     <body>
                         <h2>%s님</h2>
                         <p>[%s] 긴급 공지입니다 🚨</p>
+                    </body>
+                    </html>
+                    """.formatted(safeNickname, safeTitle);
+
+            case PAYMENT_COMPLETED -> """
+                    <html>
+                    <body>
+                        <h2>%s님</h2>
+                        <p>[%s] 결제가 완료되었습니다 ✅</p>
                     </body>
                     </html>
                     """.formatted(safeNickname, safeTitle);
