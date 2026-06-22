@@ -55,6 +55,12 @@ class EmailVerificationRedisRepositoryTest {
                 anyString(),
                 eq(Duration.ofMinutes(30))
         );
+
+        verify(valueOperations).set(
+                "member:email-verification-attempts:moyeota@example.com",
+                "0",
+                Duration.ofMinutes(30)
+        );
     }
 
     @Test
@@ -89,12 +95,30 @@ class EmailVerificationRedisRepositoryTest {
     }
 
     @Test
-    @DisplayName("이메일을 정규화하여 인증정보를 삭제한다")
-    void deleteByEmailDeletesNormalizedKey() {
+    @DisplayName("인증 실패 횟수를 원자적으로 증가시킨다")
+    void incrementFailedAttemptsIncrementsRedisCounter() {
+        when(redisTemplate.opsForValue())
+                .thenReturn(valueOperations);
+
+        when(valueOperations.increment(
+                "member:email-verification-attempts:moyeota@example.com"
+        )).thenReturn(3L);
+
+        long result = repository.incrementFailedAttempts(
+                "moyeota@example.com"
+        );
+
+        assertThat(result).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("인증정보와 실패 횟수를 함께 삭제한다")
+    void deleteByEmailDeletesVerificationAndAttemptKeys() {
         repository.deleteByEmail(" MOYEOTA@EXAMPLE.COM ");
 
-        verify(redisTemplate).delete(
-                "member:email-verification:moyeota@example.com"
-        );
+        verify(redisTemplate).delete(java.util.List.of(
+                "member:email-verification:moyeota@example.com",
+                "member:email-verification-attempts:moyeota@example.com"
+        ));
     }
 }

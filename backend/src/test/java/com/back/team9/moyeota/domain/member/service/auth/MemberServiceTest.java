@@ -263,6 +263,9 @@ class MemberServiceTest {
                 request.verificationCode(),
                 verificationData.verificationCodeHash()
         )).thenReturn(false);
+        when(verificationRepository.incrementFailedAttempts(
+                request.email()
+        )).thenReturn(1L);
 
         assertBusinessException(
                 () -> memberService.confirmEmailVerification(request),
@@ -270,6 +273,7 @@ class MemberServiceTest {
         );
 
         verifyNoInteractions(memberRegistrationService);
+        verify(verificationRepository).incrementFailedAttempts(request.email());
         verify(verificationRepository, never()).deleteByEmail(anyString());
         verify(pendingSignupRepository, never()).deleteByEmail(anyString());
     }
@@ -327,6 +331,46 @@ class MemberServiceTest {
 
         verify(verificationRepository, never()).deleteByEmail(anyString());
         verify(pendingSignupRepository, never()).deleteByEmail(anyString());
+    }
+
+    @Test
+    @DisplayName("인증 실패가 5회에 도달하면 인증정보를 삭제한다")
+    void confirmEmailVerificationWhenAttemptsExceededDeletesVerification() {
+        EmailVerificationConfirmRequest request =
+                new EmailVerificationConfirmRequest(
+                        "moyeota@example.com",
+                        "WRONG1"
+                );
+
+        PendingSignupData signupData = createPendingSignupData();
+
+        EmailVerificationData verificationData =
+                new EmailVerificationData("encoded-code");
+
+        when(pendingSignupRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(signupData));
+
+        when(verificationRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(verificationData));
+
+        when(passwordEncoder.matches(
+                request.verificationCode(),
+                verificationData.verificationCodeHash()
+        )).thenReturn(false);
+
+        when(verificationRepository.incrementFailedAttempts(
+                request.email()
+        )).thenReturn(5L);
+
+        assertBusinessException(
+                () -> memberService.confirmEmailVerification(request),
+                ErrorCode.VERIFICATION_ATTEMPTS_EXCEEDED
+        );
+
+        verify(verificationRepository)
+                .deleteByEmail(request.email());
+
+        verifyNoInteractions(memberRegistrationService);
     }
 
     private void assertBusinessException(
