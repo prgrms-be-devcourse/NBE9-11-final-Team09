@@ -47,20 +47,26 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/team09:latest
-            sudo docker stop app || true
-            sudo docker rm app || true
+            cd ~/app
             
-            # ★기존 3개 환경변수에 메일 관련 환경변수 2개를 추가하여 run 실행!
-            sudo docker run -d --name app -p 8080:8080 \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e TOSS_SECRET_KEY="${{ secrets.TOSS_SECRET_KEY }}" \
-              -e JWT_COOKIE_SECURE="${{ secrets.JWT_COOKIE_SECURE }}" \
-              -e MAIL_USERNAME="${{ secrets.MAIL_USERNAME }}" \
-              -e MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
-              -e DB_URL="${{ secrets.DB_URL }}" \
-              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              ${{ secrets.DOCKER_USERNAME }}/team09:latest
+            # EOF 문법을 사용해 GitHub Secrets 값을 .env 파일로 한방에 새로 씁니다.
+            cat > .env << EOF
+            RDS_HOST=${{ secrets.RDS_HOST }}
+            RDS_PORT=${{ secrets.RDS_PORT }}
+            RDS_DATABASE=${{ secrets.RDS_DATABASE }}
+            RDS_USERNAME=${{ secrets.RDS_USERNAME }}
+            RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             
-            sudo docker image prune -f
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_COOKIE_SECURE=${{ secrets.JWT_COOKIE_SECURE }}
+            TOSS_SECRET_KEY=${{ secrets.TOSS_SECRET_KEY }}
+            
+            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            
+            REDIS_HOST=redis
+            EOF
+            
+            # 배포 스크립트에 실행 권한을 주고 실행합니다.
+            chmod +x deploy.sh
+            ./deploy.sh
