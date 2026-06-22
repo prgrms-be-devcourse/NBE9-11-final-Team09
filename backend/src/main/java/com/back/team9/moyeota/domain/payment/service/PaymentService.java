@@ -1,5 +1,7 @@
 package com.back.team9.moyeota.domain.payment.service;
 
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.participation.service.ParticipationService;
@@ -16,6 +18,7 @@ import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -35,7 +39,7 @@ public class PaymentService {
     private final ParticipationRepository participationRepository;
     private final Clock clock;
     private final ParticipationService participationService;
-
+    private final NotificationService notificationService;
 
     @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
@@ -86,7 +90,15 @@ public class PaymentService {
             }
             throw e;
         }
-
+        try {
+            notificationService.sendMimeMessage(
+                    participation.getMember().getMemberId(),
+                    participation.getFunding().getFundingId(),
+                    NotificationType.PAYMENT_COMPLETED
+            );
+        } catch (Exception e) {
+            log.warn("결제 완료 알림 발송 실패 (paymentId={}): {}", pendingPayment.getPaymentId(), e.getMessage(), e);
+        }
         return PaymentResponse.from(pendingPayment);
     }
 
