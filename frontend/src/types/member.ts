@@ -39,6 +39,10 @@ export interface MemberUpdateResponse {
   updatedAt: string;
 }
 
+export interface MemberWithdrawRequest {
+  password: string;
+}
+
 export interface MemberParticipation {
   participationId: number;
   fundingId: number;

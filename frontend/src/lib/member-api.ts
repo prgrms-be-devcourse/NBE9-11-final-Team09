@@ -8,6 +8,7 @@ import type {
   MemberProfile,
   MemberUpdateRequest,
   MemberUpdateResponse,
+  MemberWithdrawRequest,
   PageResponse,
 } from "@/types/member";
 
@@ -106,7 +107,10 @@ async function authorizedRequest<T>(
   if (!response.ok) {
     const { message, code } = getErrorDetails(payload);
 
-    if (response.status === 401 || response.status === 403) {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      code !== "USR012"
+    ) {
       clearAccessToken();
       throw new AuthenticationRequiredError();
     }
@@ -189,6 +193,14 @@ export async function getMyDashboard(): Promise<{
 export async function logoutMember() {
   await authorizedRequest<ApiResponse<null>>("/api/members/logout", {
     method: "POST",
+  });
+  clearAccessToken();
+}
+
+export async function withdrawMember(request: MemberWithdrawRequest) {
+  await authorizedRequest<ApiResponse<null>>("/api/members/me", {
+    method: "DELETE",
+    body: JSON.stringify(request),
   });
   clearAccessToken();
 }

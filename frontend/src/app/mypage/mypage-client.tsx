@@ -7,6 +7,7 @@ import {
   getMyHistory,
   logoutMember,
   updateMyProfile,
+  withdrawMember,
 } from "@/lib/member-api";
 import type {
   HistoryTab,
@@ -140,6 +141,10 @@ export default function MypageClient() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState("");
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -290,6 +295,41 @@ export default function MypageClient() {
     }
   }
 
+  function closeWithdrawModal() {
+    if (withdrawing) return;
+    setWithdrawModalOpen(false);
+    setWithdrawPassword("");
+    setWithdrawError("");
+  }
+
+  async function handleWithdraw(event: React.FormEvent) {
+    event.preventDefault();
+    setWithdrawError("");
+
+    if (!withdrawPassword) {
+      setWithdrawError("비밀번호를 입력해주세요.");
+      return;
+    }
+
+    setWithdrawing(true);
+    try {
+      await withdrawMember({ password: withdrawPassword });
+      router.replace("/login");
+    } catch (requestError) {
+      if (requestError instanceof AuthenticationRequiredError) {
+        moveToLogin();
+        return;
+      }
+
+      setWithdrawError(
+        requestError instanceof Error
+          ? requestError.message
+          : "회원탈퇴를 처리하지 못했습니다.",
+      );
+    } finally {
+      setWithdrawing(false);
+    }
+  }
   if (loading) return <LoadingView />;
 
   if (!profile) {
@@ -436,13 +476,144 @@ export default function MypageClient() {
               onTabChange={setActiveTab}
               onPageChange={moveHistoryPage}
             />
+
+            <WithdrawSection
+              onOpen={() => {
+                setWithdrawModalOpen(true);
+                setWithdrawError("");
+              }}
+            />
           </div>
         </div>
       </main>
+
+      {withdrawModalOpen && (
+        <WithdrawModal
+          password={withdrawPassword}
+          error={withdrawError}
+          processing={withdrawing}
+          onPasswordChange={(value) => {
+            setWithdrawPassword(value);
+            setWithdrawError("");
+          }}
+          onClose={closeWithdrawModal}
+          onSubmit={handleWithdraw}
+        />
+      )}
     </div>
   );
 }
 
+function WithdrawSection({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section className="rounded-3xl border border-rose-200 bg-rose-50/60 p-6 sm:p-8">
+      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <div>
+          <p className="text-xs font-bold tracking-widest text-rose-600">
+            ACCOUNT
+          </p>
+          <h2 className="mt-2 text-xl font-black text-slate-900">회원탈퇴</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            탈퇴하면 계정을 다시 사용할 수 없습니다. 참여 중인 펀딩과 결제
+            내역을 먼저 확인해주세요.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="shrink-0 rounded-xl border border-rose-300 bg-white px-5 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-600 hover:text-white"
+        >
+          회원탈퇴
+        </button>
+      </div>
+    </section>
+  );
+}
+
+interface WithdrawModalProps {
+  password: string;
+  error: string;
+  processing: boolean;
+  onPasswordChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent) => void;
+}
+
+function WithdrawModal({
+  password,
+  error,
+  processing,
+  onPasswordChange,
+  onClose,
+  onSubmit,
+}: WithdrawModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-5 py-8 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="withdraw-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <p className="text-xs font-bold tracking-widest text-rose-600">
+          WITHDRAW ACCOUNT
+        </p>
+        <h2 id="withdraw-title" className="mt-2 text-2xl font-black text-slate-950">
+          정말 탈퇴하시겠어요?
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          본인 확인을 위해 현재 비밀번호를 입력해주세요. 탈퇴 후에는 계정을
+          복구할 수 없습니다.
+        </p>
+
+        <form onSubmit={onSubmit} className="mt-6">
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-slate-700">
+              비밀번호
+            </span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              autoComplete="current-password"
+              autoFocus
+              placeholder="현재 비밀번호 입력"
+              className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
+            />
+          </label>
+
+          {error && (
+            <p className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={processing}
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={!password || processing}
+              className="rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {processing ? "탈퇴 처리 중" : "회원탈퇴"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 interface ProfileSectionProps {
   profile: MemberProfile;
   nickname: string;
