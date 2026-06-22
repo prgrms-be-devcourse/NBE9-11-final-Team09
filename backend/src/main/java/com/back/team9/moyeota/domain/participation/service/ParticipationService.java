@@ -340,12 +340,10 @@ public class ParticipationService {
 
     // ============================== 6. 잔액 결제 완료 시 COMPLETED 전환 ==============================
     @Transactional
-    public void completeBalancePayment(Long paymentId) {
+    public void completeBalancePayment(Long participationId) {
 
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
-
-        Participation participation = payment.getParticipation();
+        Participation participation = participationRepository.findById(participationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
         // 이미 COMPLETED인 경우 중복 처리 방지 (멱등성 보장)
         if (participation.getPaymentStatus() == ParticipationPaymentStatus.COMPLETED) {
