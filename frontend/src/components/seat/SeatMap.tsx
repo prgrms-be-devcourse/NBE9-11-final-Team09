@@ -22,7 +22,7 @@ function BUS25Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
         <div className="flex flex-col gap-2">
             {/* 운전석 */}
             <div className="flex justify-start mb-2">
-                <div className="w-10 h-10 border-2 border-dashed border-gray-400 rounded flex items-center justify-center text-xs text-gray-400">
+                <div className="w-14 h-14 border-2 border-dashed border-gray-400 rounded flex items-center justify-center text-xs text-gray-400">
                     운전석
                 </div>
             </div>
@@ -37,7 +37,7 @@ function BUS25Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
                             return seat ? (
                                 <SeatButton key={col} seat={seat} onSeatClick={onSeatClick} />
                             ) : (
-                                <div key={col} className="w-10 h-10" /> // 빈 공간
+                                <div key={col} className="w-14 h-14" /> // 빈 공간
                             );
                         })}
                     </div>
@@ -88,7 +88,7 @@ function BUS45Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
                             return seat ? (
                                 <SeatButton key={col} seat={seat} onSeatClick={onSeatClick} />
                             ) : (
-                                <div key={col} className="w-10 h-10" />
+                                <div key={col} className="w-14 h-14" />
                             );
                         })}
                     </div>
@@ -103,7 +103,7 @@ function BUS45Layout({ seats, onSeatClick }: { seats: Seat[], onSeatClick: (seat
                             return seat ? (
                                 <SeatButton key={col} seat={seat} onSeatClick={onSeatClick} />
                             ) : (
-                                <div key={col} className="w-10 h-10" />
+                                <div key={col} className="w-14 h-14" />
                             );
                         })}
                     </div>

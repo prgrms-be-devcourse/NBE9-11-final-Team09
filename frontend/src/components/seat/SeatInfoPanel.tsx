@@ -48,8 +48,10 @@ export default function SeatInfoPanel({
             <div className="flex justify-between mb-6">
                 <span className="text-sm font-semibold">최종 결제 금액</span>
                 <span className="text-base font-bold">
-          {finalAmount ? `${finalAmount.toLocaleString()} 원` : "-"}
-        </span>
+        {finalAmount !== null
+            ? `${finalAmount.toLocaleString()} 원`
+            : "-"}
+    </span>
             </div>
 
             {/* 결제하기 버튼 */}
