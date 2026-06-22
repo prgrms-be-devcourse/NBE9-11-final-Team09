@@ -214,7 +214,7 @@ class FundingServiceTest {
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
@@ -997,7 +997,7 @@ class FundingServiceTest {
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.tripType()).isEqualTo(TripType.ONE_WAY);
@@ -1018,7 +1018,7 @@ class FundingServiceTest {
         pathinfoService.cancelPathinfos(response.fundingId());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.status()).isEqualTo(FundingStatus.FAILED);
