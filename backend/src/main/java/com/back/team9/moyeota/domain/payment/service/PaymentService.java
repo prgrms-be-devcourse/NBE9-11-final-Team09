@@ -95,7 +95,7 @@ public class PaymentService {
                     NotificationType.PAYMENT_COMPLETED
             );
         } catch (Exception e) {
-            log.warn("결제 완료 알림 발송 실패 (paymentId={})", pendingPayment.getPaymentId());
+            log.warn("결제 완료 알림 발송 실패 (paymentId={}): {}", pendingPayment.getPaymentId(), e.getMessage(), e);
         }
         return PaymentResponse.from(pendingPayment);
     }
