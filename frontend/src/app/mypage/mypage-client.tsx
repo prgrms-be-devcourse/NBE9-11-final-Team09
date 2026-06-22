@@ -389,9 +389,6 @@ export default function MypageClient() {
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             안녕하세요, {profile.nickname}님
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            내 정보와 모여타 이용 내역을 한곳에서 관리하세요.
-          </p>
         </div>
 
         {error && (
