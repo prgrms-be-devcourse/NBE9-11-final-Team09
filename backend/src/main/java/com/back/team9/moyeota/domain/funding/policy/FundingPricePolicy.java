@@ -93,6 +93,7 @@ public class FundingPricePolicy {
         return BigDecimal.valueOf(amount);
     }
 
+    // 인당 금액 PRICE_UNIT 단위 올림 처리
     public static BigDecimal calculateRoundedPrice(
             BigDecimal totalPrice,
             Integer participants

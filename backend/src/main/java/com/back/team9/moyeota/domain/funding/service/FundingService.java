@@ -46,7 +46,6 @@ public class FundingService {
     private final PathinfoService pathinfoService;
     private final ApplicationEventPublisher eventPublisher;
     private final ParticipationRepository participationRepository;
-    private final FundingValidator fundingValidator;
     private final ChatRoomRepository chatRoomRepository;
 
     // 펀딩 생성
@@ -66,7 +65,7 @@ public class FundingService {
                 request.busType(),
                 request.tripType()
         );
-        fundingValidator.validateFundingRequest(
+        FundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType()
         );
@@ -192,11 +191,11 @@ public class FundingService {
     @Transactional
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
-        fundingValidator.validateHost(funding, memberId);
+        FundingValidator.validateHost(funding, memberId);
         if (funding.getStatus() == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
-        fundingValidator.validateUpdatable(funding);
+        FundingValidator.validateUpdatable(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
@@ -207,8 +206,8 @@ public class FundingService {
     public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
 
         Funding funding = findFundingById(fundingId);
-        fundingValidator.validateHost(funding, memberId);
-        fundingValidator.validateUpdatable(funding);
+        FundingValidator.validateHost(funding, memberId);
+        FundingValidator.validateUpdatable(funding);
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
@@ -222,7 +221,7 @@ public class FundingService {
             return;
         }
 
-        fundingValidator.validateFundingRequest(
+        FundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType()
         );
