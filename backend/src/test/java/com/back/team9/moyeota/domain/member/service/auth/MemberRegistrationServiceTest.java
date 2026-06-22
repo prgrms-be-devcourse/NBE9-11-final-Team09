@@ -103,8 +103,7 @@ class MemberRegistrationServiceTest {
                 "encoded-password",
                 "홍길동",
                 "모여타요",
-                "010-1234-5678",
-                "encoded-code"
+                "010-1234-5678"
         );
     }
 }

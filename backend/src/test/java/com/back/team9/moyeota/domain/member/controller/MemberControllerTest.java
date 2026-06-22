@@ -47,6 +47,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -148,6 +149,47 @@ class MemberControllerTest {
         verifyNoInteractions(memberService);
     }
 
+    @Test
+    @DisplayName("유효한 이메일 인증 요청은 200 OK를 반환한다")
+    void requestEmailVerificationWithValidRequestReturnsOk()
+            throws Exception {
+        String requestBody = """
+                {
+                  "email": "moyeota@example.com"
+                }
+                """;
+
+        mockMvc.perform(post("/api/members/email-verification/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_EMAIL_VERIFICATION_SEND_SUCCESS"))
+                .andExpect(jsonPath("$.msg").exists())
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(memberService).requestEmailVerification(any());
+    }
+
+    @Test
+    @DisplayName("이메일이 누락된 인증 요청은 400 Bad Request를 반환한다")
+    void requestEmailVerificationWithoutEmailReturnsBadRequest()
+            throws Exception {
+        String requestBody = """
+                {
+                  "email": ""
+                }
+                """;
+
+        mockMvc.perform(post("/api/members/email-verification/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verify(memberService, never())
+                .requestEmailVerification(any());
+    }
     @Test
     @DisplayName("유효한 이메일 인증 확인 요청 시 200 OK를 반환한다")
     void confirmEmailVerificationWithValidRequestReturnsOk()
