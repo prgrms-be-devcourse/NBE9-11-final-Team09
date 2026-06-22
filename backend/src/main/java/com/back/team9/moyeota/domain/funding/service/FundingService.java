@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -153,7 +154,7 @@ public class FundingService {
 
         List<Pathinfo> pathinfos =
                 fundingIds.isEmpty()
-                        ? List.of()
+                        ? Collections.emptyList()
                         : pathinfoService.findByFundingIdsAndDirection(
                                 fundingIds,
                                 Direction.OUTBOUND
