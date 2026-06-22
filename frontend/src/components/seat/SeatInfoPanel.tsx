@@ -64,7 +64,7 @@ export default function SeatInfoPanel({
                 onClick={onPaymentClick}
                 disabled={!selectedSeatNumber} // 좌석 선택 안 하면 비활성화
             >
-                펀딩 결제하기 →
+                결제하기 →
             </button>
         </div>
     );

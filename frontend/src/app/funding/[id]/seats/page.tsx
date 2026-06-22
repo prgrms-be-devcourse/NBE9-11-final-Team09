@@ -12,6 +12,7 @@ export default function SeatsPage() {
     const params = useParams();
     const router = useRouter();
     const fundingId = Number(params.id);
+    const isValidId = !isNaN(fundingId);
 
     // 상태 관리
     const [seatLayout, setSeatLayout] = useState<SeatLayout | null>(null);
@@ -126,6 +127,7 @@ export default function SeatsPage() {
     }
 
     // 로딩 / 에러 처리
+    if (!isValidId) return <div className="flex justify-center p-10 text-red-500">잘못된 접근입니다.</div>;
     if (loading) return <div className="flex justify-center p-10">로딩 중...</div>;
     if (error) return <div className="flex justify-center p-10 text-red-500">{error}</div>;
     if (!seatLayout) return null;
