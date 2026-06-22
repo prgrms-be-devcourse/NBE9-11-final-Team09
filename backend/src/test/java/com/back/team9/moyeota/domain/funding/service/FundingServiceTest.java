@@ -214,7 +214,7 @@ class FundingServiceTest {
                 fundingService.createFunding(member.getMemberId(), oneWayCreateRequest());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.fundingId()).isEqualTo(response.fundingId());
@@ -997,7 +997,7 @@ class FundingServiceTest {
         fundingService.cancelFunding(member.getMemberId(), response.fundingId());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.tripType()).isEqualTo(TripType.ONE_WAY);
@@ -1018,20 +1018,13 @@ class FundingServiceTest {
         pathinfoService.cancelPathinfos(response.fundingId());
 
         // When
-        FundingDetailResponse result = fundingService.getFunding(response.fundingId());
+        FundingDetailResponse result = fundingService.getFunding(response.fundingId(), member.getMemberId());
 
         // Then
         assertThat(result.status()).isEqualTo(FundingStatus.FAILED);
         assertThat(result.tripType()).isEqualTo(TripType.ROUND);
         assertThat(result.pathinfos()).hasSize(2);
     }
-
-
-
-
-
-
-
 
 
     private FundingCreateRequest oneWayCreateRequest() {
@@ -1213,7 +1206,7 @@ class FundingServiceTest {
         List<Seat> seats =
                 seatRepository.findByPathinfo_PathinfoId(pathinfo.getPathinfoId());
 
-        assertThat(seats).hasSize(pathinfo.getBusType().getCapacity());
+        assertThat(seats).hasSize(pathinfo.getBusType().getCapacity() + 1);
         assertThat(seats)
                 .extracting(Seat::getSeatNumber)
                 .containsExactlyInAnyOrderElementsOf(

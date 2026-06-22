@@ -42,10 +42,11 @@ public class FundingController {
 
     @GetMapping("/{fundingId}")
     public ResponseEntity<ApiResponse<FundingDetailResponse>> getFunding(
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long fundingId
     ) {
         FundingDetailResponse response =
-                fundingService.getFunding(fundingId);
+                fundingService.getFunding(fundingId, memberId);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(

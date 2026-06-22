@@ -35,6 +35,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             Long fundingId,
             List<ParticipationPaymentStatus> paymentStatuses
     );
+
     // 출발 24시간 전 기준으로 payment_status = ACTIVE인 참여자 조회( NO_SHOW 처리 대상)
     @Query("""
         SELECT p FROM Participation p
@@ -52,6 +53,13 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             @Param("paymentStatus") ParticipationPaymentStatus paymentStatus,
             @Param("status") ParticipationStatus status
     );
+
+    boolean existsByFunding_FundingIdAndMember_MemberIdAndStatus(
+            Long fundingId,
+            Long memberId,
+            ParticipationStatus status
+    );
+
     // 펀딩 목록의 각 펀딩 참여자 수 조회
     @Query("""
         select p.funding.fundingId as fundingId,

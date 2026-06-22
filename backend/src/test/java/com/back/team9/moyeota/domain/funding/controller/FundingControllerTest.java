@@ -371,7 +371,7 @@ class FundingControllerTest {
     @Test
     @DisplayName("펀딩 상세 조회 성공")
     void getFunding_withExistingFunding_returnsOk() throws Exception {
-        given(fundingService.getFunding(1L))
+        given(fundingService.getFunding(eq(1L), nullable(Long.class)))
                 .willReturn(mock(FundingDetailResponse.class));
 
         mockMvc.perform(get("/api/fundings/{id}", 1L))
@@ -379,13 +379,13 @@ class FundingControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").exists());
 
-        verify(fundingService).getFunding(1L);
+        verify(fundingService).getFunding(eq(1L), nullable(Long.class));
     }
 
     @Test
     @DisplayName("펀딩 상세 조회 존재하지 않는 펀딩 404 반환")
     void getFunding_whenServiceThrowsFundingNotFound_returnsFnd001() throws Exception {
-        given(fundingService.getFunding(999L))
+        given(fundingService.getFunding(eq(999L), nullable(Long.class)))
                 .willThrow(new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
         mockMvc.perform(get("/api/fundings/{id}", 999L))
