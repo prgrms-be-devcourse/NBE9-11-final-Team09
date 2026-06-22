@@ -5,7 +5,6 @@ public record PendingSignupData(
         String encodedPassword,
         String name,
         String nickname,
-        String phoneNumber,
-        String verificationCodeHash
+        String phoneNumber
 ) {
 }

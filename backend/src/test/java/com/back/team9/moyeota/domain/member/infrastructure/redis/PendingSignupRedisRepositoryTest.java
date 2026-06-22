@@ -109,8 +109,7 @@ class PendingSignupRedisRepositoryTest {
                 "encoded-password",
                 "홍길동",
                 "모여타요",
-                "010-1234-5678",
-                "verification-code-hash"
+                "010-1234-5678"
         );
     }
 }
