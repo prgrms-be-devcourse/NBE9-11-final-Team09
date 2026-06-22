@@ -96,4 +96,17 @@ public class Participation {
         this.paymentStatus = ParticipationPaymentStatus.CANCELED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 잔액 결제 완료 시 호출
+    public void completePayment() {
+        this.paymentStatus = ParticipationPaymentStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 잔액 미납으로 NO_SHOW 처리 시 호출
+    public void markAsNoShow() {
+        this.status = ParticipationStatus.CANCELED;
+        this.paymentStatus = ParticipationPaymentStatus.NO_SHOW;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
