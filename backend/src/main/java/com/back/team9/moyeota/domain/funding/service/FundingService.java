@@ -109,20 +109,28 @@ public class FundingService {
 
     // 펀딩 상세 조회
     @Transactional(readOnly = true)
-    public FundingDetailResponse getFunding(Long fundingId) {
+    public FundingDetailResponse getFunding(Long fundingId, Long memberId) {
 
         Funding funding = findFundingById(fundingId);
         int currentParticipants = countActiveParticipants(fundingId);
         List<PathinfoResponse> pathinfos = pathinfoService.getPathinfoResponsesForDetail(funding);
         Long chatRoomId = findChatRoomIdByFundingId(fundingId);
+        boolean isHost = memberId != null
+                && funding.getMember().getMemberId().equals(memberId);
 
+        boolean isJoined = memberId != null
+                && participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndStatus(
+                fundingId,
+                memberId,
+                ACTIVE
+        );
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
                 currentParticipants,
                 chatRoomId,
-                false,  // TODO 방장 여부
-                false   // TODO 참여 여부
+                isHost,
+                isJoined
         );
     }
 
