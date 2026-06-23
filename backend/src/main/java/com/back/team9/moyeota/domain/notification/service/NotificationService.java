@@ -8,6 +8,8 @@ import com.back.team9.moyeota.domain.notification.entity.Notification;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.entity.SendStatus;
 import com.back.team9.moyeota.domain.notification.repository.NotificationRepository;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,7 @@ public class NotificationService {
     private final MemberRepository memberRepository;
     private final FundingRepository fundingRepository;
     private final NotificationRepository notificationRepository;
+    private final ParticipationRepository participationRepository;
     private final Clock clock;
 
     private final MailService mailService;
@@ -43,6 +49,75 @@ public class NotificationService {
         Funding funding = fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
+        sendMessage(member, funding, type);
+    }
+
+    // 방장용 알림
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendToFundingHost(
+            Long memberId,
+            Long fundingId,
+            NotificationType type
+    ) {
+        if (isAlreadySent(memberId, fundingId, type)) {
+            return;
+        }
+
+        sendMimeMessage(memberId, fundingId, type);
+    }
+
+    // 참가자용 알림
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendToFundingParticipants(
+            Long fundingId,
+            NotificationType type
+    ) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(
+                fundingId,
+                ParticipationStatus.ACTIVE
+        );
+
+        if (memberIds.isEmpty()) {
+            return;
+        }
+
+        Set<Long> sentMemberIds = new HashSet<>(
+                notificationRepository.findSentMemberIds(
+                        fundingId,
+                        type,
+                        memberIds
+                )
+        );
+
+        List<Member> members = memberRepository.findAllById(memberIds);
+
+        for (Member member : members) {
+            if (sentMemberIds.contains(member.getMemberId())) {
+                continue;
+            }
+
+            try {
+                sendMessage(member, funding, type);
+            } catch (Exception e) {
+                log.error(
+                        "펀딩 참가자 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
+                        member.getMemberId(),
+                        fundingId,
+                        type,
+                        e
+                );
+            }
+        }
+    }
+
+    private void sendMessage(
+            Member member,
+            Funding funding,
+            NotificationType type
+    ) {
         String title = templateService.getSubject(type, funding.getTitle());
         String content = templateService.buildContent(
                 type,
@@ -71,6 +146,18 @@ public class NotificationService {
         } finally {
             notificationRepository.save(notification);
         }
+    }
+
+    private boolean isAlreadySent(
+            Long memberId,
+            Long fundingId,
+            NotificationType type
+    ) {
+        return notificationRepository.existsByMember_MemberIdAndFunding_FundingIdAndNotificationType(
+                memberId,
+                fundingId,
+                type
+        );
     }
 
     private void sendMailWithRetry(

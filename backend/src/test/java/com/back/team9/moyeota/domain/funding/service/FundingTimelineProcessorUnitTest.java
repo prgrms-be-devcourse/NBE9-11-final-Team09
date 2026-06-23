@@ -7,6 +7,8 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -52,6 +54,9 @@ class FundingTimelineProcessorUnitTest {
     @Mock
     private ParticipationRepository participationRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     @Test
     @DisplayName("D-10 이전 모집 중 펀딩 - 최소 인원 이상이면 확정")
     void confirmOrFailFundings_whenActiveParticipantsMeetMinimum_confirmsFunding() {
@@ -71,6 +76,15 @@ class FundingTimelineProcessorUnitTest {
 
         // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CONFIRMED);
+        verify(notificationService).sendToFundingHost(
+                1L,
+                10L,
+                NotificationType.FUNDING_CONFIRMED
+        );
+        verify(notificationService).sendToFundingParticipants(
+                10L,
+                NotificationType.FUNDING_CONFIRMED
+        );
     }
 
     @Test
@@ -92,6 +106,15 @@ class FundingTimelineProcessorUnitTest {
 
         // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.FAILED);
+        verify(notificationService).sendToFundingHost(
+                1L,
+                10L,
+                NotificationType.FUNDING_FAILED
+        );
+        verify(notificationService).sendToFundingParticipants(
+                10L,
+                NotificationType.FUNDING_FAILED
+        );
     }
 
     @Test
@@ -133,6 +156,55 @@ class FundingTimelineProcessorUnitTest {
 
     @Test
     @DisplayName("출발 시간이 지난 노선 - 모든 유효 노선이 완료되면 펀딩도 완료")
+    void sendDepartureReminders_sendsNotificationForOutboundPathinfo() {
+        // Given
+        Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);
+        Pathinfo outbound = pathinfo(100L, funding, Direction.OUTBOUND, PathinfoStatus.PENDING);
+
+        given(pathinfoRepository.findDepartureReminderTargets(
+                PathinfoStatus.PENDING,
+                Direction.OUTBOUND,
+                NOW,
+                NOW.plusHours(2),
+                FundingStatus.CONFIRMED
+        )).willReturn(List.of(outbound));
+
+        // When
+        fundingTimelineProcessor.sendDepartureReminders(NOW);
+
+        // Then
+        verify(notificationService).sendToFundingHost(
+                1L,
+                10L,
+                NotificationType.DEPARTURE_REMINDER
+        );
+        verify(notificationService).sendToFundingParticipants(
+                10L,
+                NotificationType.DEPARTURE_REMINDER
+        );
+    }
+
+    @Test
+    @DisplayName("출발 2시간 전 알림 - 대상 노선이 없으면 알림을 보내지 않는다")
+    void sendDepartureReminders_whenTargetDoesNotExist_doesNotSendNotification() {
+        // Given
+        given(pathinfoRepository.findDepartureReminderTargets(
+                PathinfoStatus.PENDING,
+                Direction.OUTBOUND,
+                NOW,
+                NOW.plusHours(2),
+                FundingStatus.CONFIRMED
+        )).willReturn(List.of());
+
+        // When
+        fundingTimelineProcessor.sendDepartureReminders(NOW);
+
+        // Then
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("출발 시간이 지난 노선 - 모든 유효 노선이 완료되면 펀딩도 완료된다")
     void completePathinfosAndFundings_whenAllPathinfosAreCompleted_completesFunding() {
         // Given
         Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);

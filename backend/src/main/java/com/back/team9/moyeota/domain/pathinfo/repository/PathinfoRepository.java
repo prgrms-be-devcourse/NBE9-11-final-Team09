@@ -6,6 +6,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +55,25 @@ public interface PathinfoRepository extends JpaRepository<Pathinfo, Long> {
             PathinfoStatus status,
             LocalDateTime now,
             FundingStatus fundingStatus
+    );
+
+    @Query("""
+        select p
+        from Pathinfo p
+        join fetch p.funding f
+        join fetch f.member
+        where p.status = :status
+          and p.direction = :direction
+          and p.departureTime > :now
+          and p.departureTime <= :reminderDeadline
+          and f.status = :fundingStatus
+        """)
+    List<Pathinfo> findDepartureReminderTargets(
+            @Param("status") PathinfoStatus status,
+            @Param("direction") Direction direction,
+            @Param("now") LocalDateTime now,
+            @Param("reminderDeadline") LocalDateTime reminderDeadline,
+            @Param("fundingStatus") FundingStatus fundingStatus
     );
 
     List<Pathinfo> findByFunding_FundingIdInAndStatusNot(
