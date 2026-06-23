@@ -10,6 +10,7 @@ import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberPaymentQueryRepository;
+import com.back.team9.moyeota.domain.member.repository.projection.MemberFundingSummary;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
@@ -36,6 +38,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("회원 내역 서비스 테스트")
@@ -191,23 +194,30 @@ class MemberHistoryServiceTest {
     @DisplayName("내 모집 내역을 최신순 페이징으로 조회한다")
     void getMyFundingsReturnsPagedFundingHistory() {
         // Given
-        MemberFundingResponse fundingResponse = new MemberFundingResponse(
-                10L,
-                "강남 → 부산 합승 모집",
-                LocalDate.of(2026, 7, 10),
-                15L,
-                45,
-                FundingStatus.RECRUITING,
-                LocalDateTime.of(2026, 6, 1, 9, 0)
-        );
+        Pageable pageable = PageRequest.of(0, 10);
+
+        MemberFundingSummary fundingSummary =
+                mock(MemberFundingSummary.class);
+
+        when(fundingSummary.getFundingId()).thenReturn(10L);
+        when(fundingSummary.getFundingTitle())
+                .thenReturn("강남 → 부산 합승 모집");
+        when(fundingSummary.getDepartureDate())
+                .thenReturn(LocalDate.of(2026, 7, 10));
+        when(fundingSummary.getCurrentParticipants()).thenReturn(15L);
+        when(fundingSummary.getMaxParticipants()).thenReturn(45);
+        when(fundingSummary.getStatus())
+                .thenReturn(FundingStatus.RECRUITING);
+        when(fundingSummary.getCreatedAt())
+                .thenReturn(LocalDateTime.of(2026, 6, 1, 9, 0));
 
         when(fundingQueryRepository.findMyFundings(
                 org.mockito.ArgumentMatchers.eq(1L),
                 org.mockito.ArgumentMatchers.eq(ParticipationStatus.CANCELED),
                 org.mockito.ArgumentMatchers.any(PageRequest.class)
         )).thenReturn(new PageImpl<>(
-                List.of(fundingResponse),
-                PageRequest.of(0, 10),
+                List.of(fundingSummary),
+                pageable,
                 1
         ));
 

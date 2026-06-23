@@ -18,7 +18,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.junit.jupiter.api.BeforeEach;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,11 +35,27 @@ import static org.mockito.Mockito.*;
 @DisplayName("관리자 회원 서비스 테스트")
 class AdminMemberServiceTest {
 
+    private static final Instant FIXED_INSTANT =
+            Instant.parse("2026-06-22T00:00:00Z");
+    private static final ZoneId FIXED_ZONE =
+            ZoneId.of("Asia/Seoul");
+    private static final LocalDateTime FIXED_DATE_TIME =
+            LocalDateTime.ofInstant(FIXED_INSTANT, FIXED_ZONE);
+
+    @Mock
+    private Clock clock;
+
     @Mock
     private AdminMemberQueryRepository memberRepository;
 
     @InjectMocks
     private AdminMemberService adminMemberService;
+
+    @BeforeEach
+    void setUpClock() {
+        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+        lenient().when(clock.getZone()).thenReturn(FIXED_ZONE);
+    }
 
     @Test
     @DisplayName("회원 목록을 페이징 조회한다")
@@ -102,6 +122,8 @@ class AdminMemberServiceTest {
         assertThat(response.memberId()).isEqualTo(1L);
         assertThat(response.status()).isEqualTo(MemberStatus.WITHDRAWN);
         assertThat(member.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
+        assertThat(member.getUpdatedAt())
+                .isEqualTo(FIXED_DATE_TIME);
     }
 
     @Test

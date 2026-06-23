@@ -6,6 +6,7 @@ import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberPaymentQueryRepository;
+import com.back.team9.moyeota.domain.member.repository.projection.MemberFundingSummary;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +42,27 @@ public class MemberHistoryService {
             Long memberId,
             Pageable pageable
     ) {
-        return PageResponse.from(
+        Page<MemberFundingResponse> fundings =
                 fundingQueryRepository.findMyFundings(
                         memberId,
                         ParticipationStatus.CANCELED,
                         pageable
-                )
+                ).map(this::toMemberFundingResponse);
+
+        return PageResponse.from(fundings);
+    }
+
+    private MemberFundingResponse toMemberFundingResponse(
+            MemberFundingSummary summary
+    ) {
+        return new MemberFundingResponse(
+                summary.getFundingId(),
+                summary.getFundingTitle(),
+                summary.getDepartureDate(),
+                summary.getCurrentParticipants(),
+                summary.getMaxParticipants(),
+                summary.getStatus(),
+                summary.getCreatedAt()
         );
     }
 

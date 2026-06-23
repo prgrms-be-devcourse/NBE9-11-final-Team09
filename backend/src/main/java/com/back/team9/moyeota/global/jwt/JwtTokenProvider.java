@@ -13,12 +13,16 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+import java.time.Clock;
+import java.time.Instant;
+
 @Component
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
+    private final Clock clock;
 
     private static final String CLAIM_TOKEN_TYPE = "tokenType";
     private static final String CLAIM_PRINCIPAL_TYPE = "principalType";
@@ -30,13 +34,15 @@ public class JwtTokenProvider {
             @Value("${jwt.access-token-expiration}")
             long accessTokenExpiration,
             @Value("${jwt.refresh-token-expiration}")
-            long refreshTokenExpiration
+            long refreshTokenExpiration,
+            Clock clock
     ) {
         this.secretKey = Keys.hmacShaKeyFor(
                 Decoders.BASE64.decode(secret)
         );
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.clock = clock;
     }
 
     public JwtTokenResponse createTokens(Long memberId) {
@@ -81,8 +87,8 @@ public class JwtTokenProvider {
             TokenType tokenType,
             long expiration
     ) {
-        Date issuedAt = new Date();
-        Date expiresAt = new Date(issuedAt.getTime() + expiration);
+        Instant issuedAt = clock.instant();
+        Instant expiresAt = issuedAt.plusMillis(expiration);
 
         return Jwts.builder()
                 .subject(principalId.toString())
@@ -90,8 +96,8 @@ public class JwtTokenProvider {
                 .claim(CLAIM_PRINCIPAL_TYPE, principalType.name())
                 .claim(CLAIM_ROLE, role)
                 .claim(CLAIM_TOKEN_TYPE, tokenType.name())
-                .issuedAt(issuedAt)
-                .expiration(expiresAt)
+                .issuedAt(Date.from(issuedAt))
+                .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
     }
@@ -127,9 +133,11 @@ public class JwtTokenProvider {
 
     public long getRemainingExpiration(String token) {
         try {
-            long remaining = getClaims(token)
-                    .getExpiration()
-                    .getTime() - System.currentTimeMillis();
+            Date expiration = getClaims(token).getExpiration();
+            if (expiration == null) {
+                return 0;
+            }
+            long remaining = expiration.getTime() - clock.millis();
 
             return Math.max(remaining, 0);
         } catch (JwtException | IllegalArgumentException exception) {
@@ -175,7 +183,7 @@ public class JwtTokenProvider {
             }
 
             long remainingExpiration = Math.max(
-                    claims.getExpiration().getTime() - System.currentTimeMillis(),
+                    claims.getExpiration().getTime() - clock.millis(),
                     0
             );
 
@@ -239,6 +247,7 @@ public class JwtTokenProvider {
 
     private Claims getClaims(String token) {
         return Jwts.parser()
+                .clock(() -> Date.from(clock.instant()))
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
