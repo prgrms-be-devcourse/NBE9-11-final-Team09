@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
+import com.back.team9.moyeota.domain.member.service.auth.MemberSocialLoginService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -23,18 +24,21 @@ public class MemberAuthController {
             MemberService memberService,
             MemberLoginService memberLoginService,
             MemberLogoutService memberLogoutService,
+            MemberSocialLoginService memberSocialLoginService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
         this.memberLoginService = memberLoginService;
         this.memberLogoutService = memberLogoutService;
         this.cookieSecure = cookieSecure;
+        this.memberSocialLoginService = memberSocialLoginService;
     }
 
     private final MemberService memberService;
     private final MemberLoginService memberLoginService;
     private final MemberLogoutService memberLogoutService;
     private final boolean cookieSecure;
+    private final MemberSocialLoginService memberSocialLoginService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> requestSignup(
@@ -95,6 +99,32 @@ public class MemberAuthController {
                 .body(new ApiResponse<>(
                         "USR_LOGIN_SUCCESS",
                         "로그인 성공",
+                        result.response()
+                ));
+    }
+
+    @PostMapping("/social-login")
+    public ResponseEntity<ApiResponse<MemberLoginResponse>> socialLogin(
+            @Valid @RequestBody MemberSocialLoginRequest request
+    ) {
+        MemberLoginResult result = memberSocialLoginService.login(request);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from("refreshToken", result.refreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofSeconds(
+                        result.refreshTokenExpiresIn()
+                ))
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(new ApiResponse<>(
+                        "USR_SOCIAL_LOGIN_SUCCESS",
+                        "소셜 로그인 성공",
                         result.response()
                 ));
     }
