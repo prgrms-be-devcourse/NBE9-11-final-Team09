@@ -129,3 +129,13 @@ export type SeatLayout = {
   busType: BusType;
   seats: Seat[];
 };
+
+export type ParticipationResponse = {
+  participationId: number;
+  status: string;
+  paymentStatus: string;
+  finalAmount: string;
+  outboundSeatId: number;
+  returnSeatId: number | null;
+  createdAt: string;
+};

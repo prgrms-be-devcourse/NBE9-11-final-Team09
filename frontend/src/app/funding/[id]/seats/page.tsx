@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Seat, SeatLayout, FundingDetail } from "@/types/funding";
-import { getFunding, getSeatLayout, holdSeat } from "@/lib/fundingApi";
+import { getFunding, getSeatLayout, holdSeat, createParticipation } from "@/lib/fundingApi";
 import SeatMap from "@/components/seat/SeatMap";
 import SeatInfoPanel from "@/components/seat/SeatInfoPanel";
 import CommonModal from "@/components/common/CommonModal";
@@ -152,7 +152,20 @@ export default function SeatsPage() {
             return;
         }
 
-        router.push(`/funding/${fundingId}/payment`);
+        // 참여 신청 — 좌석 확정 후 participationId 발급 
+        try {
+            const participation = await createParticipation(
+                fundingId,
+                selectedSeat!.seatId,
+                returnSeat?.seatId ?? null
+            );
+            router.push(`/payment/${participation.participationId}`);
+        } catch (err) {
+            setModal({
+                title: "참여 신청 실패",
+                message: err instanceof Error ? err.message : "참여 신청에 실패했습니다. 다시 시도해주세요.",
+            });
+        }
     }
 
     if (!isValidId) return <div className="flex justify-center p-10 text-red-500">잘못된 접근입니다.</div>;
