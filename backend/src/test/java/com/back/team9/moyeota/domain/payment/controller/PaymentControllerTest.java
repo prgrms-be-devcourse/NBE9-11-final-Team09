@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.controller;
 
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentPrepareResponse;
 import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
@@ -60,6 +61,37 @@ class PaymentControllerTest {
                 1L, 1L, type, "test_orderId",
                 new BigDecimal("50000"), "test_paymentKey", status, LocalDateTime.now()
         );
+    }
+
+    @Test
+    @DisplayName("결제 준비 - 정상 요청 200 OK")
+    void prepare_정상요청_200OK() throws Exception {
+        given(paymentService.prepare(eq(1L), any(BigDecimal.class), any()))
+                .willReturn(new PaymentPrepareResponse("test-order-uuid"));
+
+        mockMvc.perform(post("/api/payments/prepare")
+                        .param("participationId", "1")
+                        .param("amount", "50000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").value("결제 준비가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.orderId").value("test-order-uuid"));
+    }
+
+    @Test
+    @DisplayName("결제 준비 - participationId 누락 시 400")
+    void prepare_participationId누락_400() throws Exception {
+        mockMvc.perform(post("/api/payments/prepare")
+                        .param("amount", "50000"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("결제 준비 - amount 누락 시 400")
+    void prepare_amount누락_400() throws Exception {
+        mockMvc.perform(post("/api/payments/prepare")
+                        .param("participationId", "1"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

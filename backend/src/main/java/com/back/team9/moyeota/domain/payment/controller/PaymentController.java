@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
@@ -53,9 +55,10 @@ public class PaymentController {
     @PostMapping("/prepare")
     public ResponseEntity<ApiResponse<PaymentPrepareResponse>> prepare(
             @RequestParam Long participationId,
+            @RequestParam BigDecimal amount,
             @AuthenticationPrincipal Long memberId
     ) {
-        PaymentPrepareResponse response = paymentService.prepare(participationId, memberId);
+        PaymentPrepareResponse response = paymentService.prepare(participationId, amount, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", "결제 준비가 완료되었습니다.", response));
     }
 }

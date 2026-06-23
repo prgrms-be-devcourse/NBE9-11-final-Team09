@@ -63,7 +63,8 @@ class PaymentServiceTest {
         Funding funding = mock(Funding.class);
         lenient().when(funding.getFundingId()).thenReturn(1L);
         Participation participation = mock(Participation.class);
-        given(participation.getFinalAmount()).willReturn(finalAmount);
+        // confirmPayment은 pendingPayment.getAmount()와 비교하므로 getFinalAmount()는 미사용
+        lenient().when(participation.getFinalAmount()).thenReturn(finalAmount);
         lenient().when(participation.getMember()).thenReturn(member);
         lenient().when(participation.getFunding()).thenReturn(funding);
         return participation;
@@ -103,12 +104,15 @@ class PaymentServiceTest {
         Participation participation = mockParticipationForPrepare(1L);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
 
-        PaymentPrepareResponse response = paymentService.prepare(1L, 1L);
+        BigDecimal amount = new BigDecimal("50000");
+        PaymentPrepareResponse response = paymentService.prepare(1L, amount, 1L);
 
         assertThat(response.orderId()).isNotBlank();
         assertThat(response.orderId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
         verify(paymentWriter).save(argThat(p ->
-                p.getStatus() == PaymentStatus.PENDING && p.getOrderId() != null
+                p.getStatus() == PaymentStatus.PENDING
+                        && p.getOrderId() != null
+                        && p.getAmount().compareTo(amount) == 0
         ));
     }
 
@@ -117,7 +121,7 @@ class PaymentServiceTest {
     void prepare_존재하지않는participationId_PARTICIPATION_NOT_FOUND예외() {
         given(participationRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.prepare(999L, 1L))
+        assertThatThrownBy(() -> paymentService.prepare(999L, new BigDecimal("50000"), 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.PARTICIPATION_NOT_FOUND));
@@ -131,7 +135,7 @@ class PaymentServiceTest {
         Participation participation = mockParticipationForPrepare(1L);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
 
-        assertThatThrownBy(() -> paymentService.prepare(1L, 2L))
+        assertThatThrownBy(() -> paymentService.prepare(1L, new BigDecimal("50000"), 2L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));

@@ -61,7 +61,7 @@ public class PaymentService {
         }
 
         Participation participation = pendingPayment.getParticipation();
-        if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
+        if (request.amount().compareTo(pendingPayment.getAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
@@ -152,7 +152,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentPrepareResponse prepare(Long participationId, Long memberId) {
+    public PaymentPrepareResponse prepare(Long participationId, BigDecimal amount, Long memberId) {
         Participation participation = participationRepository.findById(participationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
@@ -168,7 +168,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .participation(participation)
                 .orderId(orderId)
-                .amount(participation.getFinalAmount())
+                .amount(amount)
                 .status(PaymentStatus.PENDING)
                 .build();
         paymentWriter.save(payment);
