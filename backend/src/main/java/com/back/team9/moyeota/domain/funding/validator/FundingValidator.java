@@ -5,12 +5,13 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import org.springframework.stereotype.Component;
 
-@Component
-public class FundingValidator {
+public final class FundingValidator {
 
-    public void validateFundingRequest(
+    private FundingValidator() {
+    }
+
+    public static void validateFundingRequest(
             Integer minParticipants,
             BusType busType
     ) {
@@ -22,7 +23,7 @@ public class FundingValidator {
         }
     }
 
-    public void validateHost(
+    public static void validateHost(
             Funding funding,
             Long memberId
     ) {
@@ -31,7 +32,7 @@ public class FundingValidator {
         }
     }
 
-    public void validateUpdatable(Funding funding) {
+    public static void validateUpdatable(Funding funding) {
         if (funding.getStatus() != FundingStatus.RECRUITING) {
             throw new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE);
         }
