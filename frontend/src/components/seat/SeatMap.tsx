@@ -1,4 +1,4 @@
-import { BusType, Seat } from "@/types/seat";
+import { Seat, BusType } from "@/types/funding";
 import SeatButton from "./SeatButton";
 
 interface SeatMapProps {

@@ -10,7 +10,7 @@ import {
 } from "@/lib/fundingFormat";
 import type { FundingPayload } from "@/types/funding";
 import { REGIONS } from "@/types/funding";
-import type { Seat } from "@/types/seat";
+import type { Seat } from "@/types/funding";
 
 type FundingFormProps = {
   initialValue?: FundingPayload;
