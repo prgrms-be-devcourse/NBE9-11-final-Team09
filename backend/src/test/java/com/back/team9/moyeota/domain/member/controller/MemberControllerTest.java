@@ -11,6 +11,7 @@ import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateResponse;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberService;
+import com.back.team9.moyeota.domain.member.service.auth.MemberSocialLoginService;
 import com.back.team9.moyeota.domain.member.service.history.MemberHistoryService;
 import com.back.team9.moyeota.domain.member.service.profile.MemberProfileService;
 import com.back.team9.moyeota.domain.member.service.profile.MemberWithdrawService;
@@ -73,6 +74,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberLoginService memberLoginService;
+
+    @MockitoBean
+    private MemberSocialLoginService memberSocialLoginService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
@@ -274,6 +278,91 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.user.userId").value(1));
 
         verify(memberLoginService).login(any());
+    }
+
+    @Test
+    @DisplayName("유효한 소셜 로그인 요청은 200 OK와 토큰을 반환한다")
+    void socialLoginWithValidRequestReturnsOkAndTokens() throws Exception {
+        MemberLoginResponse response = new MemberLoginResponse(
+                "access-token",
+                "Bearer",
+                3600,
+                new MemberLoginResponse.UserResponse(
+                        1L,
+                        "kakao@example.com",
+                        "카카오유저",
+                        "카카오유저_123456789"
+                )
+        );
+
+        MemberLoginResult result = new MemberLoginResult(
+                response,
+                "refresh-token",
+                1209600
+        );
+
+        when(memberSocialLoginService.login(any())).thenReturn(result);
+
+        String requestBody = """
+            {
+              "provider": "KAKAO",
+              "accessToken": "kakao-access-token"
+            }
+            """;
+
+        mockMvc.perform(post("/api/members/social-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_SOCIAL_LOGIN_SUCCESS"))
+                .andExpect(jsonPath("$.data.accessToken")
+                        .value("access-token"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.data.tokenType")
+                        .value("Bearer"))
+                .andExpect(jsonPath("$.data.user.userId").value(1))
+                .andExpect(jsonPath("$.data.user.email")
+                        .value("kakao@example.com"))
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken=refresh-token"
+                                ),
+                                org.hamcrest.Matchers.containsString("HttpOnly"),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                ),
+                                org.hamcrest.Matchers.not(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Secure"
+                                        )
+                                )
+                        )
+                ));
+
+        verify(memberSocialLoginService).login(any());
+    }
+
+    @Test
+    @DisplayName("소셜 로그인 필수 입력값이 누락되면 400 Bad Request를 반환한다")
+    void socialLoginWithMissingRequiredFieldsReturnsBadRequest()
+            throws Exception {
+        String requestBody = """
+            {
+              "provider": null,
+              "accessToken": ""
+            }
+            """;
+
+        mockMvc.perform(post("/api/members/social-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberSocialLoginService);
     }
 
     @Test
