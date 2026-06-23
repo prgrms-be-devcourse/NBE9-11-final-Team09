@@ -594,7 +594,6 @@ class FundingServiceUnitTest {
                 .chatroomId(chatRoomId)
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(1))
                 .build();
     }
 
@@ -644,7 +643,6 @@ class FundingServiceUnitTest {
                 .nickname("test")
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(10))
                 .build();
     }
 

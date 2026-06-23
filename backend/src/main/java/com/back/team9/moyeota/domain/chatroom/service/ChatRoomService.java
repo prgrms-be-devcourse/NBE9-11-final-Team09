@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +20,6 @@ import java.time.LocalDateTime;
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final FundingRepository fundingRepository;
-    private final MemberRepository memberRepository;
 
     public ChatRoomResponse createRoom(Long fundingId){
         if(chatRoomRepository.existsByFundingFundingId(fundingId)){
@@ -34,7 +32,6 @@ public class ChatRoomService {
         ChatRoom room = ChatRoom.builder()
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         ChatRoom saved = chatRoomRepository.save(room);
@@ -55,7 +52,6 @@ public class ChatRoomService {
         ChatRoom room = ChatRoom.builder()
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         return chatRoomRepository.save(room);

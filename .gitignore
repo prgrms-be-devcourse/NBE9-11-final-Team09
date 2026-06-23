@@ -6,7 +6,6 @@
 *.iml
 *.iws
 
-# Build outputs and local logs
-.next/
-.next*/
+# Logs
+logs/
 *.log
