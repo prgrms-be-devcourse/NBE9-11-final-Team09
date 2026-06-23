@@ -38,10 +38,12 @@ public class PaymentService {
     private final ParticipationService participationService;
     private final NotificationService notificationService;
 
+    @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
         return confirmPayment(request, PaymentType.DEPOSIT, memberId);
     }
 
+    @Transactional
     public PaymentResponse confirmBalance(PaymentConfirmRequest request, Long memberId) {
         PaymentResponse response = confirmPayment(request, PaymentType.BALANCE, memberId);
         participationService.completeBalancePayment(request.participationId());
