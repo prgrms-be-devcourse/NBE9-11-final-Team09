@@ -624,7 +624,6 @@ class FundingServiceUnitTest {
                 .chatroomId(chatRoomId)
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(1))
                 .build();
     }
 
