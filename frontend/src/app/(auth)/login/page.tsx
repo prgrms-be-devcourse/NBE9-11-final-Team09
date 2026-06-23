@@ -1,8 +1,91 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { storeAccessToken } from "@/lib/member-api";
+
+type KakaoSdk = {
+  isInitialized: () => boolean;
+  init: (appKey: string) => void;
+  Auth: {
+    authorize: (options: {
+      redirectUri: string;
+      scope?: string;
+      state?: string;
+    }) => void;
+  };
+};
+
+declare global {
+  interface Window {
+    Kakao?: KakaoSdk;
+  }
+}
+
+const KAKAO_SDK_URL = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+const KAKAO_SCRIPT_ID = "kakao-js-sdk";
+const KAKAO_SCOPE = "profile_nickname,account_email";
+const KAKAO_KEEP_LOGIN_KEY = "kakaoKeepLogin";
+
+function getKakaoJavascriptKey() {
+  return process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+}
+
+function getKakaoRedirectUri() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return `${window.location.origin}/login/kakao/callback`;
+}
+
+function loadKakaoSdk() {
+  return new Promise<KakaoSdk>((resolve, reject) => {
+    if (typeof window === "undefined") {
+      reject(new Error("browser required"));
+      return;
+    }
+
+    if (window.Kakao) {
+      resolve(window.Kakao);
+      return;
+    }
+
+    const existingScript = document.getElementById(KAKAO_SCRIPT_ID);
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => {
+        if (window.Kakao) {
+          resolve(window.Kakao);
+        } else {
+          reject(new Error("Kakao SDK load failed"));
+        }
+      });
+      existingScript.addEventListener("error", () => {
+        reject(new Error("Kakao SDK load failed"));
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = KAKAO_SCRIPT_ID;
+    script.src = KAKAO_SDK_URL;
+    script.async = true;
+    script.onload = () => {
+      if (window.Kakao) {
+        resolve(window.Kakao);
+      } else {
+        reject(new Error("Kakao SDK load failed"));
+      }
+    };
+    script.onerror = () => {
+      reject(new Error("Kakao SDK load failed"));
+    };
+
+    document.head.appendChild(script);
+  });
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +95,38 @@ export default function LoginPage() {
   const [keepLogin, setKeepLogin] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [kakaoLoading, setKakaoLoading] = useState(false);
+  const [kakaoReady, setKakaoReady] = useState(false);
+
+  useEffect(() => {
+    const javascriptKey = getKakaoJavascriptKey();
+
+    if (!javascriptKey) {
+      return;
+    }
+
+    let ignore = false;
+
+    loadKakaoSdk()
+      .then((kakao) => {
+        if (!kakao.isInitialized()) {
+          kakao.init(javascriptKey);
+        }
+
+        if (!ignore) {
+          setKakaoReady(true);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setKakaoReady(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +144,7 @@ export default function LoginPage() {
         let errorMessage = "이메일 또는 비밀번호를 확인해주세요.";
         try {
           const errorData = await res.json();
-          errorMessage = errorData.message ?? errorMessage;
+          errorMessage = errorData.message ?? errorData.msg ?? errorMessage;
         } catch {}
         setError(errorMessage);
         return;
@@ -42,9 +157,9 @@ export default function LoginPage() {
         return;
       }
 
-      const storage = keepLogin ? localStorage : sessionStorage;
-      storage.setItem("accessToken", accessToken);
+      storeAccessToken(accessToken, keepLogin);
       router.push("/");
+      router.refresh();
     } catch {
       setError("서버와 연결할 수 없습니다.");
     } finally {
@@ -52,42 +167,72 @@ export default function LoginPage() {
     }
   }
 
+  async function handleKakaoLogin() {
+    const javascriptKey = getKakaoJavascriptKey();
+
+    setError("");
+
+    if (!javascriptKey) {
+      setError("카카오 JavaScript 키가 설정되지 않았습니다.");
+      return;
+    }
+
+    setKakaoLoading(true);
+
+    try {
+      const kakao = await loadKakaoSdk();
+
+      if (!kakao.isInitialized()) {
+        kakao.init(javascriptKey);
+      }
+
+      sessionStorage.setItem(KAKAO_KEEP_LOGIN_KEY, String(keepLogin));
+
+      kakao.Auth.authorize({
+        redirectUri: getKakaoRedirectUri(),
+        scope: KAKAO_SCOPE,
+      });
+    } catch {
+      setError("카카오 로그인에 실패했습니다.");
+      setKakaoLoading(false);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-white flex justify-center px-6 py-16">
+    <div className="flex min-h-screen justify-center bg-white px-6 py-16">
       <div className="w-full max-w-lg">
-        <h1 className="text-3xl font-bold mb-2">로그인</h1>
-        <p className="text-sm text-gray-500 mb-10">가입한 이메일과 비밀번호를 입력해주세요.</p>
+        <h1 className="mb-2 text-3xl font-bold">로그인</h1>
+        <p className="mb-10 text-sm text-gray-500">
+          가입한 이메일과 비밀번호를 입력해주세요.
+        </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* 이메일 */}
           <div>
-            <label className="block text-sm font-bold mb-2">이메일</label>
+            <label className="mb-2 block text-sm font-bold">이메일</label>
             <input
               type="email"
               placeholder="example@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
+              className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600"
             />
           </div>
 
-          {/* 비밀번호 */}
           <div>
-            <label className="block text-sm font-bold mb-2">비밀번호</label>
+            <label className="mb-2 block text-sm font-bold">비밀번호</label>
             <input
               type="password"
               placeholder="비밀번호 입력"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-gray-600"
+              className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600"
             />
           </div>
 
-          {/* 로그인 상태 유지 + 비밀번호 찾기 */}
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={keepLogin}
@@ -95,35 +240,46 @@ export default function LoginPage() {
               />
               로그인 상태 유지
             </label>
-            <span className="text-sm text-gray-700 underline cursor-pointer">비밀번호 찾기</span>
+            <span className="cursor-pointer text-sm text-gray-700 underline">
+              비밀번호 찾기
+            </span>
           </div>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-gray-900 text-white py-4 rounded text-sm font-bold disabled:opacity-50"
+            disabled={loading || kakaoLoading}
+            className="w-full rounded bg-gray-900 py-4 text-sm font-bold text-white disabled:opacity-50"
           >
             {loading ? "로그인 중..." : "로그인"}
           </button>
         </form>
 
-        {/* 구분선 */}
-        <div className="flex items-center gap-4 my-6">
+        <div className="my-6 flex items-center gap-4">
           <div className="flex-1 border-t border-gray-200" />
           <span className="text-sm text-gray-400">또는</span>
           <div className="flex-1 border-t border-gray-200" />
         </div>
 
-        {/* Kakao 로그인 */}
-        <button type="button" className="w-full border border-gray-900 py-4 rounded text-sm font-bold">
-          Kakao 로그인
+        <button
+          type="button"
+          onClick={handleKakaoLogin}
+          disabled={loading || kakaoLoading || !kakaoReady}
+          className="w-full rounded bg-[#FEE500] py-4 text-sm font-bold text-[#191919] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {kakaoLoading ? "카카오 로그인 중..." : "카카오로 로그인"}
         </button>
 
-        <p className="text-sm text-gray-500 text-center mt-6">
+        {!getKakaoJavascriptKey() && (
+          <p className="mt-3 text-center text-xs text-red-500">
+            NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY 설정이 필요합니다.
+          </p>
+        )}
+
+        <p className="mt-6 text-center text-sm text-gray-500">
           아직 계정이 없나요?{" "}
-          <Link href="/signup" className="text-gray-900 font-bold underline">
+          <Link href="/signup" className="font-bold text-gray-900 underline">
             회원가입
           </Link>
         </p>
