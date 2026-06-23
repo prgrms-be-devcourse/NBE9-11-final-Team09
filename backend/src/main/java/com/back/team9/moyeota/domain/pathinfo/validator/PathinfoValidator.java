@@ -5,16 +5,21 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class PathinfoValidator {
+
+    private final Clock clock;
 
     public void validateDepartureDate(LocalDateTime departureTime) {
 
-        if (departureTime.isBefore(LocalDateTime.now().plusDays(14))) {
+        if (departureTime.isBefore(LocalDateTime.now(clock).plusDays(14))) {
             throw new BusinessException(
                     ErrorCode.DEPARTURE_DATE_TOO_SOON
             );
