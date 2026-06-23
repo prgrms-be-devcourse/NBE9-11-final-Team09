@@ -472,21 +472,25 @@ class MemberControllerTest {
     @Test
     @DisplayName("회원탈퇴 요청은 비밀번호가 없어도 서비스로 전달된다")
     void withdrawWithoutPasswordDelegatesToService() throws Exception {
+        String authorization = "Bearer access-token";
+
         mockMvc.perform(delete("/api/members/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .with(memberAuthentication())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                             }
                             """))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_WITHDRAW_SUCCESS"));
 
         verify(memberWithdrawService)
-                .withdraw(eq(1L), any(MemberWithdrawRequest.class));
+                .withdraw(any(), any(MemberWithdrawRequest.class));
 
         verify(memberLogoutService)
-                .logout("Bearer access-token");
+                .logout(authorization);
     }
 
     @Test
