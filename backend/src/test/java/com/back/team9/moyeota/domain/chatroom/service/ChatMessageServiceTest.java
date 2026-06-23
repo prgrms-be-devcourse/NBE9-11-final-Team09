@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,7 +63,6 @@ public class ChatMessageServiceTest {
                 .chatRoom(room)
                 .member(member)
                 .content("안녕하세요")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         given(chatRoomService.getRoomById(1L))
@@ -151,7 +149,6 @@ public class ChatMessageServiceTest {
                 .chatRoom(chatRoom)
                 .member(member)
                 .content("안녕하세요")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         Message message2 = Message.builder()
@@ -159,7 +156,6 @@ public class ChatMessageServiceTest {
                 .chatRoom(chatRoom)
                 .member(member)
                 .content("반갑습니다")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         List<Message> messages = List.of(message1, message2);
@@ -205,7 +201,6 @@ public class ChatMessageServiceTest {
                 .chatRoom(chatRoom)
                 .member(hostMember)
                 .content("호스트 메시지")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         // normal message
@@ -214,7 +209,6 @@ public class ChatMessageServiceTest {
                 .chatRoom(chatRoom)
                 .member(normalMember)
                 .content("일반 메시지")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         given(messageRepository.findByChatRoom_ChatroomIdOrderByCreatedAtAsc(chatRoomId))

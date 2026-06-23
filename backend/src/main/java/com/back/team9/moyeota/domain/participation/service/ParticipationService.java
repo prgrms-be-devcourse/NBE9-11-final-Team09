@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.participation.dto.MyParticipationResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
@@ -245,6 +246,18 @@ public class ParticipationService {
 
 
     // ============================== 3. 참여자 목록 조회 ==============================
+    // 로그인한 사용자의 참여 내역을 최신순으로 반환
+    // JWT 인증을 통과한 사용자만 접근 가능하므로 회원 존재 여부 검사 생략
+    @Transactional(readOnly = true)
+    public List<MyParticipationResponse> getMyParticipations(Long memberId) {
+
+        return participationRepository
+                .findByMember_MemberIdOrderByCreatedAtDesc(memberId)
+                .stream()
+                .map(MyParticipationResponse::from)
+                .toList();
+    }
+
     // 참여자 목록 조회 (방장용)
     @Transactional(readOnly = true)
     public List<ParticipationListResponse> getParticipations(Long memberId, Long fundingId) {

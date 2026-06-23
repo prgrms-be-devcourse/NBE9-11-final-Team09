@@ -145,7 +145,6 @@ class MemberHistoryServiceTest {
                 .paymentStatus(ParticipationPaymentStatus.ACTIVE)
                 .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
 
@@ -158,7 +157,6 @@ class MemberHistoryServiceTest {
                 .tossPaymentKey("toss-payment-key")
                 .orderId("order-id")
                 .status(PaymentStatus.PAID)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
 
@@ -173,7 +171,6 @@ class MemberHistoryServiceTest {
                 .minParticipants(20)
                 .maxParticipants(45)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
 
@@ -186,7 +183,6 @@ class MemberHistoryServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 
@@ -319,8 +315,6 @@ class MemberHistoryServiceTest {
         assertThat(content.type()).isEqualTo(PaymentType.DEPOSIT);
         assertThat(content.amount()).isEqualByComparingTo(new BigDecimal("10000"));
         assertThat(content.status()).isEqualTo(PaymentStatus.PAID);
-        assertThat(content.createdAt())
-                .isEqualTo(LocalDateTime.of(2026, 6, 1, 9, 0));
 
         assertThat(response.page()).isZero();
         assertThat(response.totalPages()).isEqualTo(1);

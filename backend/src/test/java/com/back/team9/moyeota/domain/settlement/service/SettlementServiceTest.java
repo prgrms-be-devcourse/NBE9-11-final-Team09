@@ -27,7 +27,6 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -70,7 +69,7 @@ class SettlementServiceTest {
                 .nickname("host")
                 .phoneNumber("010-1234-5678")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         funding = Funding.builder()
@@ -83,7 +82,7 @@ class SettlementServiceTest {
                 .minParticipants(10)
                 .maxParticipants(45)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
     }
 
@@ -102,7 +101,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
@@ -145,7 +144,7 @@ class SettlementServiceTest {
                 .minParticipants(10)
                 .maxParticipants(45)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         SettlementCreateRequest request = new SettlementCreateRequest(2L, new BigDecimal("100000"));
@@ -159,7 +158,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
@@ -227,7 +226,7 @@ class SettlementServiceTest {
                 .minParticipants(10)
                 .maxParticipants(45)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
@@ -273,7 +272,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
@@ -332,7 +331,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(autoTarget));
@@ -359,7 +358,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(settlement));
@@ -399,7 +398,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.APPROVED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(alreadyApproved));
@@ -426,7 +425,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(autoTarget));
@@ -453,7 +452,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(settlement));
@@ -493,7 +492,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.REJECTED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(alreadyRejected));
@@ -520,7 +519,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.REJECTED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(rejectedSettlement));
@@ -545,7 +544,7 @@ class SettlementServiceTest {
                 .hostPaybackAmount(new BigDecimal("90000"))
                 .status(SettlementStatus.APPROVED)
                 .paybackHold(true)
-                .createdAt(LocalDateTime.now())
+
                 .build();
 
         given(settlementRepository.findById(1L)).willReturn(Optional.of(approvedSettlement));
