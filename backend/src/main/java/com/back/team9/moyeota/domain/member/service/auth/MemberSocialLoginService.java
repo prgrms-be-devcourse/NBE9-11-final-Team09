@@ -19,9 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 public class MemberSocialLoginService {
@@ -32,7 +29,6 @@ public class MemberSocialLoginService {
     private final MemberRepository memberRepository;
     private final KakaoSocialLoginClient kakaoSocialLoginClient;
     private final JwtTokenProvider jwtTokenProvider;
-    private final Clock clock;
 
     @Transactional
     public MemberLoginResult login(MemberSocialLoginRequest request) {
@@ -106,7 +102,6 @@ public class MemberSocialLoginService {
                 .provider(request.provider())
                 .providerId(String.valueOf(userInfo.id()))
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now(clock))
                 .build());
     }
 
