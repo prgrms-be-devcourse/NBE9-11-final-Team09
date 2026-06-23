@@ -130,12 +130,6 @@ export type SeatLayout = {
   seats: Seat[];
 };
 
-export type ParticipationResponse = {
+export type ParticipationCreateResponse = {
   participationId: number;
-  status: string;
-  paymentStatus: string;
-  finalAmount: string;
-  outboundSeatId: number;
-  returnSeatId: number | null;
-  createdAt: string;
 };
