@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.participation.controller;
 
+import com.back.team9.moyeota.domain.participation.dto.MyParticipationResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
@@ -79,6 +80,23 @@ public class ParticipationController {
                 new ApiResponse<>(
                         "SUCCESS",
                         "참여자 목록 조회가 완료되었습니다.",
+                        response
+                )
+        );
+    }
+
+    // 내 참여 내역 조회
+    @GetMapping("/participations/me")
+    public ResponseEntity<ApiResponse<List<MyParticipationResponse>>> getMyParticipations(
+            @AuthenticationPrincipal Long memberId
+    ) {
+        List<MyParticipationResponse> response =
+                participationService.getMyParticipations(memberId);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "내 참여 내역 조회가 완료되었습니다.",
                         response
                 )
         );

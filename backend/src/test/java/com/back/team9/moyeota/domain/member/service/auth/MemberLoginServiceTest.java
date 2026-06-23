@@ -179,7 +179,6 @@ class MemberLoginServiceTest {
                 .provider(Provider.KAKAO)
                 .providerId("kakao-provider-id")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         MemberLoginRequest request = new MemberLoginRequest(
@@ -213,7 +212,6 @@ class MemberLoginServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(null)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         when(memberRepository.findByEmail(request.email()))
@@ -260,7 +258,6 @@ class MemberLoginServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(status)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 }

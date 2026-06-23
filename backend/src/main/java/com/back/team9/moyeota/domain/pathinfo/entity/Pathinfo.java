@@ -2,11 +2,9 @@ package com.back.team9.moyeota.domain.pathinfo.entity;
 
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -15,7 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@EntityListeners(AuditingEntityListener.class)
 @Table(
         uniqueConstraints = {
                 @UniqueConstraint(
@@ -30,7 +27,7 @@ import java.time.LocalDateTime;
                 )
         }
 )
-public class Pathinfo {
+public class Pathinfo extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,13 +65,6 @@ public class Pathinfo {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Direction direction;
-
-    @CreatedDate
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     public static Pathinfo create(
             Funding funding,

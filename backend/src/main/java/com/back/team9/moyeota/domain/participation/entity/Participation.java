@@ -3,11 +3,11 @@ package com.back.team9.moyeota.domain.participation.entity;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Table(uniqueConstraints = {
         @UniqueConstraint(columnNames = {"funding_id", "member_id"})
 })
-public class Participation {
+public class Participation extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,11 +58,6 @@ public class Participation {
     @JoinColumn(name = "return_seat_id")
     private Seat returnSeat;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
     //참여 신청 시 호출되는 생성 메서드
     public static Participation create(
             Funding funding,
@@ -78,14 +73,12 @@ public class Participation {
                 .status(ParticipationStatus.ACTIVE)
                 .outboundSeat(outboundSeat)
                 .returnSeat(returnSeat)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 
     // 결제 완료 후 좌석 확정 시 호출
     public void confirmPayment() {
         this.paymentStatus = ParticipationPaymentStatus.ACTIVE;
-        this.updatedAt = LocalDateTime.now();
     }
 
     //참여 취소 시 호출되는 비즈니스 메서드
@@ -94,19 +87,16 @@ public class Participation {
     public void cancel() {
         this.status = ParticipationStatus.CANCELED;
         this.paymentStatus = ParticipationPaymentStatus.CANCELED;
-        this.updatedAt = LocalDateTime.now();
     }
 
     // 잔액 결제 완료 시 호출
     public void completePayment() {
         this.paymentStatus = ParticipationPaymentStatus.COMPLETED;
-        this.updatedAt = LocalDateTime.now();
     }
 
     // 잔액 미납으로 NO_SHOW 처리 시 호출
     public void markAsNoShow() {
         this.status = ParticipationStatus.CANCELED;
         this.paymentStatus = ParticipationPaymentStatus.NO_SHOW;
-        this.updatedAt = LocalDateTime.now();
     }
 }

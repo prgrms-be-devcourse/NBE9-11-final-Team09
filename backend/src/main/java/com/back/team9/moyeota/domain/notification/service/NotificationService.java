@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Service
@@ -26,6 +27,7 @@ public class NotificationService {
     private final MemberRepository memberRepository;
     private final FundingRepository fundingRepository;
     private final NotificationRepository notificationRepository;
+    private final Clock clock;
 
     private final MailService mailService;
     private final NotificationTemplateService templateService;
@@ -55,14 +57,13 @@ public class NotificationService {
                 .title(title)
                 .content(content)
                 .sendStatus(SendStatus.PENDING)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         notificationRepository.save(notification);
 
         try {
             sendMailWithRetry(member.getEmail(), title, content);
-            notification.markSuccess();
+            notification.markSuccess(LocalDateTime.now(clock));
 
         } catch (Exception e) {
             notification.markFailed();
