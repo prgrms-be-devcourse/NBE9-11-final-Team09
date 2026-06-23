@@ -53,7 +53,6 @@ public class NotificationService {
     }
 
     // 방장용 알림
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendToFundingHost(
             Long memberId,
             Long fundingId,
@@ -64,7 +63,13 @@ public class NotificationService {
         }
 
         try {
-            sendMimeMessage(memberId, fundingId, type);
+            Member member = memberRepository.findById(memberId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+            Funding funding = fundingRepository.findById(fundingId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+            sendMessage(member, funding, type);
         } catch (Exception e) {
             log.error(
                     "펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
@@ -77,7 +82,6 @@ public class NotificationService {
     }
 
     // 참가자용 알림
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendToFundingParticipants(
             Long fundingId,
             NotificationType type
