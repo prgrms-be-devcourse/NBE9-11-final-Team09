@@ -9,6 +9,8 @@ import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.infrastructure.social.KakaoSocialLoginClient;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.member.dto.auth.KakaoAuthorizationCodeLoginRequest;
+import com.back.team9.moyeota.domain.member.dto.auth.KakaoTokenResponse;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
@@ -60,6 +62,21 @@ public class MemberSocialLoginService {
                 tokens.refreshToken(),
                 tokens.refreshTokenExpiresIn()
         );
+    }
+
+    @Transactional
+    public MemberLoginResult loginWithKakaoAuthorizationCode(
+            KakaoAuthorizationCodeLoginRequest request
+    ) {
+        KakaoTokenResponse tokenResponse = kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        );
+
+        return login(new MemberSocialLoginRequest(
+                Provider.KAKAO,
+                tokenResponse.accessToken()
+        ));
     }
 
     private Member createSocialMember(
