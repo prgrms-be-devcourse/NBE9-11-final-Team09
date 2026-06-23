@@ -1,17 +1,16 @@
 package com.back.team9.moyeota.domain.chatroom.entity;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class ChatRoom {
+public class ChatRoom extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +23,4 @@ public class ChatRoom {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ChatRoomStatus status;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
 }

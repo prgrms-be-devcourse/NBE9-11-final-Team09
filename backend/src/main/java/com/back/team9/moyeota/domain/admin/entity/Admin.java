@@ -1,16 +1,15 @@
 package com.back.team9.moyeota.domain.admin.entity;
 
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Admin {
+public class Admin extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,8 +26,4 @@ public class Admin {
     @Enumerated(EnumType.STRING)
     private AdminStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
 }

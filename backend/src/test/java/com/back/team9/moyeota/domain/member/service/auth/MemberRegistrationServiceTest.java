@@ -13,14 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.BeforeEach;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-
-import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,27 +24,11 @@ import static org.mockito.Mockito.when;
 @DisplayName("회원 등록 서비스 테스트")
 class MemberRegistrationServiceTest {
 
-    private static final Instant FIXED_INSTANT =
-            Instant.parse("2026-06-22T00:00:00Z");
-    private static final ZoneId FIXED_ZONE =
-            ZoneId.of("Asia/Seoul");
-    private static final LocalDateTime FIXED_DATE_TIME =
-            LocalDateTime.ofInstant(FIXED_INSTANT, FIXED_ZONE);
-
-    @Mock
-    private Clock clock;
-
     @Mock
     private MemberRepository memberRepository;
 
     @InjectMocks
     private MemberRegistrationService memberRegistrationService;
-
-    @BeforeEach
-    void setUpClock() {
-        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
-        lenient().when(clock.getZone()).thenReturn(FIXED_ZONE);
-    }
 
     @Test
     @DisplayName("가입 대기 정보로 활성 회원을 등록한다")
@@ -75,8 +51,6 @@ class MemberRegistrationServiceTest {
         assertThat(savedMember.getPhoneNumber())
                 .isEqualTo(signupData.phoneNumber());
         assertThat(savedMember.getStatus()).isEqualTo(MemberStatus.ACTIVE);
-        assertThat(savedMember.getCreatedAt())
-                .isEqualTo(FIXED_DATE_TIME);
     }
 
     @Test
