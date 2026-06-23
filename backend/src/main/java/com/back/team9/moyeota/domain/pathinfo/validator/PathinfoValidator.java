@@ -5,28 +5,15 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
 
-@Component
-@RequiredArgsConstructor
-public class PathinfoValidator {
+public final class PathinfoValidator {
 
-    private final Clock clock;
-
-    public void validateDepartureDate(LocalDateTime departureTime) {
-
-        if (departureTime.isBefore(LocalDateTime.now(clock).plusDays(14))) {
-            throw new BusinessException(
-                    ErrorCode.DEPARTURE_DATE_TOO_SOON
-            );
-        }
+    private PathinfoValidator() {
     }
 
-    public void validateRoundTripTime(LocalDateTime outboundTime, LocalDateTime returnTime) {
+    public static void validateRoundTripTime(LocalDateTime outboundTime, LocalDateTime returnTime) {
 
         if (!returnTime.isAfter(outboundTime)) {
             throw new BusinessException(
@@ -41,7 +28,7 @@ public class PathinfoValidator {
         }
     }
 
-    public void validateRegion(Region departureRegion, Region arrivalRegion) {
+    public static void validateRegion(Region departureRegion, Region arrivalRegion) {
 
         if (departureRegion == arrivalRegion) {
             throw new BusinessException(
@@ -50,14 +37,14 @@ public class PathinfoValidator {
         }
     }
 
-    public void validateTripType(
+    public static void validateTripType(
             TripType tripType,
             RouteRequest route
     ) {
         validateRoute(tripType, route);
     }
 
-    private void validateRoute(
+    private static void validateRoute(
             TripType tripType,
             RouteRequest route
     ) {
@@ -65,12 +52,17 @@ public class PathinfoValidator {
             throw new BusinessException(ErrorCode.PATHINFO_REQUIRED);
         }
 
+        if (tripType == null
+                || route.departureTime() == null
+                || route.departureRegion() == null
+                || route.arrivalRegion() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
         validateRegion(
                 route.departureRegion(),
                 route.arrivalRegion()
         );
-
-        validateDepartureDate(route.departureTime());
 
         if (tripType == TripType.ONE_WAY) {
             if (route.returnTime() != null) {

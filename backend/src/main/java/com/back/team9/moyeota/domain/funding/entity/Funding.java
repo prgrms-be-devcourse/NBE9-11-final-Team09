@@ -56,6 +56,7 @@ public class Funding extends BaseEntity {
     private Boolean paybackHold;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TripType tripType;
 
     @Column(nullable = false)
