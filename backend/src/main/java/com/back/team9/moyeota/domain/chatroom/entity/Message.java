@@ -1,18 +1,17 @@
 package com.back.team9.moyeota.domain.chatroom.entity;
 
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Message {
+public class Message extends BaseEntity {
     @Id
     @Column(nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +27,4 @@ public class Message {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
 }
