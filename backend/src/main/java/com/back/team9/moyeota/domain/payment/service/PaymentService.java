@@ -118,11 +118,16 @@ public class PaymentService {
 
         payment.startRefund();
         paymentWriter.save(payment);
-
-        tossPaymentClient.cancel(
-                payment.getTossPaymentKey(),
-                request.cancelReason()
-        );
+        try {
+            tossPaymentClient.cancel(
+                    payment.getTossPaymentKey(),
+                    request.cancelReason()
+            );
+        } catch (Exception e) {
+            log.error("[REFUND_FAILED] paymentId={}, reason={}: {}",
+                    paymentId, request.cancelReason(), e.getMessage(), e);
+            throw e;
+        }
 
         payment.completeRefund();
         Payment updatedPayment = paymentWriter.save(payment);
