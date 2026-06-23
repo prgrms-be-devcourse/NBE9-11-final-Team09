@@ -63,7 +63,17 @@ public class NotificationService {
             return;
         }
 
-        sendMimeMessage(memberId, fundingId, type);
+        try {
+            sendMimeMessage(memberId, fundingId, type);
+        } catch (Exception e) {
+            log.error(
+                    "펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
+                    memberId,
+                    fundingId,
+                    type,
+                    e
+            );
+        }
     }
 
     // 참가자용 알림

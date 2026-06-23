@@ -170,6 +170,16 @@ public class FundingTimelineProcessor {
                     fundingId,
                     type
             );
+        } catch (Exception e) {
+            log.error(
+                    "펀딩 방장 알림 처리 실패 fundingId={}, notificationType={}",
+                    fundingId,
+                    type,
+                    e
+            );
+        }
+
+        try {
             notificationService.sendToFundingParticipants(
                     fundingId,
                     type
