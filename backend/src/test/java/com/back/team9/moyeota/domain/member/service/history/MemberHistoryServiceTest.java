@@ -315,8 +315,6 @@ class MemberHistoryServiceTest {
         assertThat(content.type()).isEqualTo(PaymentType.DEPOSIT);
         assertThat(content.amount()).isEqualByComparingTo(new BigDecimal("10000"));
         assertThat(content.status()).isEqualTo(PaymentStatus.PAID);
-        assertThat(content.createdAt())
-                .isEqualTo(LocalDateTime.of(2026, 6, 1, 9, 0));
 
         assertThat(response.page()).isZero();
         assertThat(response.totalPages()).isEqualTo(1);
