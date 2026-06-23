@@ -1,4 +1,4 @@
-import { Seat, SeatDisplayStatus } from "@/types/seat";
+import { Seat, SeatDisplayStatus } from "@/types/funding";
 
 interface SeatButtonProps {
     seat: Seat;                    // 좌석 정보
