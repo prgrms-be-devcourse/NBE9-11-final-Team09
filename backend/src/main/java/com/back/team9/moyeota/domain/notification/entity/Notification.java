@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.notification.entity;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Notification {
+public class Notification extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,12 +43,9 @@ public class Notification {
     @Column(nullable = false)
     private SendStatus sendStatus;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    public void markSuccess() {
+    public void markSuccess(LocalDateTime emailSentAt) {
         this.sendStatus = SendStatus.SUCCESS;
-        this.emailSentAt = LocalDateTime.now();
+        this.emailSentAt = emailSentAt;
     }
 
     public void markFailed() {
