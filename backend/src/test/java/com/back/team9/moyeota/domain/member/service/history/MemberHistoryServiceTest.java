@@ -157,7 +157,6 @@ class MemberHistoryServiceTest {
                 .tossPaymentKey("toss-payment-key")
                 .orderId("order-id")
                 .status(PaymentStatus.PAID)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
 

@@ -26,10 +26,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +52,6 @@ class PaymentServiceTest {
     @Mock private TossPaymentClient tossPaymentClient;
     @Mock private PaymentWriter paymentWriter;
     @Mock private ParticipationService participationService;
-    @Mock private Clock clock;
     @Mock private NotificationService notificationService;
 
     @InjectMocks
@@ -97,7 +92,6 @@ class PaymentServiceTest {
                 .orderId("uuid-order-id")
                 .amount(new BigDecimal("50000"))
                 .status(PaymentStatus.PENDING)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 
@@ -106,9 +100,6 @@ class PaymentServiceTest {
     @Test
     @DisplayName("결제 준비 - 정상 요청 시 UUID orderId 반환 및 PENDING Payment 저장")
     void prepare_정상요청_PENDING결제저장() {
-        given(clock.instant()).willReturn(Instant.now());
-        given(clock.getZone()).willReturn(ZoneId.systemDefault());
-
         Participation participation = mockParticipationForPrepare(1L);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
 
@@ -238,7 +229,7 @@ class PaymentServiceTest {
         given(paymentRepository.findByTossPaymentKey("test_paymentKey"))
                 .willReturn(Optional.of(Payment.builder().paymentId(2L)
                         .tossPaymentKey("test_paymentKey").status(PaymentStatus.PAID)
-                        .createdAt(LocalDateTime.now()).build()));
+                        .build()));
 
         assertThatThrownBy(() -> paymentService.confirmDeposit(request))
                 .isInstanceOf(BusinessException.class)
@@ -379,7 +370,7 @@ class PaymentServiceTest {
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.PAID).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
         given(paymentWriter.save(any())).willReturn(payment);
@@ -399,7 +390,7 @@ class PaymentServiceTest {
         Payment refundPendingPayment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.REFUND_PENDING).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.REFUND_PENDING).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(refundPendingPayment));
 
@@ -420,7 +411,7 @@ class PaymentServiceTest {
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.PAID).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
         willThrow(new BusinessException(ErrorCode.REFUND_FAILED))
@@ -442,7 +433,7 @@ class PaymentServiceTest {
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.PAID).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
 
@@ -478,7 +469,7 @@ class PaymentServiceTest {
         Payment refundedPayment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.REFUNDED).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.REFUNDED).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(refundedPayment));
 
@@ -499,7 +490,7 @@ class PaymentServiceTest {
         Payment failedPayment = Payment.builder()
                 .paymentId(1L).participation(participation).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.FAILED).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.FAILED).build();
 
         given(paymentRepository.findById(1L)).willReturn(Optional.of(failedPayment));
 
@@ -520,7 +511,7 @@ class PaymentServiceTest {
         Payment payment = Payment.builder()
                 .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.PAID).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.PAID).build();
 
         given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(payment));
 
@@ -550,7 +541,7 @@ class PaymentServiceTest {
         Payment refundedPayment = Payment.builder()
                 .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.DEPOSIT)
                 .amount(new BigDecimal("50000")).tossPaymentKey("test_paymentKey")
-                .orderId("test_orderId").status(PaymentStatus.REFUNDED).createdAt(LocalDateTime.now()).build();
+                .orderId("test_orderId").status(PaymentStatus.REFUNDED).build();
 
         given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(refundedPayment));
 
