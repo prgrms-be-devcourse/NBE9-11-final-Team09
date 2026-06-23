@@ -12,7 +12,6 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.JwtTokenResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -35,12 +33,6 @@ import static org.mockito.Mockito.*;
 @DisplayName("회원 소셜 로그인 서비스 테스트")
 class MemberSocialLoginServiceTest {
 
-    private static final Instant FIXED_INSTANT =
-            Instant.parse("2026-06-23T00:00:00Z");
-    private static final ZoneId FIXED_ZONE = ZoneId.of("Asia/Seoul");
-    private static final LocalDateTime FIXED_DATE_TIME =
-            LocalDateTime.ofInstant(FIXED_INSTANT, FIXED_ZONE);
-
     @Mock
     private MemberRepository memberRepository;
 
@@ -50,17 +42,8 @@ class MemberSocialLoginServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
-    @Mock
-    private Clock clock;
-
     @InjectMocks
     private MemberSocialLoginService memberSocialLoginService;
-
-    @BeforeEach
-    void setUpClock() {
-        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
-        lenient().when(clock.getZone()).thenReturn(FIXED_ZONE);
-    }
 
     @Test
     @DisplayName("기존 카카오 회원이면 회원 생성 없이 JWT를 발급한다")
@@ -132,7 +115,6 @@ class MemberSocialLoginServiceTest {
         assertThat(newMember.getProvider()).isEqualTo(Provider.KAKAO);
         assertThat(newMember.getProviderId()).isEqualTo("123456789");
         assertThat(newMember.getStatus()).isEqualTo(MemberStatus.ACTIVE);
-        assertThat(newMember.getCreatedAt()).isEqualTo(FIXED_DATE_TIME);
     }
 
     @Test
@@ -271,7 +253,6 @@ class MemberSocialLoginServiceTest {
                 .provider(Provider.KAKAO)
                 .providerId("123456789")
                 .status(status)
-                .createdAt(FIXED_DATE_TIME)
                 .build();
     }
 

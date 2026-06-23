@@ -211,7 +211,6 @@ class MemberWithdrawServiceTest {
                 .provider(Provider.KAKAO)
                 .providerId("123456789")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         MemberWithdrawRequest request = new MemberWithdrawRequest(null);
