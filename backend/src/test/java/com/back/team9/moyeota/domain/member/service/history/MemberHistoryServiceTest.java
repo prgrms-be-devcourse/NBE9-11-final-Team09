@@ -173,7 +173,6 @@ class MemberHistoryServiceTest {
                 .minParticipants(20)
                 .maxParticipants(45)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .build();
     }
 
@@ -186,7 +185,6 @@ class MemberHistoryServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 

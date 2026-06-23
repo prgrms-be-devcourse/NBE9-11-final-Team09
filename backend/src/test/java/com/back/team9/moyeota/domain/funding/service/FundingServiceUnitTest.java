@@ -673,7 +673,6 @@ class FundingServiceUnitTest {
                 .nickname("test")
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(10))
                 .build();
     }
 
