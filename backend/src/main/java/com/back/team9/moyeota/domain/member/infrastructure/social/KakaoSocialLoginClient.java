@@ -11,17 +11,20 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 @Component
-@RequiredArgsConstructor
 public class KakaoSocialLoginClient {
 
-    private final RestClient.Builder restClientBuilder;
+    private final RestClient restClient;
 
     @Value("${social.kakao.user-info-uri}")
     private String userInfoUri;
 
+    public KakaoSocialLoginClient() {
+        this.restClient = RestClient.builder().build();
+    }
+
     public KakaoUserInfoResponse getUserInfo(String accessToken) {
         try {
-            return restClientBuilder.build()
+            return restClient
                     .get()
                     .uri(userInfoUri)
                     .header(
