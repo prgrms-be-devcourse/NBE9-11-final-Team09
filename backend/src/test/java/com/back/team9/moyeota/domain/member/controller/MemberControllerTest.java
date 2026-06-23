@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.member.dto.history.MemberParticipationRespo
 import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberWithdrawRequest;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberService;
@@ -21,17 +22,17 @@ import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
-import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.*;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -469,25 +470,23 @@ class MemberControllerTest {
     }
 
     @Test
-    @DisplayName("회원 탈퇴 시 비밀번호가 누락되면 400 Bad Request를 반환한다")
-    void withdrawWithMissingPasswordReturnsBadRequest() throws Exception {
-        // Given
-        String requestBody = """
-            {
-              "password": ""
-            }
-            """;
-
-        // When / Then
+    @DisplayName("회원탈퇴 요청은 비밀번호가 없어도 서비스로 전달된다")
+    void withdrawWithoutPasswordDelegatesToService() throws Exception {
         mockMvc.perform(delete("/api/members/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
                         .with(memberAuthentication())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("COM001"));
+                        .content("""
+                            {
+                            }
+                            """))
+                .andExpect(status().isOk());
 
-        verifyNoInteractions(memberWithdrawService);
+        verify(memberWithdrawService)
+                .withdraw(eq(1L), any(MemberWithdrawRequest.class));
+
+        verify(memberLogoutService)
+                .logout("Bearer access-token");
     }
 
     @Test

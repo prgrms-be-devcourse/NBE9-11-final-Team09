@@ -63,4 +63,12 @@ public class Member {
         this.status = MemberStatus.WITHDRAWN;
         this.updatedAt = updatedAt;
     }
+
+    public boolean isLocalMember() {
+        return provider == null;
+    }
+
+    public boolean isSocialMember() {
+        return provider != null;
+    }
 }

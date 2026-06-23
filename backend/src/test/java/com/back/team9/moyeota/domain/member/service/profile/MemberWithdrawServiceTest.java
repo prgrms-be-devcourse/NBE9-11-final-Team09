@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.member.service.profile;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberWithdrawRequest;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -218,6 +219,33 @@ class MemberWithdrawServiceTest {
                 ErrorCode.INVALID_LOGIN_CREDENTIALS
         );
 
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    @DisplayName("카카오 회원은 비밀번호 없이 탈퇴할 수 있다")
+    void withdrawWithSocialMemberWithoutPasswordChangesStatus() {
+        Member member = Member.builder()
+                .memberId(1L)
+                .email("kakao@example.com")
+                .password(null)
+                .name("홍길동")
+                .nickname("카카오회원")
+                .phoneNumber("010-1234-5678")
+                .provider(Provider.KAKAO)
+                .providerId("123456789")
+                .status(MemberStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        MemberWithdrawRequest request = new MemberWithdrawRequest(null);
+
+        when(memberRepository.findById(1L))
+                .thenReturn(Optional.of(member));
+
+        memberWithdrawService.withdraw(1L, request);
+
+        assertThat(member.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
         verifyNoInteractions(passwordEncoder);
     }
 
