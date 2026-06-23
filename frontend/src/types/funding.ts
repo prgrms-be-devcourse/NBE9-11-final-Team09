@@ -129,3 +129,7 @@ export type SeatLayout = {
   busType: BusType;
   seats: Seat[];
 };
+
+export type ParticipationCreateResponse = {
+  participationId: number;
+};

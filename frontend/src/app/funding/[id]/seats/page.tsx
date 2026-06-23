@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Seat, SeatLayout, FundingDetail } from "@/types/funding";
-import { getFunding, getSeatLayout, holdSeat } from "@/lib/fundingApi";
+import { getFunding, getSeatLayout, holdSeat, createParticipation } from "@/lib/fundingApi";
 import SeatMap from "@/components/seat/SeatMap";
 import SeatInfoPanel from "@/components/seat/SeatInfoPanel";
 import CommonModal from "@/components/common/CommonModal";
@@ -39,13 +39,10 @@ export default function SeatsPage() {
 
                 const funding: FundingDetail = await getFunding(fundingId);
 
-                // 왕복 여부 확인
                 const roundTrip = funding.tripType === "ROUND";
                 setIsRoundTrip(roundTrip);
 
-                // 가는편 노선
                 const outbound = funding.pathinfos.find((p) => p.direction === "OUTBOUND");
-                // 오는편 노선
                 const returnPath = funding.pathinfos.find((p) => p.direction === "RETURN");
 
                 if (!outbound) {
@@ -68,14 +65,14 @@ export default function SeatsPage() {
                 const layout = await getSeatLayout(outbound.pathinfoId);
                 setSeatLayout(layout);
 
-            } catch (err) {
+            } catch {
                 setError("정보를 불러오는데 실패했습니다.");
             } finally {
                 setLoading(false);
             }
         }
 
-        fetchData();
+        void fetchData();
     }, [fundingId, isValidId]);
 
     async function handleSeatClick(seat: Seat) {
@@ -119,7 +116,6 @@ export default function SeatsPage() {
     }
 
     async function handlePaymentClick() {
-        // 좌석 미선택 검증
         if (step === "outbound" && !selectedSeat) {
             setModal({
                 title: "좌석을 선택해주세요",
@@ -136,7 +132,6 @@ export default function SeatsPage() {
             return;
         }
 
-        // 왕복이고 가는편만 선택한 경우 -> 오는편 좌석 선택 단계로
         if (isRoundTrip && step === "outbound") {
             if (!returnPathId) {
                 setModal({ title: "오류", message: "오는편 노선 정보를 찾을 수 없습니다." });
@@ -152,7 +147,21 @@ export default function SeatsPage() {
             return;
         }
 
-        router.push(`/funding/${fundingId}/payment`);
+        // 참여 신청 후 결제 페이지로 이동
+        try {
+            await createParticipation(
+                fundingId,
+                selectedSeat!.seatId,
+                returnSeat?.seatId ?? null,
+            );
+            router.push(`/funding/${fundingId}/payment`);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setModal({ title: "참여 신청 실패", message: err.message });
+            } else {
+                setModal({ title: "오류", message: "참여 신청에 실패했습니다." });
+            }
+        }
     }
 
     if (!isValidId) return <div className="flex justify-center p-10 text-red-500">잘못된 접근입니다.</div>;
@@ -162,7 +171,6 @@ export default function SeatsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            {/* 왕복 단계 표시 */}
             {isRoundTrip && (
                 <div className="text-center mb-4 text-sm font-medium text-gray-600">
                     {step === "outbound" ? "1단계: 가는편 좌석 선택" : "2단계: 오는편 좌석 선택"}
@@ -170,14 +178,12 @@ export default function SeatsPage() {
             )}
 
             <div className="flex gap-6 justify-center">
-                {/* 좌석 배치도 */}
                 <SeatMap
                     busType={seatLayout.busType}
                     seats={seatLayout.seats}
                     onSeatClick={handleSeatClick}
                 />
 
-                {/* 선택 정보 확인 패널 - 단계별 노선 정보 표시 */}
                 <SeatInfoPanel
                     routeInfo={step === "outbound" ? outboundRouteInfo : returnRouteInfo}
                     busType={seatLayout.busType}
@@ -191,7 +197,6 @@ export default function SeatsPage() {
                 />
             </div>
 
-            {/* 공통 모달 */}
             {modal && (
                 <CommonModal
                     title={modal.title}
