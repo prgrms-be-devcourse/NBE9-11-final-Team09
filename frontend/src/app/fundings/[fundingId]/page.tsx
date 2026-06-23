@@ -137,6 +137,17 @@ export default function FundingDetailPage() {
                   </span>
                 )}
               </div>
+              {funding.status === "RECRUITING" && !isJoined && (
+                  <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/funding/${fundingId}/seats`)}
+                        className="rounded bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+                    >
+                      원하는 좌석 선택하기 →
+                    </button>
+                  </div>
+              )}
               <h1 className="mt-4 text-3xl font-bold">{funding.title}</h1>
               <p className="mt-2 text-sm text-gray-600">
                 방장 {funding.hostNickname}
