@@ -1,18 +1,18 @@
 package com.back.team9.moyeota.domain.payment.entity;
 
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Payment {
+public class Payment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,11 +41,6 @@ public class Payment {
 
     private String failReason;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
     public void updateStatus(PaymentStatus status){
         this.status = status;
     }
@@ -54,19 +49,15 @@ public class Payment {
         this.paymentType = paymentType;
         this.tossPaymentKey = tossPaymentKey;
         this.status = PaymentStatus.PAID;
-        this.updatedAt = LocalDateTime.now();
     }
     public void startRefund() {
         this.status = PaymentStatus.REFUND_PENDING;
-        this.updatedAt = LocalDateTime.now();
     }
     public void completeRefund() {
         this.status = PaymentStatus.REFUNDED;
-        this.updatedAt = LocalDateTime.now();
     }
     public void expire() {
         this.status = PaymentStatus.FAILED;
-        this.updatedAt = LocalDateTime.now();
     }
 
 }

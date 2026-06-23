@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
@@ -54,7 +53,6 @@ public class ChatRoomServiceTest {
                 .chatroomId(1L)
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         given(chatRoomRepository.existsByFundingFundingId(fundingId))

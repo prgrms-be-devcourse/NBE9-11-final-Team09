@@ -1269,7 +1269,6 @@ class FundingServiceTest {
                 .nickname(nickname)
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
         return memberRepository.save(member);
     }

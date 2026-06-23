@@ -1,29 +1,25 @@
 package com.back.team9.moyeota.domain.funding.entity;
 
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@EntityListeners(AuditingEntityListener.class)
 @Table(indexes = {
         @Index(
                 name = "idx_funding_status_departure_date",
                 columnList = "status, departure_date"
         )
 })
-public class Funding {
+public class Funding extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,13 +61,6 @@ public class Funding {
 
     @Column(nullable = false)
     private BigDecimal totalPrice;
-
-    @CreatedDate
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     public static Funding create(
             Member member,

@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -190,7 +189,6 @@ class AdminLoginServiceTest {
                 .password(password)
                 .role(AdminRole.SUPER_ADMIN)
                 .status(status)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 

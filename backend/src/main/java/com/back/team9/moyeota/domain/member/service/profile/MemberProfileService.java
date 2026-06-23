@@ -10,16 +10,12 @@ import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.Clock;
-import java.time.LocalDateTime;
-
 // 회원 프로필 조회 및 수정 서비스
 @Service
 @RequiredArgsConstructor
 public class MemberProfileService {
 
     private final MemberRepository memberRepository;
-    private final Clock clock;
 
     @Transactional(readOnly = true)
     public MemberInfoResponse getMyInfo(Long memberId) {
@@ -46,8 +42,7 @@ public class MemberProfileService {
 
         member.updateProfile(
                 request.nickname(),
-                request.phoneNumber(),
-                LocalDateTime.now(clock)
+                request.phoneNumber()
         );
 
         return MemberUpdateResponse.from(member);

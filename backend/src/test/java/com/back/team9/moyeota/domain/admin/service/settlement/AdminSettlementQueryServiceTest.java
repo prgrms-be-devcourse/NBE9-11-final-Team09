@@ -144,8 +144,6 @@ class AdminSettlementQueryServiceTest {
                 .hostPaybackAmount(BigDecimal.valueOf(600000))
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(false)
-                .createdAt(LocalDateTime.of(2026, 6, 20, 23, 0))
-                .updatedAt(LocalDateTime.of(2026, 6, 20, 23, 0))
                 .build();
     }
 
@@ -162,7 +160,6 @@ class AdminSettlementQueryServiceTest {
                 .maxParticipants(43)
                 .totalPrice(BigDecimal.valueOf(600000))
                 .paybackHold(false)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 
@@ -175,7 +172,6 @@ class AdminSettlementQueryServiceTest {
                 .nickname("버스방장")
                 .phoneNumber("010-1234-5678")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 }
