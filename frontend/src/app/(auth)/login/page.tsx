@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -266,9 +266,17 @@ export default function LoginPage() {
           type="button"
           onClick={handleKakaoLogin}
           disabled={loading || kakaoLoading || !kakaoReady}
-          className="w-full rounded bg-[#FEE500] py-4 text-sm font-bold text-[#191919] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-[#FEE500] text-[15px] font-semibold text-black/85 transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="카카오 로그인"
         >
-          {kakaoLoading ? "카카오 로그인 중..." : "카카오로 로그인"}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 22"
+            className="h-[18px] w-[20px] shrink-0 fill-black"
+          >
+            <path d="M12 0C5.373 0 0 4.182 0 9.342c0 3.352 2.267 6.29 5.67 7.936l-.884 3.252c-.078.288.25.519.5.353l3.871-2.562c.915.236 1.87.363 2.843.363 6.627 0 12-4.182 12-9.342S18.627 0 12 0Z" />
+          </svg>
+          <span>{kakaoLoading ? "카카오 로그인 중..." : "카카오 로그인"}</span>
         </button>
 
         {!getKakaoJavascriptKey() && (
