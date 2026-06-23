@@ -5,6 +5,7 @@ import {
   clearAccessToken,
   getMyDashboard,
   getMyHistory,
+  getMyParticipations,
   logoutMember,
   updateMyProfile,
   withdrawMember,
@@ -16,6 +17,7 @@ import type {
   MemberParticipation,
   MemberPayment,
   MemberProfile,
+  MyParticipation,
   PageResponse,
 } from "@/types/member";
 import Link from "next/link";
@@ -134,6 +136,7 @@ export default function MypageClient() {
   const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [histories, setHistories] =
     useState<MemberHistoryPages>(EMPTY_PAGES);
+  const [myParticipations, setMyParticipations] = useState<MyParticipation[]>([]);
   const [activeTab, setActiveTab] = useState<HistoryTab>("participations");
   const [nickname, setNickname] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -171,13 +174,17 @@ export default function MypageClient() {
 
     async function loadDashboard() {
       try {
-        const dashboard = await getMyDashboard();
+        const [dashboard, participations] = await Promise.all([
+          getMyDashboard(),
+          getMyParticipations(),
+        ]);
         if (cancelled) return;
 
         setProfile(dashboard.profile);
         setNickname(dashboard.profile.nickname);
         setPhoneNumber(dashboard.profile.phoneNumber);
         setHistories(dashboard.histories);
+        setMyParticipations(participations);
       } catch (requestError) {
         if (!cancelled) {
           handleRequestError(
@@ -470,6 +477,7 @@ export default function MypageClient() {
               activeTab={activeTab}
               page={currentPage}
               loading={historyLoading}
+              myParticipations={myParticipations}
               onTabChange={setActiveTab}
               onPageChange={moveHistoryPage}
             />
@@ -716,101 +724,156 @@ interface HistorySectionProps {
   activeTab: HistoryTab;
   page: MemberHistoryPages[HistoryTab];
   loading: boolean;
+  myParticipations: MyParticipation[];
   onTabChange: (tab: HistoryTab) => void;
   onPageChange: (page: number) => void;
 }
 
 function HistorySection({
-  activeTab,
-  page,
-  loading,
-  onTabChange,
-  onPageChange,
-}: HistorySectionProps) {
+                          activeTab,
+                          page,
+                          loading,
+                          myParticipations,
+                          onTabChange,
+                          onPageChange,
+                        }: HistorySectionProps) {
+  const isEmpty =
+      activeTab === "participations"
+          ? myParticipations.length === 0
+          : page.content.length === 0;
+
   return (
-    <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/80">
-      <div className="border-b border-slate-100 px-6 pt-6 sm:px-8 sm:pt-8">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-xs font-bold tracking-widest text-[#357465]">
-              ACTIVITY
+      <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/80">
+        <div className="border-b border-slate-100 px-6 pt-6 sm:px-8 sm:pt-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold tracking-widest text-[#357465]">
+                ACTIVITY
+              </p>
+              <h2 className="mt-2 text-xl font-black">이용 내역</h2>
+            </div>
+            <p className="text-sm text-slate-400">
+              총{" "}
+              {(activeTab === "participations"
+                      ? myParticipations.length
+                      : page.totalElements
+              ).toLocaleString("ko-KR")}
+              건
             </p>
-            <h2 className="mt-2 text-xl font-black">이용 내역</h2>
           </div>
-          <p className="text-sm text-slate-400">
-            총 {page.totalElements.toLocaleString("ko-KR")}건
-          </p>
+
+          <div className="mt-6 flex gap-6 overflow-x-auto">
+            {(Object.keys(TAB_LABELS) as HistoryTab[]).map((tab) => (
+                <button
+                    key={tab}
+                    type="button"
+                    onClick={() => onTabChange(tab)}
+                    className={`whitespace-nowrap border-b-2 pb-4 text-sm font-bold transition ${
+                        activeTab === tab
+                            ? "border-[#235347] text-[#235347]"
+                            : "border-transparent text-slate-400 hover:text-slate-700"
+                    }`}
+                >
+                  {TAB_LABELS[tab]}
+                </button>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-6 flex gap-6 overflow-x-auto">
-          {(Object.keys(TAB_LABELS) as HistoryTab[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTabChange(tab)}
-              className={`whitespace-nowrap border-b-2 pb-4 text-sm font-bold transition ${
-                activeTab === tab
-                  ? "border-[#235347] text-[#235347]"
-                  : "border-transparent text-slate-400 hover:text-slate-700"
-              }`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
+        <div className="relative min-h-64 px-6 py-6 sm:px-8">
+          {loading && (
+              <div className="absolute inset-0 z-10 grid place-items-center bg-white/75 backdrop-blur-[1px]">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#235347]" />
+              </div>
+          )}
+
+          {isEmpty ? (
+              <EmptyHistory tab={activeTab} />
+          ) : (
+              <div className="space-y-3">
+                {activeTab === "participations" &&
+                    myParticipations.map((item) => (
+                        <MyParticipationItem
+                            key={item.participationId}
+                            item={item}
+                        />
+                    ))}
+
+                {activeTab === "fundings" &&
+                    (page.content as MemberFunding[]).map((item) => (
+                        <FundingItem key={item.fundingId} item={item} />
+                    ))}
+
+                {activeTab === "payments" &&
+                    (page.content as MemberPayment[]).map((item) => (
+                        <PaymentItem key={item.paymentId} item={item} />
+                    ))}
+              </div>
+          )}
         </div>
-      </div>
 
-      <div className="relative min-h-64 px-6 py-6 sm:px-8">
-        {loading && (
-          <div className="absolute inset-0 z-10 grid place-items-center bg-white/75 backdrop-blur-[1px]">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#235347]" />
-          </div>
-        )}
-
-        {page.content.length === 0 ? (
-          <EmptyHistory tab={activeTab} />
-        ) : (
-          <div className="space-y-3">
-            {activeTab === "participations" &&
-              (page.content as MemberParticipation[]).map((item) => (
-                <ParticipationItem key={item.participationId} item={item} />
-              ))}
-            {activeTab === "fundings" &&
-              (page.content as MemberFunding[]).map((item) => (
-                <FundingItem key={item.fundingId} item={item} />
-              ))}
-            {activeTab === "payments" &&
-              (page.content as MemberPayment[]).map((item) => (
-                <PaymentItem key={item.paymentId} item={item} />
-              ))}
-          </div>
-        )}
-      </div>
-
-      {page.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 border-t border-slate-100 px-6 py-5">
-          <button
-            type="button"
-            disabled={page.first || loading}
-            onClick={() => onPageChange(page.page - 1)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            이전
-          </button>
-          <span className="min-w-20 text-center text-sm font-semibold text-slate-600">
+        {activeTab !== "participations" && page.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 border-t border-slate-100 px-6 py-5">
+              <button
+                  type="button"
+                  disabled={page.first || loading}
+                  onClick={() => onPageChange(page.page - 1)}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                이전
+              </button>
+              <span className="min-w-20 text-center text-sm font-semibold text-slate-600">
             {page.page + 1} / {page.totalPages}
           </span>
-          <button
-            type="button"
-            disabled={page.last || loading}
-            onClick={() => onPageChange(page.page + 1)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            다음
-          </button>
+              <button
+                  type="button"
+                  disabled={page.last || loading}
+                  onClick={() => onPageChange(page.page + 1)}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                다음
+              </button>
+            </div>
+        )}
+      </section>
+  );
+}
+
+function MyParticipationItem({ item }: { item: MyParticipation }) {
+  return (
+      <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-bold text-slate-900">
+              {item.fundingTitle}
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">{item.routeInfo}</p>
+
+            <p className="mt-1 text-xs text-slate-400">
+              좌석:{" "}
+              {item.returnSeatNumber
+                  ? `가는편 ${item.outboundSeatNumber} / 오는편 ${item.returnSeatNumber}`
+                  : item.outboundSeatNumber}
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <StatusBadge status={item.status} />
+              <StatusBadge status={item.paymentStatus} />
+
+              <span
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
+                      item.canBoard
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-600/15"
+                          : "bg-slate-50 text-slate-500 ring-slate-200"
+                  }`}
+              >
+              {item.canBoard ? "탑승 가능" : "탑승 불가"}
+            </span>
+            </div>
+          </div>
         </div>
-      )}
-    </section>
+      </article>
   );
 }
 
@@ -832,91 +895,69 @@ function EmptyHistory({ tab }: { tab: HistoryTab }) {
   );
 }
 
-function ParticipationItem({ item }: { item: MemberParticipation }) {
-  return (
-    <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={item.status} />
-            <StatusBadge status={item.paymentStatus} />
-          </div>
-          <h3 className="mt-3 truncate font-bold text-slate-900">
-            {item.fundingTitle}
-          </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            출발일 {formatDate(item.departureDate)}
-          </p>
-        </div>
-        <p className="shrink-0 text-xs text-slate-400">
-          {formatDate(item.createdAt)} 참여
-        </p>
-      </div>
-    </article>
-  );
-}
-
 function FundingItem({ item }: { item: MemberFunding }) {
   const progress = Math.min(
-    100,
-    Math.round((item.currentParticipants / item.maxParticipants) * 100),
+      100,
+      Math.round((item.currentParticipants / item.maxParticipants) * 100),
   );
 
   return (
-    <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={item.status} />
-            <span className="text-xs font-medium text-slate-400">
+      <article
+          className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={item.status}/>
+              <span className="text-xs font-medium text-slate-400">
               출발일 {formatDate(item.departureDate)}
             </span>
-          </div>
-          <h3 className="mt-3 truncate font-bold text-slate-900">
-            {item.fundingTitle}
-          </h3>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-[#4f8d7e]"
-                style={{ width: `${progress}%` }}
-              />
             </div>
-            <span className="text-xs font-bold text-slate-600">
+            <h3 className="mt-3 truncate font-bold text-slate-900">
+              {item.fundingTitle}
+            </h3>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                <div
+                    className="h-full rounded-full bg-[#4f8d7e]"
+                    style={{width: `${progress}%`}}
+                />
+              </div>
+              <span className="text-xs font-bold text-slate-600">
               {item.currentParticipants}/{item.maxParticipants}명
             </span>
+            </div>
           </div>
+          <p className="shrink-0 text-xs text-slate-400">
+            {formatDate(item.createdAt)} 개설
+          </p>
         </div>
-        <p className="shrink-0 text-xs text-slate-400">
-          {formatDate(item.createdAt)} 개설
-        </p>
-      </div>
-    </article>
+      </article>
   );
 }
 
 function PaymentItem({ item }: { item: MemberPayment }) {
   return (
-    <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={item.status} />
-            <span className="text-xs font-bold text-[#357465]">
+      <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={item.status} />
+              <span className="text-xs font-bold text-[#357465]">
               {statusLabel(item.type)}
             </span>
+            </div>
+            <h3 className="mt-3 truncate font-bold text-slate-900">
+              {item.fundingTitle}
+            </h3>
+            <p className="mt-1 text-xs text-slate-400">
+              {formatDate(item.createdAt, true)}
+            </p>
           </div>
-          <h3 className="mt-3 truncate font-bold text-slate-900">
-            {item.fundingTitle}
-          </h3>
-          <p className="mt-1 text-xs text-slate-400">
-            {formatDate(item.createdAt, true)}
+          <p className="shrink-0 text-lg font-black text-slate-900">
+            {formatCurrency(item.amount)}
           </p>
         </div>
-        <p className="shrink-0 text-lg font-black text-slate-900">
-          {formatCurrency(item.amount)}
-        </p>
-      </div>
-    </article>
+      </article>
   );
 }
+

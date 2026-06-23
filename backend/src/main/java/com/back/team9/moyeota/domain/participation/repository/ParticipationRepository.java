@@ -22,6 +22,11 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     @EntityGraph(attributePaths = {"outboundSeat", "outboundSeat.pathinfo", "returnSeat"})
     Optional<Participation> findByParticipationIdAndMember_MemberId(Long participationId, Long memberId);
 
+    // 내 참여 내역 조회
+    // N+1 방지
+    @EntityGraph(attributePaths = {"funding", "outboundSeat", "outboundSeat.pathinfo", "returnSeat"})
+    List<Participation> findByMember_MemberIdOrderByCreatedAtDesc(Long memberId);
+
     //특정 펀딩의 전체 참여자 목록 조회
     //N+1 방지를 위해 연관 데이터를 함께 조회
     @EntityGraph(attributePaths = {"member", "outboundSeat", "returnSeat"})

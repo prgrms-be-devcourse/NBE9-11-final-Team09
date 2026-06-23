@@ -49,23 +49,23 @@ jobs:
           script: |
             cd ~/app
             
-            # EOF 문법을 사용해 GitHub Secrets 값을 .env 파일로 한방에 새로 씁니다.
-            cat > .env << EOF
-            RDS_HOST=${{ secrets.RDS_HOST }}
-            RDS_PORT=${{ secrets.RDS_PORT }}
-            RDS_DATABASE=${{ secrets.RDS_DATABASE }}
-            RDS_USERNAME=${{ secrets.RDS_USERNAME }}
-            RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
+            # echo 문법을 사용하여 앞의 공백 없이 .env 파일을 한 줄씩 생성합니다.
+            # 첫 번째 줄은 '>'를 사용하여 기존 .env 파일 내용을 덮어쓰고(초기화), 
+            # 두 번째 줄부터는 '>>'를 사용하여 아래에 내용을 이어 붙입니다.
+            echo "RDS_HOST=${{ secrets.RDS_HOST }}" > .env
+            echo "RDS_PORT=${{ secrets.RDS_PORT }}" >> .env
+            echo "RDS_DATABASE=${{ secrets.RDS_DATABASE }}" >> .env
+            echo "RDS_USERNAME=${{ secrets.RDS_USERNAME }}" >> .env
+            echo "RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}" >> .env
             
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_COOKIE_SECURE=${{ secrets.JWT_COOKIE_SECURE }}
-            TOSS_SECRET_KEY=${{ secrets.TOSS_SECRET_KEY }}
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "JWT_COOKIE_SECURE=${{ secrets.JWT_COOKIE_SECURE }}" >> .env
+            echo "TOSS_SECRET_KEY=${{ secrets.TOSS_SECRET_KEY }}" >> .env
             
-            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
+            echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
             
-            REDIS_HOST=redis
-            EOF
+            echo "REDIS_HOST=redis" >> .env
             
             # 배포 스크립트에 실행 권한을 주고 실행합니다.
             chmod +x deploy.sh
