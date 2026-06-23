@@ -7,6 +7,7 @@ import type {
   FundingPayload,
   FundingStatus,
   PageResponse,
+  ParticipationCreateResponse,
   Region,
   Seat,
   SeatLayout,
@@ -109,7 +110,6 @@ export function getSeatLayout(pathId: number) {
   return request<SeatLayout>(`/api/pathinfos/${pathId}/seats`);
 }
 
-// 좌석 선점 (5분 홀딩)
 export async function holdSeat(seatId: number) {
   const token = getFundingAccessToken();
 
@@ -140,4 +140,15 @@ export async function holdSeat(seatId: number) {
   }
 
   return (body as ApiResponse<Seat>).data;
+}
+
+export function createParticipation(
+    fundingId: number,
+    outboundSeatId: number,
+    returnSeatId: number | null,
+) {
+  return request<ParticipationCreateResponse>("/api/participations", {
+    method: "POST",
+    body: JSON.stringify({ fundingId, outboundSeatId, returnSeatId }),
+  });
 }
