@@ -12,7 +12,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
-import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
+import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoTimeValidator;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +53,7 @@ class PathinfoServiceUnitTest {
     private PathinfoRepository pathinfoRepository;
 
     @Mock
-    private PathinfoValidator pathinfoValidator;
+    private PathinfoTimeValidator pathinfoTimeValidator;
 
     @Test
     @DisplayName("노선 생성 - 편도면 가는 노선만 저장한다")
@@ -67,7 +67,7 @@ class PathinfoServiceUnitTest {
 
         // Then
         ArgumentCaptor<Pathinfo> captor = ArgumentCaptor.forClass(Pathinfo.class);
-        verify(pathinfoValidator).validateTripType(TripType.ONE_WAY, route);
+        verify(pathinfoTimeValidator).validateDepartureDate(route.departureTime());
         verify(pathinfoRepository).save(captor.capture());
 
         Pathinfo saved = captor.getValue();
@@ -89,7 +89,7 @@ class PathinfoServiceUnitTest {
 
         // Then
         ArgumentCaptor<Pathinfo> captor = ArgumentCaptor.forClass(Pathinfo.class);
-        verify(pathinfoValidator).validateTripType(TripType.ROUND, route);
+        verify(pathinfoTimeValidator).validateDepartureDate(route.departureTime());
         verify(pathinfoRepository, org.mockito.Mockito.times(2))
                 .save(captor.capture());
 
@@ -110,8 +110,8 @@ class PathinfoServiceUnitTest {
         RouteRequest route = oneWayRoute();
 
         willThrow(new BusinessException(ErrorCode.DEPARTURE_DATE_TOO_SOON))
-                .given(pathinfoValidator)
-                .validateTripType(TripType.ONE_WAY, route);
+                .given(pathinfoTimeValidator)
+                .validateDepartureDate(route.departureTime());
 
         // When / Then
         assertThatThrownBy(() ->
@@ -152,11 +152,7 @@ class PathinfoServiceUnitTest {
     void updatePathinfos_whenValidationFails_doesNotFindPathinfos() {
         // Given
         Funding funding = funding(1L, TripType.ROUND, FundingStatus.RECRUITING);
-        RouteRequest route = roundRoute();
-
-        willThrow(new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION))
-                .given(pathinfoValidator)
-                .validateTripType(TripType.ROUND, route);
+        RouteRequest route = oneWayRoute();
 
         // When / Then
         assertThatThrownBy(() ->
@@ -447,7 +443,6 @@ class PathinfoServiceUnitTest {
                 .nickname("test")
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(10))
                 .build();
     }
 }

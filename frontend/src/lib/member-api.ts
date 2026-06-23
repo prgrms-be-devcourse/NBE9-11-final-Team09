@@ -12,6 +12,7 @@
   MemberUpdateRequest,
   MemberUpdateResponse,
   MemberWithdrawRequest,
+  MyParticipation,
   PageResponse,
 } from "@/types/member";
 
@@ -280,4 +281,11 @@ export async function withdrawMember(request: MemberWithdrawRequest) {
     body: JSON.stringify(request),
   });
   clearAccessToken();
+}
+
+export async function getMyParticipations() {
+  const response = await authorizedRequest<ApiResponse<MyParticipation[]>>(
+      "/api/participations/me",
+  );
+  return response.data;
 }

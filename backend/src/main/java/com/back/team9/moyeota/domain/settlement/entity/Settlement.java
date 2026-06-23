@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.settlement.entity;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Settlement {
+public class Settlement extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,19 +46,12 @@ public class Settlement {
     @Column(nullable = false)
     private Boolean paybackHold;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
-    public void approve(){
-        LocalDateTime now = LocalDateTime.now();
+    public void approve(LocalDateTime paybackPaidAt) {
         this.status = SettlementStatus.APPROVED;
-        this.paybackPaidAt = now;
-        this.updatedAt = now;
+        this.paybackPaidAt = paybackPaidAt;
     }
-    public void reject(){
-        LocalDateTime now = LocalDateTime.now();
+
+    public void reject() {
         this.status = SettlementStatus.REJECTED;
-        this.updatedAt = now;    }
+    }
 }

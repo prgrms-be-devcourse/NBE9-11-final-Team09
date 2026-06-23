@@ -23,8 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,7 +35,6 @@ public class PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final PaymentWriter paymentWriter;
     private final ParticipationRepository participationRepository;
-    private final Clock clock;
     private final ParticipationService participationService;
     private final NotificationService notificationService;
 
@@ -173,7 +170,6 @@ public class PaymentService {
                 .orderId(orderId)
                 .amount(participation.getFinalAmount())
                 .status(PaymentStatus.PENDING)
-                .createdAt(LocalDateTime.now(clock))
                 .build();
         paymentWriter.save(payment);
 

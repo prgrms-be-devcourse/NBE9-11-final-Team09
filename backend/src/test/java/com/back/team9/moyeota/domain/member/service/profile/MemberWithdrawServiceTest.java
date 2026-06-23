@@ -14,12 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.junit.jupiter.api.BeforeEach;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,16 +24,6 @@ import static org.mockito.Mockito.*;
 @DisplayName("회원 탈퇴 서비스 테스트")
 class MemberWithdrawServiceTest {
 
-    private static final Instant FIXED_INSTANT =
-            Instant.parse("2026-06-22T00:00:00Z");
-    private static final ZoneId FIXED_ZONE =
-            ZoneId.of("Asia/Seoul");
-    private static final LocalDateTime FIXED_DATE_TIME =
-            LocalDateTime.ofInstant(FIXED_INSTANT, FIXED_ZONE);
-
-    @Mock
-    private Clock clock;
-
     @Mock
     private MemberRepository memberRepository;
 
@@ -48,12 +32,6 @@ class MemberWithdrawServiceTest {
 
     @InjectMocks
     private MemberWithdrawService memberWithdrawService;
-
-    @BeforeEach
-    void setUpClock() {
-        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
-        lenient().when(clock.getZone()).thenReturn(FIXED_ZONE);
-    }
 
     @Test
     @DisplayName("비밀번호가 일치하면 회원 상태를 탈퇴로 변경한다")
@@ -73,8 +51,6 @@ class MemberWithdrawServiceTest {
 
         // Then
         assertThat(member.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
-        assertThat(member.getUpdatedAt())
-                .isEqualTo(FIXED_DATE_TIME);
     }
 
     @Test
@@ -261,7 +237,6 @@ class MemberWithdrawServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(status)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 

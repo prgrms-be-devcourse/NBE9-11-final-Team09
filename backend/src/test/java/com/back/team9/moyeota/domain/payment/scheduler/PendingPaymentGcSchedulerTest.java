@@ -52,7 +52,6 @@ class PendingPaymentGcSchedulerTest {
                 .orderId("order-" + paymentId)
                 .amount(new BigDecimal("50000"))
                 .status(PaymentStatus.PENDING)
-                .createdAt(LocalDateTime.now(clock).minusMinutes(35))
                 .build();
     }
 

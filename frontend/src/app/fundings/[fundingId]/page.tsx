@@ -164,11 +164,22 @@ export default function FundingDetailPage() {
           </div>
 
           {error && (
-            <p className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </p>
+              <p className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
           )}
 
+          {funding.status === "RECRUITING" && !isJoined && (
+              <div className="flex justify-end">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/funding/${fundingId}/seats`)}
+                    className="rounded bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+                >
+                  원하는 좌석 선택하기 →
+                </button>
+              </div>
+          )}
           <div className="grid gap-4 md:grid-cols-4">
             <Summary label="현재 인원" value={`${funding.currentParticipants}명`} />
             <Summary label="최소 인원" value={`${funding.minParticipants}명`} />

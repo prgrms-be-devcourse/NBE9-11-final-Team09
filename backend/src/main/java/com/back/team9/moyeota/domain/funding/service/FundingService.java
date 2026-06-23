@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +47,6 @@ public class FundingService {
     private final PathinfoService pathinfoService;
     private final ApplicationEventPublisher eventPublisher;
     private final ParticipationRepository participationRepository;
-    private final FundingValidator fundingValidator;
     private final ChatRoomRepository chatRoomRepository;
 
     // 펀딩 생성
@@ -60,13 +60,17 @@ public class FundingService {
                 request.hostOutboundSeatNumber(),
                 request.hostReturnSeatNumber()
         );
+        pathinfoService.validatePathinfoRequest(
+                request.tripType(),
+                request.route()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
                 request.busType(),
                 request.tripType()
         );
-        fundingValidator.validateFundingRequest(
+        FundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType()
         );
@@ -154,7 +158,7 @@ public class FundingService {
 
         List<Pathinfo> pathinfos =
                 fundingIds.isEmpty()
-                        ? List.of()
+                        ? Collections.emptyList()
                         : pathinfoService.findByFundingIdsAndDirection(
                                 fundingIds,
                                 Direction.OUTBOUND
@@ -192,11 +196,11 @@ public class FundingService {
     @Transactional
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
-        fundingValidator.validateHost(funding, memberId);
+        FundingValidator.validateHost(funding, memberId);
         if (funding.getStatus() == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
         }
-        fundingValidator.validateUpdatable(funding);
+        FundingValidator.validateUpdatable(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
@@ -207,22 +211,28 @@ public class FundingService {
     public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
 
         Funding funding = findFundingById(fundingId);
-        fundingValidator.validateHost(funding, memberId);
-        fundingValidator.validateUpdatable(funding);
+        FundingValidator.validateHost(funding, memberId);
+        FundingValidator.validateUpdatable(funding);
+
+        int currentParticipants = countActiveParticipants(fundingId);
+
+        if (currentParticipants > 0) {
+            updateFundingWithParticipants(funding, request);
+            return;
+        }
+
+        pathinfoService.validatePathinfoRequest(
+                request.tripType(),
+                request.route()
+        );
 
         BigDecimal totalPrice = FundingPricePolicy.calculateTotalPrice(
                 request.route(),
                 request.busType(),
                 request.tripType()
         );
-        int currentParticipants = countActiveParticipants(fundingId);
 
-        if (currentParticipants > 0) {
-            updateFundingWithParticipants(funding, request, totalPrice);
-            return;
-        }
-
-        fundingValidator.validateFundingRequest(
+        FundingValidator.validateFundingRequest(
                 request.minParticipants(),
                 request.busType()
         );
@@ -232,12 +242,11 @@ public class FundingService {
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
-    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request, BigDecimal totalPrice) {
+    private void updateFundingWithParticipants(Funding funding, FundingUpdateRequest request) {
 
         boolean changed =
                 !Objects.equals(funding.getBusType(), request.busType())
                         || !Objects.equals(funding.getMinParticipants(), request.minParticipants())
-                        || !Objects.equals(funding.getTotalPrice(), totalPrice)
                         || !Objects.equals(funding.getTripType(), request.tripType())
                         || pathinfoService.isRouteChanged(
                         funding.getFundingId(),

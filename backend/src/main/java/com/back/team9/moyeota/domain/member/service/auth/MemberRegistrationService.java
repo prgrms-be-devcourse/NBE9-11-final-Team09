@@ -10,15 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.Clock;
-
 @Service
 @RequiredArgsConstructor
 public class MemberRegistrationService {
 
     private final MemberRepository memberRepository;
-    private final Clock clock;
 
     @Transactional
     public void register(PendingSignupData signupData) {
@@ -31,7 +27,6 @@ public class MemberRegistrationService {
                 .nickname(signupData.nickname())
                 .phoneNumber(signupData.phoneNumber())
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.now(clock))
                 .build());
     }
 
