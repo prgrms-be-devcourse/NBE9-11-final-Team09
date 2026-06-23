@@ -5,3 +5,8 @@
 .idea/
 *.iml
 *.iws
+
+# Build outputs and local logs
+.next/
+.next*/
+*.log
