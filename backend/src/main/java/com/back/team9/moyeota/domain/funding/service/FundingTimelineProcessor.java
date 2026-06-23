@@ -86,17 +86,18 @@ public class FundingTimelineProcessor {
     }
 
     // 출발 n 시간 전 알림
-    @Transactional
     public void sendDepartureReminders(LocalDateTime now) {
-        LocalDateTime reminderDeadline =
+        LocalDateTime reminderStart =
                 now.plusHours(DEPARTURE_REMINDER_HOURS_BEFORE);
+        LocalDateTime reminderEnd =
+                reminderStart.plusHours(1);
 
         List<Pathinfo> pathinfos =
                 pathinfoRepository.findDepartureReminderTargets(
                         PathinfoStatus.PENDING,
                         Direction.OUTBOUND,
-                        now,
-                        reminderDeadline,
+                        reminderStart,
+                        reminderEnd,
                         FundingStatus.CONFIRMED
                 );
 

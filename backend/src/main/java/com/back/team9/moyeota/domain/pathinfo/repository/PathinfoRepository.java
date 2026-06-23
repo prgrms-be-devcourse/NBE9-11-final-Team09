@@ -64,15 +64,15 @@ public interface PathinfoRepository extends JpaRepository<Pathinfo, Long> {
         join fetch f.member
         where p.status = :status
           and p.direction = :direction
-          and p.departureTime > :now
-          and p.departureTime <= :reminderDeadline
+          and p.departureTime >= :reminderStart
+          and p.departureTime < :reminderEnd
           and f.status = :fundingStatus
         """)
     List<Pathinfo> findDepartureReminderTargets(
             @Param("status") PathinfoStatus status,
             @Param("direction") Direction direction,
-            @Param("now") LocalDateTime now,
-            @Param("reminderDeadline") LocalDateTime reminderDeadline,
+            @Param("reminderStart") LocalDateTime reminderStart,
+            @Param("reminderEnd") LocalDateTime reminderEnd,
             @Param("fundingStatus") FundingStatus fundingStatus
     );
 

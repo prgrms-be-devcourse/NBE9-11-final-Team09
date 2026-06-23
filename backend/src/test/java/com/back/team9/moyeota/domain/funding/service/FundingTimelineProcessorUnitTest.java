@@ -164,8 +164,8 @@ class FundingTimelineProcessorUnitTest {
         given(pathinfoRepository.findDepartureReminderTargets(
                 PathinfoStatus.PENDING,
                 Direction.OUTBOUND,
-                NOW,
                 NOW.plusHours(2),
+                NOW.plusHours(3),
                 FundingStatus.CONFIRMED
         )).willReturn(List.of(outbound));
 
@@ -191,8 +191,8 @@ class FundingTimelineProcessorUnitTest {
         given(pathinfoRepository.findDepartureReminderTargets(
                 PathinfoStatus.PENDING,
                 Direction.OUTBOUND,
-                NOW,
                 NOW.plusHours(2),
+                NOW.plusHours(3),
                 FundingStatus.CONFIRMED
         )).willReturn(List.of());
 
