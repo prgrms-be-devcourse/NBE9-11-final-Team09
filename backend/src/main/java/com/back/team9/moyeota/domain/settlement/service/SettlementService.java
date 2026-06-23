@@ -59,7 +59,6 @@ public class SettlementService {
                 .hostPaybackAmount(hostPaybackAmount)
                 .status(SettlementStatus.CALCULATED)
                 .paybackHold(funding.getPaybackHold())
-                .createdAt(LocalDateTime.now(clock))
                 .build();
 
         Settlement saved;
@@ -97,7 +96,7 @@ public class SettlementService {
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_AVAILABLE);
         }
 
-        settlement.approve();
+        settlement.approve(LocalDateTime.now(clock));
         return SettlementResponse.from(settlement);
 
     }

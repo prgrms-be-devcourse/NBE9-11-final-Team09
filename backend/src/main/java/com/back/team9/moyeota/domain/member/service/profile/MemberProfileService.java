@@ -10,7 +10,6 @@ import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 // 회원 프로필 조회 및 수정 서비스
 @Service
 @RequiredArgsConstructor

@@ -254,7 +254,6 @@ class FundingTimelineProcessorUnitTest {
                 .nickname("test")
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(NOW.minusDays(10))
                 .build();
     }
 

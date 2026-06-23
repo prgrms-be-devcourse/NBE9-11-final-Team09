@@ -14,8 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,8 +88,6 @@ class MemberProfileServiceTest {
         // Then
         assertThat(response.nickname()).isEqualTo("변경닉네임");
         assertThat(response.phoneNumber()).isEqualTo("010-9999-8888");
-        assertThat(response.updatedAt()).isNotNull();
-
         assertThat(member.getNickname()).isEqualTo("변경닉네임");
         assertThat(member.getPhoneNumber()).isEqualTo("010-9999-8888");
     }
@@ -237,7 +233,6 @@ class MemberProfileServiceTest {
                 .nickname("기존닉네임")
                 .phoneNumber("010-1234-5678")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 

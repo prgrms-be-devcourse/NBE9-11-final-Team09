@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -146,7 +145,6 @@ class AdminMemberServiceTest {
                 .nickname("모여타요")
                 .phoneNumber("010-1234-5678")
                 .status(status)
-                .createdAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .build();
     }
 

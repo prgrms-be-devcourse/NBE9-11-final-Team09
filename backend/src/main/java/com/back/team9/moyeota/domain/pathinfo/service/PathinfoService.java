@@ -10,6 +10,7 @@ import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 import com.back.team9.moyeota.domain.pathinfo.entity.PathinfoStatus;
 import com.back.team9.moyeota.domain.pathinfo.repository.PathinfoRepository;
+import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoTimeValidator;
 import com.back.team9.moyeota.domain.pathinfo.validator.PathinfoValidator;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -25,7 +26,15 @@ import java.util.Objects;
 public class PathinfoService {
 
     private final PathinfoRepository pathinfoRepository;
-    private final PathinfoValidator pathinfoValidator;
+    private final PathinfoTimeValidator pathinfoTimeValidator;
+
+    public void validatePathinfoRequest(
+            TripType tripType,
+            RouteRequest route
+    ) {
+        PathinfoValidator.validateTripType(tripType, route);
+        pathinfoTimeValidator.validateDepartureDate(route.departureTime());
+    }
 
     // 펀딩 생성 시 노선 생성
     @Transactional
@@ -34,7 +43,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        pathinfoValidator.validateTripType(tripType, route);
+        validatePathinfoRequest(tripType, route);
 
         Pathinfo outbound = Pathinfo.create(
                 funding,
@@ -72,7 +81,7 @@ public class PathinfoService {
             TripType tripType,
             RouteRequest route
     ) {
-        pathinfoValidator.validateTripType(tripType, route);
+        validatePathinfoRequest(tripType, route);
 
         Pathinfo outbound = pathinfoRepository
                 .findByFunding_FundingIdAndDirection(
@@ -160,7 +169,6 @@ public class PathinfoService {
     }
 
     // 여러 펀딩의 특정 방향 노선 일괄 조회
-    // 펀딩 목록 조회에서 노선정보 가져오는데 사용
     @Transactional(readOnly = true)
     public List<Pathinfo> findByFundingIdsAndDirection(
             List<Long> fundingIds,
@@ -207,7 +215,6 @@ public class PathinfoService {
     }
 
     // 노선 정보가 달라졌는지 검사
-    // 참가자가 있는 펀딩 수정 시 노선 변경을 막기 위한 검증에 사용
     @Transactional(readOnly = true)
     public boolean isRouteChanged(
             Long fundingId,

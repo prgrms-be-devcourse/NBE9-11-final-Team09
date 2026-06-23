@@ -13,13 +13,17 @@ import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ParticipationController.class)
 @Import(GlobalExceptionHandler.class)
-@WithMockUser
 class ParticipationControllerTest {
 
     @Autowired
@@ -54,15 +57,32 @@ class ParticipationControllerTest {
     @MockitoBean
     private JwtBlacklistService jwtBlacklistService;
 
-
-
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void setMockMember(Long memberId) {
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(
+                        memberId,  // principal에 Long 타입 memberId 직접 주입
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))
+                );
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
+    }
 
     // ==================== 참여 신청 ====================
 
     @Test
     @DisplayName("참여 신청 - 정상 요청 200 OK")
     void createParticipation_정상요청_200OK() throws Exception {
+        setMockMember(1L);
+
         ParticipationResponse response = new ParticipationResponse(
                 1L,
                 ParticipationStatus.ACTIVE,
@@ -73,7 +93,7 @@ class ParticipationControllerTest {
                 LocalDateTime.now()
         );
 
-        given(participationService.createParticipation(anyLong(), any(ParticipationCreateRequest.class)))
+        given(participationService.createParticipation(any(), any(ParticipationCreateRequest.class)))
                 .willReturn(response);
 
         ParticipationCreateRequest request = new ParticipationCreateRequest(10L, 100L, null);
@@ -91,6 +111,8 @@ class ParticipationControllerTest {
     @Test
     @DisplayName("참여 신청 - fundingId 누락 시 400")
     void createParticipation_fundingId누락_400반환() throws Exception {
+        setMockMember(1L);
+
         String invalidRequest = """
                 {
                     "outboundSeatId": 100
@@ -108,6 +130,8 @@ class ParticipationControllerTest {
     @Test
     @DisplayName("참여 취소 - 정상 요청 200 OK")
     void cancelParticipation_정상요청_200OK() throws Exception {
+        setMockMember(1L);
+
         mockMvc.perform(delete("/api/participations/{participationId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
@@ -117,9 +141,11 @@ class ParticipationControllerTest {
     @Test
     @DisplayName("참여 취소 - 존재하지 않는 참여 404")
     void cancelParticipation_존재하지않는참여_404반환() throws Exception {
+        setMockMember(1L);
+
         willThrow(new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND))
                 .given(participationService)
-                .cancelParticipation(anyLong(), eq(999L));
+                .cancelParticipation(any(), eq(999L));
 
         mockMvc.perform(delete("/api/participations/{participationId}", 999L))
                 .andExpect(status().isNotFound())
@@ -132,6 +158,8 @@ class ParticipationControllerTest {
     @Test
     @DisplayName("참여자 목록 조회 - 정상 요청 200 OK")
     void getParticipations_정상요청_200OK() throws Exception {
+        setMockMember(1L);
+
         ParticipationListResponse listResponse = new ParticipationListResponse(
                 1L,
                 "모여타요",
@@ -141,7 +169,7 @@ class ParticipationControllerTest {
                 null
         );
 
-        given(participationService.getParticipations(anyLong(), eq(10L)))
+        given(participationService.getParticipations(any(), eq(10L)))
                 .willReturn(List.of(listResponse));
 
         mockMvc.perform(get("/api/fundings/{fundingId}/participations", 10L))
@@ -155,9 +183,11 @@ class ParticipationControllerTest {
     @Test
     @DisplayName("참여자 목록 조회 - 방장 아님 403")
     void getParticipations_방장아님_403반환() throws Exception {
+        setMockMember(1L);
+
         willThrow(new BusinessException(ErrorCode.FUNDING_FORBIDDEN))
                 .given(participationService)
-                .getParticipations(anyLong(), eq(10L));
+                .getParticipations(any(), eq(10L));
 
         mockMvc.perform(get("/api/fundings/{fundingId}/participations", 10L))
                 .andExpect(status().isForbidden())

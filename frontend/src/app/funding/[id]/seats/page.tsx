@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Seat, SeatLayout } from "@/types/seat";
-import { getSeatLayout, holdSeat } from "@/api/seat";
+import { Seat, SeatLayout } from "@/types/funding";
+import { getSeatLayout } from "@/lib/fundingApi";
 import SeatMap from "@/components/seat/SeatMap";
 import SeatInfoPanel from "@/components/seat/SeatInfoPanel";
 import CommonModal from "@/components/common/CommonModal";
@@ -77,43 +77,30 @@ export default function SeatsPage() {
 
     // 좌석 클릭 핸들러
     async function handleSeatClick(seat: Seat) {
-        // BOOKED → 아무 반응 없음 (맨 먼저 체크!)
         if (seat.status === "BOOKED") return;
 
-        // HOLD (다른 사람 선점 중) → 팝업 (두 번째 체크!)
         if (seat.status === "HOLD" && !seat.mySeat) {
             setModal({
-                title: "선택 불가",
-                message: "이미 다른 사람이 선점한 좌석입니다. 새로고침 후 다시 시도해주세요.",
+                title: "이미 선택된 좌석입니다",
+                message: "다른 분이 먼저 선택했어요. 잠시 후 새로고침하여 다시 시도해주세요.",
             });
             return;
         }
 
-        // AVAILABLE → 선점 시도
-        try {
-            const updatedSeat = await holdSeat(seat.seatId);
-            setSeatLayout((prev) =>
-                prev ? {
-                    ...prev,
-                    seats: prev.seats.map((s) =>
-                        s.seatId === seat.seatId
-                            ? { ...s, status: "HOLD" as const, mySeat: true }
-                            : s
-                    ),
-                } : prev
-            );
-            if (step === "outbound") setSelectedSeat(updatedSeat);
-            else setReturnSeat(updatedSeat);
-        } catch (err: unknown) {
-            if (err instanceof Error && err.message === "ALREADY_HELD") {
-                setModal({
-                    title: "선택 불가",
-                    message: "이미 다른 사람이 선점한 좌석입니다. 새로고침 후 다시 시도해주세요.",
-                });
-            } else {
-                setModal({ title: "오류", message: "좌석 선점에 실패했습니다." });
-            }
-        }
+        // TODO: 실제 API 연동 시 holdSeat 호출로 교체 예정 (feat/143-seat-api-integration)
+        // 현재는 mock 데이터 상태이므로 로컬 상태만 업데이트
+        setSeatLayout((prev) =>
+            prev ? {
+                ...prev,
+                seats: prev.seats.map((s) =>
+                    s.seatId === seat.seatId
+                        ? { ...s, status: "HOLD" as const, mySeat: true }
+                        : s
+                ),
+            } : prev
+        );
+        if (step === "outbound") setSelectedSeat(seat);
+        else setReturnSeat(seat);
     }
 
 

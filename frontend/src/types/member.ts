@@ -79,3 +79,23 @@ export interface MemberHistoryPages {
   fundings: PageResponse<MemberFunding>;
   payments: PageResponse<MemberPayment>;
 }
+
+export type ParticipationStatus = "ACTIVE" | "CANCELED" | "COMPLETED";
+
+export type ParticipationPaymentStatus =
+    | "PENDING"
+    | "ACTIVE"
+    | "CANCELED"
+    | "COMPLETED"
+    | "NO_SHOW";
+
+export interface MyParticipation {
+  participationId: number;
+  fundingTitle: string;
+  routeInfo: string;
+  outboundSeatNumber: string;
+  returnSeatNumber: string | null;
+  status: ParticipationStatus;
+  paymentStatus: ParticipationPaymentStatus;
+  canBoard: boolean;
+}

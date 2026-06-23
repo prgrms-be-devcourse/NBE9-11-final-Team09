@@ -1,16 +1,15 @@
 package com.back.team9.moyeota.domain.member.entity;
 
+import com.back.team9.moyeota.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Member {
+public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long memberId;
@@ -38,12 +37,10 @@ public class Member {
     @Column(nullable = false)
     private MemberStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
-    public void updateProfile(String nickname, String phoneNumber) {
+    public void updateProfile(
+            String nickname,
+            String phoneNumber
+    ) {
         if (nickname != null) {
             this.nickname = nickname;
         }
@@ -51,12 +48,9 @@ public class Member {
         if (phoneNumber != null) {
             this.phoneNumber = phoneNumber;
         }
-
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void withdraw() {
         this.status = MemberStatus.WITHDRAWN;
-        this.updatedAt = LocalDateTime.now();
     }
 }

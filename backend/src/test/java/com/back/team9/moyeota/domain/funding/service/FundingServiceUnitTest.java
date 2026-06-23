@@ -15,7 +15,6 @@ import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
-import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
@@ -51,7 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -82,9 +80,6 @@ class FundingServiceUnitTest {
 
     @Mock
     private ParticipationRepository participationRepository;
-
-    @Mock
-    private FundingValidator fundingValidator;
 
     @Test
     @DisplayName("펀딩 생성 성공")
@@ -121,8 +116,8 @@ class FundingServiceUnitTest {
         assertThat(savedFunding.getMaxParticipants())
                 .isEqualTo(BusType.BUS_45.getCapacity());
 
-        verify(fundingValidator)
-                .validateFundingRequest(20, BusType.BUS_45);
+        verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
         verify(pathinfoService)
                 .createPathinfos(savedFunding, TripType.ONE_WAY, request.route());
         ArgumentCaptor<FundingCreatedEvent> eventCaptor =
@@ -147,7 +142,7 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
 
-        verifyNoInteractions(fundingRepository, pathinfoService, eventPublisher, fundingValidator);
+        verifyNoInteractions(fundingRepository, pathinfoService, eventPublisher);
     }
 
     @Test
@@ -162,9 +157,6 @@ class FundingServiceUnitTest {
         );
 
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
-        willThrow(new BusinessException(ErrorCode.FUNDING_MIN_INVALID))
-                .given(fundingValidator)
-                .validateFundingRequest(70, BusType.BUS_45);
 
         // When / Then
         assertThatThrownBy(() -> fundingService.createFunding(1L, request))
@@ -173,7 +165,9 @@ class FundingServiceUnitTest {
                 .isEqualTo(ErrorCode.FUNDING_MIN_INVALID);
 
         verify(fundingRepository, never()).save(any());
-        verifyNoInteractions(pathinfoService, eventPublisher);
+        verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -273,10 +267,8 @@ class FundingServiceUnitTest {
                 .isEqualTo(BusType.BUS_25.getCapacity());
         assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(495000));
 
-        verify(fundingValidator).validateHost(funding, 1L);
-        verify(fundingValidator).validateUpdatable(funding);
-        verify(fundingValidator)
-                .validateFundingRequest(10, BusType.BUS_25);
+        verify(pathinfoService)
+                .validatePathinfoRequest(TripType.ONE_WAY, request.route());
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
@@ -319,9 +311,6 @@ class FundingServiceUnitTest {
         assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(550000));
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
 
-        verify(fundingValidator).validateHost(funding, 1L);
-        verify(fundingValidator).validateUpdatable(funding);
-        verify(fundingValidator).validateFundingRequest(10, BusType.BUS_25);
         verify(pathinfoService)
                 .updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
@@ -348,7 +337,7 @@ class FundingServiceUnitTest {
                 TripType.ONE_WAY,
                 null,
                 null,
-                route()
+                route(Region.INCHEON, Region.BUSAN)
         );
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
@@ -368,9 +357,7 @@ class FundingServiceUnitTest {
         // Then
         assertThat(funding.getTitle()).isEqualTo("Updated Title");
         assertThat(funding.getContent()).isEqualTo("Updated Content");
-        verify(fundingValidator).validateHost(funding, 1L);
-        verify(fundingValidator).validateUpdatable(funding);
-        verify(fundingValidator, never()).validateFundingRequest(any(), any());
+        verify(pathinfoService, never()).validatePathinfoRequest(any(), any());
         verify(pathinfoService, never()).updatePathinfos(any(), any(), any());
         verify(pathinfoService, never()).syncBusType(any(), any());
         verify(eventPublisher, never()).publishEvent(any(FundingSeatsRecreateEvent.class));
@@ -390,7 +377,7 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_NOT_FOUND);
 
-        verifyNoInteractions(pathinfoService, fundingValidator);
+        verifyNoInteractions(pathinfoService);
     }
 
     @Test
@@ -399,9 +386,6 @@ class FundingServiceUnitTest {
         // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        willThrow(new BusinessException(ErrorCode.FUNDING_FORBIDDEN))
-                .given(fundingValidator)
-                .validateHost(funding, 2L);
 
         // When / Then
         assertThatThrownBy(() ->
@@ -411,7 +395,6 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_FORBIDDEN);
 
-        verify(fundingValidator, never()).validateUpdatable(funding);
         verifyNoInteractions(pathinfoService);
     }
 
@@ -421,9 +404,6 @@ class FundingServiceUnitTest {
         // Given
         Funding funding = funding(10L, member(1L), FundingStatus.CONFIRMED);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
-                .given(fundingValidator)
-                .validateUpdatable(funding);
 
         // When / Then
         assertThatThrownBy(() ->
@@ -433,8 +413,6 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE);
 
-        verify(fundingValidator, never())
-                .validateFundingRequest(10, BusType.BUS_25);
         verifyNoInteractions(pathinfoService);
     }
 
@@ -450,8 +428,6 @@ class FundingServiceUnitTest {
 
         // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
-        verify(fundingValidator).validateHost(funding, 1L);
-        verify(fundingValidator).validateUpdatable(funding);
         verify(pathinfoService).cancelPathinfos(10L);
     }
 
@@ -468,8 +444,6 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_ALREADY_CANCELLED);
 
-        verify(fundingValidator).validateHost(funding, 1L);
-        verify(fundingValidator, never()).validateUpdatable(funding);
         verify(pathinfoService, never()).cancelPathinfos(10L);
     }
 
@@ -479,9 +453,6 @@ class FundingServiceUnitTest {
         // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        willThrow(new BusinessException(ErrorCode.FUNDING_FORBIDDEN))
-                .given(fundingValidator)
-                .validateHost(funding, 2L);
 
         // When / Then
         assertThatThrownBy(() -> fundingService.cancelFunding(2L, 10L))
@@ -489,7 +460,6 @@ class FundingServiceUnitTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FUNDING_FORBIDDEN);
 
-        verify(fundingValidator, never()).validateUpdatable(funding);
         verify(pathinfoService, never()).cancelPathinfos(10L);
     }
 
@@ -624,7 +594,6 @@ class FundingServiceUnitTest {
                 .chatroomId(chatRoomId)
                 .funding(funding)
                 .status(ChatRoomStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(1))
                 .build();
     }
 
@@ -674,7 +643,6 @@ class FundingServiceUnitTest {
                 .nickname("test")
                 .phoneNumber("01012341234")
                 .status(MemberStatus.ACTIVE)
-                .createdAt(DEPARTURE_TIME.minusDays(10))
                 .build();
     }
 

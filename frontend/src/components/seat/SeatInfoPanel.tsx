@@ -1,4 +1,4 @@
-import { BusType } from "@/types/seat";
+import { BusType } from "@/types/funding";
 
 interface SeatInfoPanelProps {
     routeInfo: string;          // 노선 정보
