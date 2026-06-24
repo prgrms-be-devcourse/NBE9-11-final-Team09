@@ -195,6 +195,7 @@ class MemberControllerTest {
         verify(memberService, never())
                 .requestEmailVerification(any());
     }
+
     @Test
     @DisplayName("유효한 이메일 인증 확인 요청 시 200 OK를 반환한다")
     void confirmEmailVerificationWithValidRequestReturnsOk()
@@ -302,16 +303,17 @@ class MemberControllerTest {
                 1209600
         );
 
-        when(memberSocialLoginService.login(any())).thenReturn(result);
+        when(memberSocialLoginService.loginWithKakaoAuthorizationCode(any()))
+                .thenReturn(result);
 
         String requestBody = """
-            {
-              "provider": "KAKAO",
-              "accessToken": "kakao-access-token"
-            }
-            """;
+                {
+                  "code": "kakao-authorization-code",
+                  "redirectUri": "http://localhost:3000/login/kakao/callback"
+                }
+                """;
 
-        mockMvc.perform(post("/api/members/social-login")
+        mockMvc.perform(post("/api/members/social-login/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -343,7 +345,8 @@ class MemberControllerTest {
                         )
                 ));
 
-        verify(memberSocialLoginService).login(any());
+        verify(memberSocialLoginService)
+                .loginWithKakaoAuthorizationCode(any());
     }
 
     @Test
@@ -351,13 +354,13 @@ class MemberControllerTest {
     void socialLoginWithMissingRequiredFieldsReturnsBadRequest()
             throws Exception {
         String requestBody = """
-            {
-              "provider": null,
-              "accessToken": ""
-            }
-            """;
+                {
+                  "code": "",
+                  "redirectUri": ""
+                }
+                """;
 
-        mockMvc.perform(post("/api/members/social-login")
+        mockMvc.perform(post("/api/members/social-login/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -429,10 +432,10 @@ class MemberControllerTest {
         // Given
         String authorization = "Bearer access-token";
         String requestBody = """
-            {
-              "password": "Password123!"
-            }
-            """;
+                {
+                  "password": "Password123!"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(delete("/api/members/me")
@@ -479,9 +482,9 @@ class MemberControllerTest {
                         .with(memberAuthentication())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                            }
-                            """))
+                                {
+                                }
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode")
                         .value("USR_WITHDRAW_SUCCESS"));

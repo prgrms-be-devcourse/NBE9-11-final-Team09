@@ -6,7 +6,8 @@ import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.infrastructure.social.KakaoSocialLoginClient;
-import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.member.dto.auth.KakaoAuthorizationCodeLoginRequest;
+import com.back.team9.moyeota.domain.member.dto.auth.KakaoTokenResponse;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
@@ -14,13 +15,9 @@ import com.back.team9.moyeota.global.jwt.JwtTokenResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -30,7 +27,7 @@ import static org.mockito.Mockito.*;
 class MemberSocialLoginServiceTest {
 
     @Mock
-    private MemberRepository memberRepository;
+    private MemberSocialLoginTransactionService transactionService;
 
     @Mock
     private KakaoSocialLoginClient kakaoSocialLoginClient;
@@ -44,21 +41,27 @@ class MemberSocialLoginServiceTest {
     @Test
     @DisplayName("기존 카카오 회원이면 회원 생성 없이 JWT를 발급한다")
     void loginWithExistingKakaoMemberReturnsTokens() {
-        MemberSocialLoginRequest request = createRequest();
+        KakaoAuthorizationCodeLoginRequest request = createRequest();
+        KakaoTokenResponse tokenResponse = createKakaoTokenResponse();
         KakaoUserInfoResponse userInfo = createKakaoUserInfo();
         Member member = createKakaoMember(MemberStatus.ACTIVE);
         JwtTokenResponse tokens = createTokens();
 
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
+        when(kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        )).thenReturn(tokenResponse);
+        when(kakaoSocialLoginClient.getUserInfo(tokenResponse.accessToken()))
                 .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        when(transactionService.findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.of(member));
+                userInfo
+        )).thenReturn(member);
         when(jwtTokenProvider.createTokens(member.getMemberId()))
                 .thenReturn(tokens);
 
-        MemberLoginResult result = memberSocialLoginService.login(request);
+        MemberLoginResult result =
+                memberSocialLoginService.loginWithKakaoAuthorizationCode(request);
 
         assertThat(result.response().accessToken()).isEqualTo("access-token");
         assertThat(result.refreshToken()).isEqualTo("refresh-token");
@@ -66,81 +69,43 @@ class MemberSocialLoginServiceTest {
         assertThat(result.response().user().email())
                 .isEqualTo("kakao@example.com");
 
-        verify(memberRepository, never()).save(any(Member.class));
-        verify(jwtTokenProvider).createTokens(member.getMemberId());
-    }
-
-    @Test
-    @DisplayName("신규 카카오 회원이면 회원을 생성하고 JWT를 발급한다")
-    void loginWithNewKakaoMemberCreatesMemberAndReturnsTokens() {
-        MemberSocialLoginRequest request = createRequest();
-        KakaoUserInfoResponse userInfo = createKakaoUserInfo();
-        Member savedMember = createKakaoMember(MemberStatus.ACTIVE);
-        JwtTokenResponse tokens = createTokens();
-
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
-                .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        verify(transactionService).findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.empty());
-        when(memberRepository.existsByEmail("kakao@example.com"))
-                .thenReturn(false);
-        when(memberRepository.existsByNickname("카카오유저_123456789"))
-                .thenReturn(false);
-        when(memberRepository.save(any(Member.class)))
-                .thenReturn(savedMember);
-        when(jwtTokenProvider.createTokens(savedMember.getMemberId()))
-                .thenReturn(tokens);
-
-        MemberLoginResult result = memberSocialLoginService.login(request);
-
-        assertThat(result.response().accessToken()).isEqualTo("access-token");
-        assertThat(result.response().user().email())
-                .isEqualTo("kakao@example.com");
-
-        ArgumentCaptor<Member> memberCaptor =
-                ArgumentCaptor.forClass(Member.class);
-        verify(memberRepository).save(memberCaptor.capture());
-
-        Member newMember = memberCaptor.getValue();
-        assertThat(newMember.getEmail()).isEqualTo("kakao@example.com");
-        assertThat(newMember.getPassword()).isNull();
-        assertThat(newMember.getName()).isEqualTo("카카오유저_123456789");
-        assertThat(newMember.getNickname()).isEqualTo("카카오유저_123456789");
-        assertThat(newMember.getProvider()).isEqualTo(Provider.KAKAO);
-        assertThat(newMember.getProviderId()).isEqualTo("123456789");
-        assertThat(newMember.getStatus()).isEqualTo(MemberStatus.ACTIVE);
+                userInfo
+        );
+        verify(jwtTokenProvider).createTokens(member.getMemberId());
     }
 
     @Test
     @DisplayName("소셜 이메일이 기존 회원 이메일과 중복되면 예외가 발생한다")
     void loginWithDuplicateEmailThrowsException() {
-        MemberSocialLoginRequest request = createRequest();
+        KakaoAuthorizationCodeLoginRequest request = createRequest();
+        KakaoTokenResponse tokenResponse = createKakaoTokenResponse();
         KakaoUserInfoResponse userInfo = createKakaoUserInfo();
 
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
+        when(kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        )).thenReturn(tokenResponse);
+        when(kakaoSocialLoginClient.getUserInfo(tokenResponse.accessToken()))
                 .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        when(transactionService.findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.empty());
-        when(memberRepository.existsByEmail("kakao@example.com"))
-                .thenReturn(true);
+                userInfo
+        )).thenThrow(new BusinessException(ErrorCode.DUPLICATE_EMAIL));
 
         assertBusinessException(
-                () -> memberSocialLoginService.login(request),
+                () -> memberSocialLoginService.loginWithKakaoAuthorizationCode(request),
                 ErrorCode.DUPLICATE_EMAIL
         );
-
-        verify(memberRepository, never()).save(any(Member.class));
         verifyNoInteractions(jwtTokenProvider);
     }
 
     @Test
     @DisplayName("소셜 이메일이 제공되지 않으면 예외가 발생한다")
     void loginWithoutEmailThrowsException() {
-        MemberSocialLoginRequest request = createRequest();
+        KakaoAuthorizationCodeLoginRequest request = createRequest();
+        KakaoTokenResponse tokenResponse = createKakaoTokenResponse();
         KakaoUserInfoResponse userInfo = new KakaoUserInfoResponse(
                 123456789L,
                 new KakaoUserInfoResponse.KakaoAccount(
@@ -149,38 +114,45 @@ class MemberSocialLoginServiceTest {
                 )
         );
 
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
+        when(kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        )).thenReturn(tokenResponse);
+        when(kakaoSocialLoginClient.getUserInfo(tokenResponse.accessToken()))
                 .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        when(transactionService.findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.empty());
+                userInfo
+        )).thenThrow(new BusinessException(ErrorCode.SOCIAL_EMAIL_NOT_PROVIDED));
 
         assertBusinessException(
-                () -> memberSocialLoginService.login(request),
+                () -> memberSocialLoginService.loginWithKakaoAuthorizationCode(request),
                 ErrorCode.SOCIAL_EMAIL_NOT_PROVIDED
         );
-
-        verify(memberRepository, never()).save(any(Member.class));
         verifyNoInteractions(jwtTokenProvider);
     }
 
     @Test
     @DisplayName("정지 회원이면 소셜 로그인에 실패한다")
     void loginWithSuspendedMemberThrowsException() {
-        MemberSocialLoginRequest request = createRequest();
+        KakaoAuthorizationCodeLoginRequest request = createRequest();
+        KakaoTokenResponse tokenResponse = createKakaoTokenResponse();
         KakaoUserInfoResponse userInfo = createKakaoUserInfo();
         Member member = createKakaoMember(MemberStatus.SUSPENDED);
 
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
+        when(kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        )).thenReturn(tokenResponse);
+        when(kakaoSocialLoginClient.getUserInfo(tokenResponse.accessToken()))
                 .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        when(transactionService.findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.of(member));
+                userInfo
+        )).thenThrow(new BusinessException(ErrorCode.USER_SUSPENDED));
 
         assertBusinessException(
-                () -> memberSocialLoginService.login(request),
+                () -> memberSocialLoginService.loginWithKakaoAuthorizationCode(request),
                 ErrorCode.USER_SUSPENDED
         );
 
@@ -190,19 +162,24 @@ class MemberSocialLoginServiceTest {
     @Test
     @DisplayName("탈퇴 회원이면 소셜 로그인에 실패한다")
     void loginWithWithdrawnMemberThrowsException() {
-        MemberSocialLoginRequest request = createRequest();
+        KakaoAuthorizationCodeLoginRequest request = createRequest();
+        KakaoTokenResponse tokenResponse = createKakaoTokenResponse();
         KakaoUserInfoResponse userInfo = createKakaoUserInfo();
         Member member = createKakaoMember(MemberStatus.WITHDRAWN);
 
-        when(kakaoSocialLoginClient.getUserInfo(request.accessToken()))
+        when(kakaoSocialLoginClient.getToken(
+                request.code(),
+                request.redirectUri()
+        )).thenReturn(tokenResponse);
+        when(kakaoSocialLoginClient.getUserInfo(tokenResponse.accessToken()))
                 .thenReturn(userInfo);
-        when(memberRepository.findByProviderAndProviderId(
+        when(transactionService.findOrCreateSocialMember(
                 Provider.KAKAO,
-                "123456789"
-        )).thenReturn(Optional.of(member));
+                userInfo
+        )).thenThrow(new BusinessException(ErrorCode.USER_ALREADY_WITHDRAWN));
 
         assertBusinessException(
-                () -> memberSocialLoginService.login(request),
+                () -> memberSocialLoginService.loginWithKakaoAuthorizationCode(request),
                 ErrorCode.USER_ALREADY_WITHDRAWN
         );
 
@@ -221,10 +198,21 @@ class MemberSocialLoginServiceTest {
                 );
     }
 
-    private MemberSocialLoginRequest createRequest() {
-        return new MemberSocialLoginRequest(
-                Provider.KAKAO,
-                "kakao-access-token"
+    private KakaoAuthorizationCodeLoginRequest createRequest() {
+        return new KakaoAuthorizationCodeLoginRequest(
+                "kakao-authorization-code",
+                "http://localhost:3000/login/kakao/callback"
+        );
+    }
+
+    private KakaoTokenResponse createKakaoTokenResponse() {
+        return new KakaoTokenResponse(
+                "kakao-access-token",
+                "bearer",
+                21599,
+                "kakao-refresh-token",
+                5183999,
+                "account_email profile_nickname"
         );
     }
 
