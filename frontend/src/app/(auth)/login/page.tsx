@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import PasswordField from "@/components/ui/PasswordField";
 import { storeAccessToken } from "@/lib/member-api";
 
 type KakaoSdk = {
@@ -93,6 +94,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [kakaoLoading, setKakaoLoading] = useState(false);
@@ -159,7 +161,6 @@ export default function LoginPage() {
 
       storeAccessToken(accessToken, keepLogin);
       router.push("/");
-      router.refresh();
     } catch {
       setError("서버와 연결할 수 없습니다.");
     } finally {
@@ -219,17 +220,15 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-bold">비밀번호</label>
-            <input
-              type="password"
-              placeholder="비밀번호 입력"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600"
-            />
-          </div>
+          <PasswordField
+            label="비밀번호"
+            placeholder="비밀번호 입력"
+            value={password}
+            visible={showPassword}
+            required
+            onChange={setPassword}
+            onToggleVisible={() => setShowPassword((current) => !current)}
+          />
 
           <div className="flex items-center justify-between">
             <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
