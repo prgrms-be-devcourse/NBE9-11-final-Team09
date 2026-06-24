@@ -75,7 +75,7 @@ export default function PasswordField({
           onClick={onToggleVisible}
           disabled={disabled}
           className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-500 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label={visible ? `${label} 숨기기` : `${label} 보기`}
+          aria-label={visible ? `${label} \uC228\uAE30\uAE30` : `${label} \uBCF4\uAE30`}
         >
           <PasswordVisibilityIcon visible={visible} />
         </button>

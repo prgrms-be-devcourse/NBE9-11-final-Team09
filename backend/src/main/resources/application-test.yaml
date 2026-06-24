@@ -5,3 +5,10 @@ spring:
 
 platform:
   fee-rate: "0.10"
+
+social:
+  kakao:
+    client-id: test-kakao-rest-api-key
+    client-secret: test-kakao-client-secret
+    token-uri: https://kauth.kakao.com/oauth/token
+    user-info-uri: https://kapi.kakao.com/v2/user/me

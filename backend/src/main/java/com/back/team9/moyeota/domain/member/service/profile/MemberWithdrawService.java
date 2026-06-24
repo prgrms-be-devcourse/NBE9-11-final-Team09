@@ -26,7 +26,7 @@ public class MemberWithdrawService {
         Member member = getMember(memberId);
 
         validateActiveMember(member);
-        validatePassword(member, request.password());
+        validateWithdrawCredential(member, request.password());
 
         member.withdraw();
     }
@@ -56,13 +56,30 @@ public class MemberWithdrawService {
         }
     }
 
-    private void validatePassword(
+    private void validateWithdrawCredential(
             Member member,
             String rawPassword
     ) {
-        if (member.getPassword() == null || !passwordEncoder.matches(
+        if (member.isSocialMember()) {
+            return;
+        }
+
+        validatePassword(rawPassword, member.getPassword());
+    }
+
+    private void validatePassword(
+            String rawPassword,
+            String encodedPassword
+    ) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_LOGIN_CREDENTIALS
+            );
+        }
+
+        if (encodedPassword == null || !passwordEncoder.matches(
                 rawPassword,
-                member.getPassword()
+                encodedPassword
         )) {
             throw new BusinessException(
                     ErrorCode.INVALID_LOGIN_CREDENTIALS

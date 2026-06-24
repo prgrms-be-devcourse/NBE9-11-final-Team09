@@ -53,4 +53,12 @@ public class Member extends BaseEntity {
     public void withdraw() {
         this.status = MemberStatus.WITHDRAWN;
     }
+
+    public boolean isLocalMember() {
+        return provider == null;
+    }
+
+    public boolean isSocialMember() {
+        return provider != null;
+    }
 }

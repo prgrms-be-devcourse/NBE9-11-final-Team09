@@ -34,6 +34,7 @@ public class SecurityConfig {
                                 "/api/members/email-verification/request",
                                 "/api/members/email-verification/confirm",
                                 "/api/members/login",
+                                "/api/members/social-login/kakao",
                                 "/swagger-ui/**",
                                 "/health",
                                 "/v3/api-docs/**",
