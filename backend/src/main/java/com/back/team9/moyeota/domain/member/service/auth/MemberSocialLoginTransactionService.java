@@ -82,34 +82,44 @@ public class MemberSocialLoginTransactionService {
         }
 
         String suffix = "_" + userInfo.id();
-        int maxBaseLength = MAX_NICKNAME_LENGTH - suffix.length();
+        String nickname = createNickname(baseNickname, suffix, "");
 
-        if (baseNickname.length() > maxBaseLength) {
-            baseNickname = baseNickname.substring(0, maxBaseLength);
+        if (!memberRepository.existsByNickname(nickname)) {
+            return nickname;
         }
 
-        String nickname = baseNickname + suffix;
-
-        if (memberRepository.existsByNickname(nickname)) {
+        for (int attempt = 0; attempt < 3; attempt++) {
             String randomSuffix = "_" + UUID.randomUUID()
                     .toString()
                     .substring(0, 4);
 
-            int adjustedBaseLength = MAX_NICKNAME_LENGTH
-                    - suffix.length()
-                    - randomSuffix.length();
+            nickname = createNickname(baseNickname, suffix, randomSuffix);
 
-            if (baseNickname.length() > adjustedBaseLength) {
-                baseNickname = baseNickname.substring(
-                        0,
-                        Math.max(0, adjustedBaseLength)
-                );
+            if (!memberRepository.existsByNickname(nickname)) {
+                return nickname;
             }
-
-            nickname = baseNickname + randomSuffix + suffix;
         }
 
-        return nickname;
+        throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+    }
+
+    private String createNickname(
+            String baseNickname,
+            String suffix,
+            String randomSuffix
+    ) {
+        int maxBaseLength = MAX_NICKNAME_LENGTH
+                - suffix.length()
+                - randomSuffix.length();
+
+        if (baseNickname.length() > maxBaseLength) {
+            baseNickname = baseNickname.substring(
+                    0,
+                    Math.max(0, maxBaseLength)
+            );
+        }
+
+        return baseNickname + randomSuffix + suffix;
     }
 
     private void validateMemberStatus(Member member) {
