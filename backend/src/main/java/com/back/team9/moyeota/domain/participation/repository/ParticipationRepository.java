@@ -65,6 +65,17 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             ParticipationStatus status
     );
 
+    @Query("""
+        select distinct p.member.memberId
+        from Participation p
+        where p.funding.fundingId = :fundingId
+          and p.status = :status
+        """)
+    List<Long> findMemberIdsByFundingIdAndStatus(
+            @Param("fundingId") Long fundingId,
+            @Param("status") ParticipationStatus status
+    );
+
     // 펀딩 목록의 각 펀딩 참여자 수 조회
     @Query("""
         select p.funding.fundingId as fundingId,
