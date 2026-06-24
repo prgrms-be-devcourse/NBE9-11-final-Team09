@@ -11,6 +11,7 @@ import {
 import type { BusType, FundingPayload, Region } from "@/types/funding";
 import { REGIONS } from "@/types/funding";
 import type { Seat } from "@/types/funding";
+import { toTimeInput } from "@/lib/fundingFormat";
 
 type FundingFormProps = {
   initialValue?: FundingPayload;
@@ -395,7 +396,7 @@ export default function FundingForm({
                 복귀 출발 시간
                 <input
                   type="time"
-                  value={toTimeInputValue(payload.route.returnTime)}
+                  value={toTimeInput(payload.route.returnTime)}
                   onChange={(event) =>
                     setPayload((current) => ({
                       ...current,
@@ -711,14 +712,6 @@ function toDatetimeLocalValue(date: Date) {
   return offsetDate.toISOString().slice(0, 16);
 }
 
-function toTimeInputValue(value?: string | null) {
-  if (!value) {
-    return "";
-  }
-
-  return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
-}
-
 function getDepartureTimeError(
   departureTime: string,
   minimumDepartureDateTime: string
@@ -759,7 +752,7 @@ function combineDepartureDateAndReturnTime(
   departureTime: string,
   returnTime: string
 ) {
-  const time = toTimeInputValue(returnTime);
+  const time = toTimeInput(returnTime);
 
   if (!departureTime || !time) {
     return "";
