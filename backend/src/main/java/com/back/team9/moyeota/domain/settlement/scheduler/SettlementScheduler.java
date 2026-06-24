@@ -1,7 +1,6 @@
 package com.back.team9.moyeota.domain.settlement.scheduler;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
-import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.settlement.service.SettlementService;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +21,10 @@ public class SettlementScheduler {
     private final SettlementService settlementService;
     private final Clock clock;
 
-    @Scheduled(cron = "0 0 10 * * *")
+    @Scheduled(cron = "0 0 10 * * *", zone = "Asia/Seoul")
     public void createSettlements() {
         LocalDate today = LocalDate.now(clock);
-        List<Funding> targets = fundingRepository.findByStatusAndDepartureDateBefore(
-                FundingStatus.COMPLETED, today);
+        List<Funding> targets = fundingRepository.findCompletedWithoutSettlement(today);
 
         if (targets.isEmpty()) return;
 

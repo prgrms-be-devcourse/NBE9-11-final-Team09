@@ -77,8 +77,7 @@ class SettlementSchedulerTest {
     @DisplayName("정산 스케줄러 - COMPLETED 펀딩 존재 시 createByScheduler 호출")
     void createSettlements_COMPLETED펀딩존재_createByScheduler호출() {
         Funding funding = completedFunding(1L);
-        given(fundingRepository.findByStatusAndDepartureDateBefore(
-                FundingStatus.COMPLETED, LocalDate.now(clock)))
+        given(fundingRepository.findCompletedWithoutSettlement(LocalDate.now(clock)))
                 .willReturn(List.of(funding));
 
         scheduler.createSettlements();
@@ -91,8 +90,7 @@ class SettlementSchedulerTest {
     void createSettlements_복수건_각각처리() {
         Funding funding1 = completedFunding(1L);
         Funding funding2 = completedFunding(2L);
-        given(fundingRepository.findByStatusAndDepartureDateBefore(
-                FundingStatus.COMPLETED, LocalDate.now(clock)))
+        given(fundingRepository.findCompletedWithoutSettlement(LocalDate.now(clock)))
                 .willReturn(List.of(funding1, funding2));
 
         scheduler.createSettlements();
@@ -104,8 +102,7 @@ class SettlementSchedulerTest {
     @Test
     @DisplayName("정산 스케줄러 - 대상 없을 시 아무 처리 없이 종료")
     void createSettlements_대상없음_스킵() {
-        given(fundingRepository.findByStatusAndDepartureDateBefore(
-                FundingStatus.COMPLETED, LocalDate.now(clock)))
+        given(fundingRepository.findCompletedWithoutSettlement(LocalDate.now(clock)))
                 .willReturn(List.of());
 
         scheduler.createSettlements();
@@ -118,8 +115,7 @@ class SettlementSchedulerTest {
     void createSettlements_개별실패_나머지건계속처리() {
         Funding funding1 = completedFunding(1L);
         Funding funding2 = completedFunding(2L);
-        given(fundingRepository.findByStatusAndDepartureDateBefore(
-                FundingStatus.COMPLETED, LocalDate.now(clock)))
+        given(fundingRepository.findCompletedWithoutSettlement(LocalDate.now(clock)))
                 .willReturn(List.of(funding1, funding2));
         willThrow(new RuntimeException("DB 오류"))
                 .given(settlementService).createByScheduler(1L);
