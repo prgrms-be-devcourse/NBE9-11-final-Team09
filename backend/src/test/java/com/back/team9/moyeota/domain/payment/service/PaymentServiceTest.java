@@ -83,8 +83,9 @@ class PaymentServiceTest {
 
     private Participation mockParticipationForPrepareWithFunding(Long memberId, BigDecimal totalPrice) {
         Funding funding = mock(Funding.class);
-        given(funding.getFundingId()).willReturn(1L);
+        lenient().when(funding.getFundingId()).thenReturn(1L);
         given(funding.getTotalPrice()).willReturn(totalPrice);
+        given(funding.getMaxParticipants()).willReturn(43); // BUS_45 방장 제외 정원
         Participation participation = mockParticipationForPrepare(memberId);
         given(participation.getFunding()).willReturn(funding);
         return participation;
@@ -116,12 +117,13 @@ class PaymentServiceTest {
         BigDecimal totalPrice = new BigDecimal("500000");
         Participation participation = mockParticipationForPrepareWithFunding(1L, totalPrice);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
-        given(participationRepository.countByFunding_FundingIdAndStatus(1L, ParticipationStatus.ACTIVE))
-                .willReturn(10L);
 
         PaymentPrepareResponse response = paymentService.prepare(1L, 1L);
 
-        BigDecimal expectedAmount = totalPrice.divide(BigDecimal.valueOf(10), 0, RoundingMode.CEILING);
+        // 보증금 = totalPrice / (maxParticipants+1) / 2 = 500000 / 44 / 2
+        BigDecimal expectedAmount = totalPrice
+                .divide(BigDecimal.valueOf(44), 0, RoundingMode.CEILING)
+                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
         assertThat(response.orderId()).isNotBlank();
         assertThat(response.orderId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
         assertThat(response.amount()).isEqualByComparingTo(expectedAmount);
