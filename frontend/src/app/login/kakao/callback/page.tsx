@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   ApiRequestError,
   kakaoAuthorizationCodeLogin,
@@ -39,6 +39,7 @@ function KakaoCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
+  const loginInitiated = useRef(false);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -58,6 +59,12 @@ function KakaoCallbackContent() {
       clearKakaoLoginState();
       return;
     }
+
+    if (loginInitiated.current) {
+      return;
+    }
+    
+    loginInitiated.current = true;
 
     const authorizationCode = code;
     let ignore = false;
