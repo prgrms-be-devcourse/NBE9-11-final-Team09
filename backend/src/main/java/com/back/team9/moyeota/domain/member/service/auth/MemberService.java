@@ -10,6 +10,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupData;
 import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupRedisRepository;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.EmailVerificationRateLimitRedisRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,6 +49,7 @@ public class MemberService {
     private final PendingSignupRedisRepository pendingSignupRepository;
     private final EmailVerificationRedisRepository verificationRepository;
     private final MemberRegistrationService memberRegistrationService;
+    private final EmailVerificationRateLimitRedisRepository rateLimitRepository;
 
     public void requestSignup(MemberSignupRequest request) {
         String email = normalizeEmail(request.email());
@@ -77,6 +79,8 @@ public class MemberService {
             );
         }
 
+        validateEmailVerificationRequestRateLimit(email);
+
         PendingSignupData signupData = pendingSignupRepository
                 .findByEmail(email)
                 .orElseThrow(() -> new BusinessException(
@@ -88,7 +92,6 @@ public class MemberService {
                 signupData.nickname()
         );
 
-        // 인증코드와 가입 대기 정보의 TTL을 동일하게 갱신한다.
         pendingSignupRepository.save(signupData);
 
         String verificationCode = generateVerificationCode();
@@ -105,6 +108,8 @@ public class MemberService {
                     email,
                     verificationCode
             );
+
+            rateLimitRepository.lockRequest(email);
         } catch (RuntimeException exception) {
             safelyDeleteVerification(email);
             throw exception;
@@ -152,6 +157,7 @@ public class MemberService {
 
         safelyDeleteVerification(email);
         safelyDeletePendingSignup(email);
+        safelyDeleteRateLimit(email);
     }
 
     private void validateSignupRequest(
@@ -216,6 +222,22 @@ public class MemberService {
                     "이메일 인증 정보 Redis 삭제 실패",
                     exception
             );
+        }
+    }
+
+    private void validateEmailVerificationRequestRateLimit(String email) {
+        if (rateLimitRepository.isRequestLocked(email)) {
+            throw new BusinessException(
+                    ErrorCode.EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT
+            );
+        }
+    }
+
+    private void safelyDeleteRateLimit(String email) {
+        try {
+            rateLimitRepository.deleteRequestLock(email);
+        } catch (BusinessException exception) {
+            log.warn("이메일 인증 요청 제한 정보 Redis 삭제 실패", exception);
         }
     }
 }
