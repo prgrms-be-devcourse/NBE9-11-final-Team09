@@ -6,6 +6,8 @@ import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementCreateRequest;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementResponse;
 import com.back.team9.moyeota.domain.settlement.entity.Settlement;
@@ -46,6 +48,9 @@ class SettlementServiceTest {
 
     @Mock
     private FundingRepository fundingRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @Mock
     private Clock clock;
@@ -554,5 +559,96 @@ class SettlementServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SETTLEMENT_NOT_AVAILABLE));
+    }
+
+    // ===== createByScheduler =====
+
+    @Test
+    @DisplayName("스케줄러 정산 생성 - paybackHold=false면 COMPLETED 상태로 저장, paybackPaidAt 설정")
+    void createByScheduler_paybackHoldFalse_COMPLETED상태저장() {
+        // Given
+        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
+        given(fundingRepository.findById(1L)).willReturn(Optional.of(funding)); // paybackHold=false
+        given(paymentRepository.sumAmountByFundingIdAndStatus(1L, PaymentStatus.PAID))
+                .willReturn(new BigDecimal("100000"));
+
+        // When
+        settlementService.createByScheduler(1L);
+
+        // Then
+        ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
+        verify(settlementRepository).save(captor.capture());
+        Settlement saved = captor.getValue();
+
+        assertThat(saved.getStatus()).isEqualTo(SettlementStatus.COMPLETED);
+        assertThat(saved.getPaybackPaidAt()).isNotNull();
+        assertThat(saved.getTotalAmount()).isEqualByComparingTo(new BigDecimal("100000"));
+        assertThat(saved.getPlatformFee()).isEqualByComparingTo(new BigDecimal("10000"));
+        assertThat(saved.getHostPaybackAmount()).isEqualByComparingTo(new BigDecimal("90000"));
+        assertThat(saved.getPaybackHold()).isFalse();
+    }
+
+    @Test
+    @DisplayName("스케줄러 정산 생성 - paybackHold=true면 CALCULATED 상태로 저장, paybackPaidAt null")
+    void createByScheduler_paybackHoldTrue_CALCULATED상태저장() {
+        // Given
+        Funding holdFunding = Funding.builder()
+                .fundingId(2L)
+                .member(hostMember)
+                .title("신고 있는 펀딩")
+                .departureDate(LocalDate.now().minusDays(1))
+                .status(FundingStatus.COMPLETED)
+                .busType(BusType.BUS_45)
+                .minParticipants(10)
+                .maxParticipants(45)
+                .paybackHold(true)
+                .build();
+
+        given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
+        given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
+        given(paymentRepository.sumAmountByFundingIdAndStatus(2L, PaymentStatus.PAID))
+                .willReturn(new BigDecimal("100000"));
+
+        // When
+        settlementService.createByScheduler(2L);
+
+        // Then
+        ArgumentCaptor<Settlement> captor = ArgumentCaptor.forClass(Settlement.class);
+        verify(settlementRepository).save(captor.capture());
+        Settlement saved = captor.getValue();
+
+        assertThat(saved.getStatus()).isEqualTo(SettlementStatus.CALCULATED);
+        assertThat(saved.getPaybackPaidAt()).isNull();
+        assertThat(saved.getPaybackHold()).isTrue();
+    }
+
+    @Test
+    @DisplayName("스케줄러 정산 생성 - 이미 정산 존재 시 멱등성 보장, save 미실행")
+    void createByScheduler_이미정산존재_멱등성보장() {
+        // Given
+        given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(true);
+
+        // When
+        settlementService.createByScheduler(1L);
+
+        // Then
+        verify(fundingRepository, never()).findById(any());
+        verify(settlementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("스케줄러 정산 생성 - 존재하지 않는 fundingId 요청 시 FUNDING_NOT_FOUND 예외")
+    void createByScheduler_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
+        // Given
+        given(settlementRepository.existsByFunding_FundingId(999L)).willReturn(false);
+        given(fundingRepository.findById(999L)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> settlementService.createByScheduler(999L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.FUNDING_NOT_FOUND));
+
+        verify(settlementRepository, never()).save(any());
     }
 }
