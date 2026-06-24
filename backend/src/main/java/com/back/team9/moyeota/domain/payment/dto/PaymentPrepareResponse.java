@@ -1,4 +1,6 @@
 package com.back.team9.moyeota.domain.payment.dto;
 
-public record PaymentPrepareResponse(String orderId) {
+import java.math.BigDecimal;
+
+public record PaymentPrepareResponse(String orderId, BigDecimal amount) {
 }

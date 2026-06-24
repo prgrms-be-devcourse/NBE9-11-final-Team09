@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.payment.service;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -160,12 +162,24 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentPrepareResponse prepare(Long participationId, BigDecimal amount, Long memberId) {
+    public PaymentPrepareResponse prepare(Long participationId, Long memberId) {
         Participation participation = participationRepository.findById(participationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
         if (!participation.getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
+
+        BigDecimal amount;
+        if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // 잔액 결제 단계: 스케줄러가 출발 -7일에 계산한 확정 금액 사용
+            amount = participation.getFinalAmount();
+        } else {
+            // 보증금 결제 단계: totalPrice / 현재 활성 참여자 수로 서버 계산
+            long activeCount = participationRepository.countByFunding_FundingIdAndStatus(
+                    participation.getFunding().getFundingId(), ParticipationStatus.ACTIVE);
+            amount = participation.getFunding().getTotalPrice()
+                    .divide(BigDecimal.valueOf(activeCount), 0, RoundingMode.CEILING);
         }
 
         List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
@@ -181,7 +195,7 @@ public class PaymentService {
                 .build();
         paymentWriter.save(payment);
 
-        return new PaymentPrepareResponse(orderId);
+        return new PaymentPrepareResponse(orderId, amount);
     }
 
     @Transactional

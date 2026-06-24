@@ -66,16 +66,16 @@ class PaymentControllerTest {
     @Test
     @DisplayName("결제 준비 - 정상 요청 200 OK")
     void prepare_정상요청_200OK() throws Exception {
-        given(paymentService.prepare(eq(1L), any(BigDecimal.class), any()))
-                .willReturn(new PaymentPrepareResponse("test-order-uuid"));
+        given(paymentService.prepare(eq(1L), any()))
+                .willReturn(new PaymentPrepareResponse("test-order-uuid", new BigDecimal("50000")));
 
         mockMvc.perform(post("/api/payments/prepare")
-                        .param("participationId", "1")
-                        .param("amount", "50000"))
+                        .param("participationId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("결제 준비가 완료되었습니다."))
-                .andExpect(jsonPath("$.data.orderId").value("test-order-uuid"));
+                .andExpect(jsonPath("$.data.orderId").value("test-order-uuid"))
+                .andExpect(jsonPath("$.data.amount").value(50000));
     }
 
     @Test
