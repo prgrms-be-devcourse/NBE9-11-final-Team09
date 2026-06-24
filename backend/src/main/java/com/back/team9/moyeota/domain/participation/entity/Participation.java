@@ -38,7 +38,6 @@ public class Participation extends BaseEntity {
     @Column(nullable = false)
     private ParticipationPaymentStatus paymentStatus;
 
-    // 최종 확정 금액 (출발 -7일 자정에 스케줄러가 계산 후 업데이트)
     // 참여 신청 시점에는 아직 인원이 확정되지 않아 BigDecimal.ZERO로 저장
     @Column(nullable = false)
     private BigDecimal finalAmount;
@@ -92,6 +91,10 @@ public class Participation extends BaseEntity {
     // 잔액 결제 완료 시 호출
     public void completePayment() {
         this.paymentStatus = ParticipationPaymentStatus.COMPLETED;
+    }
+
+    public void updateFinalAmount(BigDecimal finalAmount) {
+        this.finalAmount = finalAmount;
     }
 
     // 잔액 미납으로 NO_SHOW 처리 시 호출

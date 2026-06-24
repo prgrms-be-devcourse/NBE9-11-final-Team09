@@ -92,4 +92,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
         Long getFundingId();
         Long getCount();
     }
+
+    List<Participation> findByFunding_FundingIdAndStatus(Long fundingId, ParticipationStatus status);
+
 }

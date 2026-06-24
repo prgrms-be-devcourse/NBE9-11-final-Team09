@@ -1,5 +1,6 @@
 package com.back.team9.moyeota.domain.payment.service;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
@@ -170,17 +171,18 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
+        Funding funding = participation.getFunding();
+        BigDecimal deposit = funding.getTotalPrice()
+                .divide(BigDecimal.valueOf(funding.getMaxParticipants() + 1), 0, RoundingMode.CEILING)
+                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
+
         BigDecimal amount;
         if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
-            // 잔액 결제 단계: 스케줄러가 출발 -7일에 계산한 확정 금액 사용
-            amount = participation.getFinalAmount();
+            amount = participation.getFinalAmount().subtract(deposit);
         } else {
-            // 보증금 결제 단계: totalPrice / 현재 활성 참여자 수로 서버 계산
-            long activeCount = participationRepository.countByFunding_FundingIdAndStatus(
-                    participation.getFunding().getFundingId(), ParticipationStatus.ACTIVE);
-            amount = participation.getFunding().getTotalPrice()
-                    .divide(BigDecimal.valueOf(activeCount), 0, RoundingMode.CEILING);
+            amount = deposit;
         }
+
 
         List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
                 PaymentStatus.PENDING);

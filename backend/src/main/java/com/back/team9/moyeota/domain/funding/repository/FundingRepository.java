@@ -31,4 +31,5 @@ public interface FundingRepository extends JpaRepository<Funding, Long>, Funding
               and not exists (select 1 from Settlement s where s.funding = f)
             """)
     List<Funding> findCompletedWithoutSettlement(@Param("today") LocalDate today);
+    List<Funding> findByStatusAndDepartureDate(FundingStatus status, LocalDate departureDate);
 }
