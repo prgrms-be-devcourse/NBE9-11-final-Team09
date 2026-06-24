@@ -533,7 +533,8 @@ function HostSeatSelector({
           <SeatMap
             busType={busType}
             seats={seats}
-            selectedSeatId={null}
+            selectedSeatId={seats.find((s) => s.seatNumber ===
+                selectedSeatNumber)?.seatId ?? null}
             onSeatClick={(seat) => {
               if (!disabled) {
                 onChange(seat.seatNumber);
