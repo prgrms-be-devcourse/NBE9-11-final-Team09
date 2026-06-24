@@ -62,6 +62,12 @@ public class ChatRoomService {
                 .orElseThrow(()-> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
+    public ChatRoomResponse getRoomResponse(Long fundingId) {
+        ChatRoom chatRoom = getRoom(fundingId);
+        return ChatRoomResponse.from(chatRoom);
+    }
+
     public ChatRoom getRoomById(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
