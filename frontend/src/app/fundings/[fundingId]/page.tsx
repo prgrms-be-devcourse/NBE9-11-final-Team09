@@ -143,24 +143,34 @@ export default function FundingDetailPage() {
               </p>
             </div>
 
-            {isHost && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              {isHost && (
+                <>
+                  <Link
+                    href={`/fundings/${funding.fundingId}/edit`}
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold"
+                  >
+                    수정
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                  >
+                    {deleting ? "취소 중" : "삭제"}
+                  </button>
+                </>
+              )}
+              {!isHost && !isJoined && funding.status === "RECRUITING" && (
                 <Link
-                  href={`/fundings/${funding.fundingId}/edit`}
-                  className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold"
+                  href={`/funding/${funding.fundingId}/seats`}
+                  className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
                 >
-                  수정
+                  참여하기
                 </Link>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
-                >
-                  {deleting ? "취소 중" : "삭제"}
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {error && (

@@ -1,0 +1,140 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { getSettlement, type SettlementResponse } from "@/lib/payment-api";
+import { formatMoney } from "@/lib/fundingFormat";
+
+const STATUS_LABEL: Record<SettlementResponse["status"], string> = {
+  CALCULATED: "정산 대기",
+  APPROVED: "정산 승인",
+  REJECTED: "정산 거절",
+  COMPLETED: "정산 완료",
+};
+
+const STATUS_COLOR: Record<SettlementResponse["status"], string> = {
+  CALCULATED: "bg-yellow-100 text-yellow-700",
+  APPROVED: "bg-blue-100 text-blue-700",
+  REJECTED: "bg-red-100 text-red-700",
+  COMPLETED: "bg-green-100 text-green-700",
+};
+
+export default function SettlementPage() {
+  const params = useParams<{ fundingId: string }>();
+  const router = useRouter();
+  const fundingId = Number(params.fundingId);
+
+  const [settlement, setSettlement] = useState<SettlementResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!Number.isFinite(fundingId)) {
+      setError("잘못된 접근입니다.");
+      setLoading(false);
+      return;
+    }
+
+    getSettlement(fundingId)
+      .then(setSettlement)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [fundingId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 underline text-sm"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!settlement) return null;
+
+  const rows: { label: string; value: string }[] = [
+    { label: "총 정산 금액", value: `${formatMoney(Number(settlement.totalAmount))}원` },
+    { label: "플랫폼 수수료", value: `${formatMoney(Number(settlement.platformFee))}원` },
+    { label: "호스트 지급액", value: `${formatMoney(Number(settlement.hostPaybackAmount))}원` },
+    {
+      label: "지급 보류",
+      value: settlement.paybackHold ? "보류 중" : "정상",
+    },
+    {
+      label: "지급 완료 일시",
+      value: settlement.paybackPaidAt
+        ? new Date(settlement.paybackPaidAt).toLocaleString("ko-KR")
+        : "-",
+    },
+    {
+      label: "정산 생성일",
+      value: new Date(settlement.createdAt).toLocaleString("ko-KR"),
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm mb-6"
+        >
+          ← 돌아가기
+        </button>
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">정산 현황</h1>
+          <span
+            className={`text-sm font-semibold px-3 py-1 rounded-full ${STATUS_COLOR[settlement.status]}`}
+          >
+            {STATUS_LABEL[settlement.status]}
+          </span>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <dl className="divide-y divide-gray-100">
+            {rows.map(({ label, value }) => (
+              <div key={label} className="flex justify-between py-3 text-sm">
+                <dt className="text-gray-500">{label}</dt>
+                <dd className="font-medium text-gray-900">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        {settlement.status === "COMPLETED" && (
+          <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700">
+            정산이 완료되어 호스트에게 지급되었습니다.
+          </div>
+        )}
+
+        {settlement.status === "REJECTED" && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+            정산이 거절되었습니다. 관리자에게 문의해 주세요.
+          </div>
+        )}
+
+        {settlement.paybackHold && settlement.status !== "REJECTED" && (
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-700">
+            지급이 일시 보류 중입니다. 확인 후 처리됩니다.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

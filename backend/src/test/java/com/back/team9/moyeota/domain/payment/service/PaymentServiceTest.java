@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,7 +65,8 @@ class PaymentServiceTest {
         Funding funding = mock(Funding.class);
         lenient().when(funding.getFundingId()).thenReturn(1L);
         Participation participation = mock(Participation.class);
-        given(participation.getFinalAmount()).willReturn(finalAmount);
+        // confirmPayment은 pendingPayment.getAmount()와 비교하므로 getFinalAmount()는 미사용
+        lenient().when(participation.getFinalAmount()).thenReturn(finalAmount);
         lenient().when(participation.getMember()).thenReturn(member);
         lenient().when(participation.getFunding()).thenReturn(funding);
         return participation;
@@ -74,6 +77,16 @@ class PaymentServiceTest {
         given(member.getMemberId()).willReturn(memberId);
         Participation participation = mock(Participation.class);
         given(participation.getMember()).willReturn(member);
+        lenient().when(participation.getFinalAmount()).thenReturn(BigDecimal.ZERO);
+        return participation;
+    }
+
+    private Participation mockParticipationForPrepareWithFunding(Long memberId, BigDecimal totalPrice) {
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(1L);
+        given(funding.getTotalPrice()).willReturn(totalPrice);
+        Participation participation = mockParticipationForPrepare(memberId);
+        given(participation.getFunding()).willReturn(funding);
         return participation;
     }
 
@@ -98,17 +111,24 @@ class PaymentServiceTest {
     // ===== prepare =====
 
     @Test
-    @DisplayName("결제 준비 - 정상 요청 시 UUID orderId 반환 및 PENDING Payment 저장")
+    @DisplayName("결제 준비 - 정상 요청 시 서버 계산 금액으로 PENDING Payment 저장 및 amount 응답 반환")
     void prepare_정상요청_PENDING결제저장() {
-        Participation participation = mockParticipationForPrepare(1L);
+        BigDecimal totalPrice = new BigDecimal("500000");
+        Participation participation = mockParticipationForPrepareWithFunding(1L, totalPrice);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
+        given(participationRepository.countByFunding_FundingIdAndStatus(1L, ParticipationStatus.ACTIVE))
+                .willReturn(10L);
 
         PaymentPrepareResponse response = paymentService.prepare(1L, 1L);
 
+        BigDecimal expectedAmount = totalPrice.divide(BigDecimal.valueOf(10), 0, RoundingMode.CEILING);
         assertThat(response.orderId()).isNotBlank();
         assertThat(response.orderId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+        assertThat(response.amount()).isEqualByComparingTo(expectedAmount);
         verify(paymentWriter).save(argThat(p ->
-                p.getStatus() == PaymentStatus.PENDING && p.getOrderId() != null
+                p.getStatus() == PaymentStatus.PENDING
+                        && p.getOrderId() != null
+                        && p.getAmount().compareTo(expectedAmount) == 0
         ));
     }
 
@@ -222,7 +242,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Payment pendingPayment = pendingPaymentOf(mock(Participation.class));
+        Payment pendingPayment = pendingPaymentOf(mockParticipationForConfirm(new BigDecimal("50000")));
 
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
                 .willReturn(Optional.of(pendingPayment));
@@ -307,6 +327,27 @@ class PaymentServiceTest {
 
         assertThatCode(() -> paymentService.confirmDeposit(request, 1L))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("보증금 결제 승인 - 타인의 참여 결제 승인 요청 시 PAYMENT_ACCESS_DENIED 예외")
+    void confirmDeposit_타인결제_PAYMENT_ACCESS_DENIED예외() {
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", new BigDecimal("50000"), 1L
+        );
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
+        Payment pendingPayment = pendingPaymentOf(participation);
+
+        given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
+                .willReturn(Optional.of(pendingPayment));
+
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 2L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));
+
+        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     // ===== confirmBalance =====

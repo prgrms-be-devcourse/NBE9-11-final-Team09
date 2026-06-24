@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.payment.service;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.participation.service.ParticipationService;
 import com.back.team9.moyeota.domain.payment.client.TossConfirmResponse;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +46,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse confirmBalance(PaymentConfirmRequest request, Long memberId) {
+    public PaymentResponse confirmBalance(PaymentConfirmRequest request,  Long memberId) {
         PaymentResponse response = confirmPayment(request, PaymentType.BALANCE, memberId);
         participationService.completeBalancePayment(request.participationId());
         return response;
@@ -56,15 +58,15 @@ public class PaymentService {
                 .findByParticipation_ParticipationIdAndStatus(request.participationId(), PaymentStatus.PENDING)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
+        if (!pendingPayment.getParticipation().getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
         if (paymentRepository.findByTossPaymentKey(request.paymentKey()).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
         }
 
         Participation participation = pendingPayment.getParticipation();
-        if (!participation.getMember().getMemberId().equals(memberId)) {
-            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
-        }
-        if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
+        if (request.amount().compareTo(pendingPayment.getAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
@@ -168,6 +170,18 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
+        BigDecimal amount;
+        if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // 잔액 결제 단계: 스케줄러가 출발 -7일에 계산한 확정 금액 사용
+            amount = participation.getFinalAmount();
+        } else {
+            // 보증금 결제 단계: totalPrice / 현재 활성 참여자 수로 서버 계산
+            long activeCount = participationRepository.countByFunding_FundingIdAndStatus(
+                    participation.getFunding().getFundingId(), ParticipationStatus.ACTIVE);
+            amount = participation.getFunding().getTotalPrice()
+                    .divide(BigDecimal.valueOf(activeCount), 0, RoundingMode.CEILING);
+        }
+
         List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
                 PaymentStatus.PENDING);
         paymentRepository.deleteAll(existingPendings);
@@ -176,12 +190,12 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .participation(participation)
                 .orderId(orderId)
-                .amount(participation.getFinalAmount())
+                .amount(amount)
                 .status(PaymentStatus.PENDING)
                 .build();
         paymentWriter.save(payment);
 
-        return new PaymentPrepareResponse(orderId);
+        return new PaymentPrepareResponse(orderId, amount);
     }
 
     @Transactional

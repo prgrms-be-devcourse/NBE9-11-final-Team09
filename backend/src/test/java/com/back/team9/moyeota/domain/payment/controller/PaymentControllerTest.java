@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.controller;
 
 import com.back.team9.moyeota.domain.payment.dto.PaymentConfirmRequest;
+import com.back.team9.moyeota.domain.payment.dto.PaymentPrepareResponse;
 import com.back.team9.moyeota.domain.payment.dto.PaymentRefundRequest;
 import com.back.team9.moyeota.domain.payment.dto.PaymentResponse;
 import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
@@ -60,6 +61,21 @@ class PaymentControllerTest {
                 1L, 1L, type, "test_orderId",
                 new BigDecimal("50000"), "test_paymentKey", status, LocalDateTime.now()
         );
+    }
+
+    @Test
+    @DisplayName("결제 준비 - 정상 요청 200 OK")
+    void prepare_정상요청_200OK() throws Exception {
+        given(paymentService.prepare(eq(1L), any()))
+                .willReturn(new PaymentPrepareResponse("test-order-uuid", new BigDecimal("50000")));
+
+        mockMvc.perform(post("/api/payments/prepare")
+                        .param("participationId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.msg").value("결제 준비가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.orderId").value("test-order-uuid"))
+                .andExpect(jsonPath("$.data.amount").value(50000));
     }
 
     @Test
