@@ -8,9 +8,11 @@ import com.back.team9.moyeota.domain.member.dto.history.MemberParticipationRespo
 import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.profile.MemberUpdateResponse;
+import com.back.team9.moyeota.domain.member.dto.profile.MemberWithdrawRequest;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberService;
+import com.back.team9.moyeota.domain.member.service.auth.MemberSocialLoginService;
 import com.back.team9.moyeota.domain.member.service.history.MemberHistoryService;
 import com.back.team9.moyeota.domain.member.service.profile.MemberProfileService;
 import com.back.team9.moyeota.domain.member.service.profile.MemberWithdrawService;
@@ -20,17 +22,17 @@ import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
 import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
-import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.*;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
 import com.back.team9.moyeota.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,6 +75,9 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberLoginService memberLoginService;
+
+    @MockitoBean
+    private MemberSocialLoginService memberSocialLoginService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
@@ -190,6 +195,7 @@ class MemberControllerTest {
         verify(memberService, never())
                 .requestEmailVerification(any());
     }
+
     @Test
     @DisplayName("유효한 이메일 인증 확인 요청 시 200 OK를 반환한다")
     void confirmEmailVerificationWithValidRequestReturnsOk()
@@ -277,6 +283,93 @@ class MemberControllerTest {
     }
 
     @Test
+    @DisplayName("유효한 소셜 로그인 요청은 200 OK와 토큰을 반환한다")
+    void socialLoginWithValidRequestReturnsOkAndTokens() throws Exception {
+        MemberLoginResponse response = new MemberLoginResponse(
+                "access-token",
+                "Bearer",
+                3600,
+                new MemberLoginResponse.UserResponse(
+                        1L,
+                        "kakao@example.com",
+                        "카카오유저",
+                        "카카오유저_123456789"
+                )
+        );
+
+        MemberLoginResult result = new MemberLoginResult(
+                response,
+                "refresh-token",
+                1209600
+        );
+
+        when(memberSocialLoginService.loginWithKakaoAuthorizationCode(any()))
+                .thenReturn(result);
+
+        String requestBody = """
+                {
+                  "code": "kakao-authorization-code",
+                  "redirectUri": "http://localhost:3000/login/kakao/callback"
+                }
+                """;
+
+        mockMvc.perform(post("/api/members/social-login/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_SOCIAL_LOGIN_SUCCESS"))
+                .andExpect(jsonPath("$.data.accessToken")
+                        .value("access-token"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.data.tokenType")
+                        .value("Bearer"))
+                .andExpect(jsonPath("$.data.user.userId").value(1))
+                .andExpect(jsonPath("$.data.user.email")
+                        .value("kakao@example.com"))
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(
+                                        "refreshToken=refresh-token"
+                                ),
+                                org.hamcrest.Matchers.containsString("HttpOnly"),
+                                org.hamcrest.Matchers.containsString(
+                                        "SameSite=Strict"
+                                ),
+                                org.hamcrest.Matchers.not(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Secure"
+                                        )
+                                )
+                        )
+                ));
+
+        verify(memberSocialLoginService)
+                .loginWithKakaoAuthorizationCode(any());
+    }
+
+    @Test
+    @DisplayName("소셜 로그인 필수 입력값이 누락되면 400 Bad Request를 반환한다")
+    void socialLoginWithMissingRequiredFieldsReturnsBadRequest()
+            throws Exception {
+        String requestBody = """
+                {
+                  "code": "",
+                  "redirectUri": ""
+                }
+                """;
+
+        mockMvc.perform(post("/api/members/social-login/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COM001"));
+
+        verifyNoInteractions(memberSocialLoginService);
+    }
+
+    @Test
     @DisplayName("로그인 필수 입력값이 누락되면 400 Bad Request를 반환한다")
     void loginWithMissingRequiredFieldsReturnsBadRequest() throws Exception {
         // Given
@@ -339,10 +432,10 @@ class MemberControllerTest {
         // Given
         String authorization = "Bearer access-token";
         String requestBody = """
-            {
-              "password": "Password123!"
-            }
-            """;
+                {
+                  "password": "Password123!"
+                }
+                """;
 
         // When / Then
         mockMvc.perform(delete("/api/members/me")
@@ -380,25 +473,27 @@ class MemberControllerTest {
     }
 
     @Test
-    @DisplayName("회원 탈퇴 시 비밀번호가 누락되면 400 Bad Request를 반환한다")
-    void withdrawWithMissingPasswordReturnsBadRequest() throws Exception {
-        // Given
-        String requestBody = """
-            {
-              "password": ""
-            }
-            """;
+    @DisplayName("회원탈퇴 요청은 비밀번호가 없어도 서비스로 전달된다")
+    void withdrawWithoutPasswordDelegatesToService() throws Exception {
+        String authorization = "Bearer access-token";
 
-        // When / Then
         mockMvc.perform(delete("/api/members/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .with(memberAuthentication())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("COM001"));
+                        .content("""
+                                {
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode")
+                        .value("USR_WITHDRAW_SUCCESS"));
 
-        verifyNoInteractions(memberWithdrawService);
+        verify(memberWithdrawService)
+                .withdraw(any(), any(MemberWithdrawRequest.class));
+
+        verify(memberLogoutService)
+                .logout(authorization);
     }
 
     @Test

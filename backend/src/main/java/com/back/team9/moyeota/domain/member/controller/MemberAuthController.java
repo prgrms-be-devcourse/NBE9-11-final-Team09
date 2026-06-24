@@ -5,6 +5,7 @@ import com.back.team9.moyeota.domain.member.service.auth.MemberLoginService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberLogoutService;
 import com.back.team9.moyeota.domain.member.service.auth.MemberService;
 import com.back.team9.moyeota.global.response.ApiResponse;
+import com.back.team9.moyeota.domain.member.service.auth.MemberSocialLoginService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -23,18 +24,21 @@ public class MemberAuthController {
             MemberService memberService,
             MemberLoginService memberLoginService,
             MemberLogoutService memberLogoutService,
+            MemberSocialLoginService memberSocialLoginService,
             @Value("${jwt.cookie-secure}") boolean cookieSecure
     ) {
         this.memberService = memberService;
         this.memberLoginService = memberLoginService;
         this.memberLogoutService = memberLogoutService;
         this.cookieSecure = cookieSecure;
+        this.memberSocialLoginService = memberSocialLoginService;
     }
 
     private final MemberService memberService;
     private final MemberLoginService memberLoginService;
     private final MemberLogoutService memberLogoutService;
     private final boolean cookieSecure;
+    private final MemberSocialLoginService memberSocialLoginService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> requestSignup(
@@ -79,24 +83,25 @@ public class MemberAuthController {
     ) {
         MemberLoginResult result = memberLoginService.login(request);
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", result.refreshToken())
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofSeconds(
-                        result.refreshTokenExpiresIn()
-                ))
-                .build();
+        return createLoginResponse(
+                result,
+                "USR_LOGIN_SUCCESS",
+                "로그인 성공"
+        );
+    }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-                .body(new ApiResponse<>(
-                        "USR_LOGIN_SUCCESS",
-                        "로그인 성공",
-                        result.response()
-                ));
+    @PostMapping("/social-login/kakao")
+    public ResponseEntity<ApiResponse<MemberLoginResponse>> kakaoLogin(
+            @Valid @RequestBody KakaoAuthorizationCodeLoginRequest request
+    ) {
+        MemberLoginResult result =
+                memberSocialLoginService.loginWithKakaoAuthorizationCode(request);
+
+        return createLoginResponse(
+                result,
+                "USR_SOCIAL_LOGIN_SUCCESS",
+                "소셜 로그인 성공"
+        );
     }
 
     @PostMapping("/logout")
@@ -123,5 +128,34 @@ public class MemberAuthController {
                         "USR_LOGOUT_SUCCESS",
                         "로그아웃 되었습니다."
                 ));
+    }
+
+    private ResponseEntity<ApiResponse<MemberLoginResponse>> createLoginResponse(
+            MemberLoginResult result,
+            String resultCode,
+            String message
+    ) {
+        ResponseCookie refreshTokenCookie = createRefreshTokenCookie(result);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(new ApiResponse<>(
+                        resultCode,
+                        message,
+                        result.response()
+                ));
+    }
+
+    private ResponseCookie createRefreshTokenCookie(MemberLoginResult result) {
+        return ResponseCookie
+                .from("refreshToken", result.refreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofSeconds(
+                        result.refreshTokenExpiresIn()
+                ))
+                .build();
     }
 }

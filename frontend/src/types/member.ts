@@ -1,4 +1,4 @@
-export interface ApiResponse<T> {
+﻿export interface ApiResponse<T> {
   resultCode: string;
   msg: string;
   data: T;
@@ -41,6 +41,25 @@ export interface MemberUpdateResponse {
 
 export interface MemberWithdrawRequest {
   password: string;
+}
+
+export interface MemberLoginUser {
+  userId: number;
+  email: string;
+  name: string;
+  nickname: string;
+}
+
+export interface MemberLoginResponse {
+  accessToken: string;
+  tokenType: string;
+  accessTokenExpiresIn: number;
+  user: MemberLoginUser;
+}
+
+export interface MemberKakaoCodeLoginRequest {
+  code: string;
+  redirectUri: string;
 }
 
 export interface MemberParticipation {

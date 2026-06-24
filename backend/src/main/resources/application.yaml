@@ -75,3 +75,10 @@ app:
       delay: 500
       multiplier: 2.0
       max-delay: 2000
+
+social:
+  kakao:
+    client-id: ${KAKAO_REST_API_KEY}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+    token-uri: https://kauth.kakao.com/oauth/token
+    user-info-uri: https://kapi.kakao.com/v2/user/me

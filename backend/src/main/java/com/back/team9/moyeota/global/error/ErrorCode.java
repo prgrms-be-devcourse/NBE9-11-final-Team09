@@ -32,6 +32,9 @@ public enum ErrorCode {
     USER_SUSPENDED(HttpStatus.FORBIDDEN, "USR013", "정지된 계정입니다."),
     SIGNUP_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "USR014", "회원가입 요청 정보를 찾을 수 없습니다."),
     VERIFICATION_ATTEMPTS_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "USR015", "인증 시도 횟수를 초과했습니다. 인증코드를 다시 요청해주세요."),
+    UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "USR016", "지원하지 않는 소셜 로그인입니다."),
+    INVALID_SOCIAL_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "USR017", "유효하지 않은 소셜 로그인 토큰입니다."),
+    SOCIAL_EMAIL_NOT_PROVIDED(HttpStatus.BAD_REQUEST, "USR018", "소셜 계정에서 이메일 정보를 제공하지 않았습니다."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
