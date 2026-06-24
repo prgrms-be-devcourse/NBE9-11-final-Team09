@@ -169,13 +169,23 @@ export default function SeatsPage() {
         }
 
         try {
-            await createParticipation(
+            const { participationId } = await createParticipation(
                 fundingId,
                 selectedSeat!.seatId,
                 returnSeat?.seatId ?? null
             );
 
-            router.push(`/funding/${fundingId}/payment`);
+            const seatInfo = isRoundTrip && returnSeat
+                ? `가는편 ${selectedSeat!.seatNumber}석 · 오는편 ${returnSeat.seatNumber}석`
+                : `${selectedSeat!.seatNumber}석`;
+
+            sessionStorage.setItem(`paymentContext_${participationId}`, JSON.stringify({
+                fundingId,
+                seatInfo,
+                amount: finalAmount,
+            }));
+
+            router.push(`/payment/${participationId}`);
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setModal({
