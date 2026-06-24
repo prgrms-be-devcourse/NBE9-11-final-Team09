@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.chatroom.controller;
 
 import com.back.team9.moyeota.domain.chatroom.dto.ChatRoomResponse;
 import com.back.team9.moyeota.domain.chatroom.dto.MessageResponse;
+import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.service.ChatMessageService;
 import com.back.team9.moyeota.domain.chatroom.service.ChatRoomService;
 import com.back.team9.moyeota.global.response.ApiResponse;
@@ -41,6 +42,19 @@ public class ChatRoomController {
                         "SUCCESS",
                         "채팅 메시지 조회 성공",
                         response
+                )
+        );
+    }
+    @GetMapping("/funding/{fundingId}")
+    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomByFundingId(
+            @PathVariable Long fundingId
+    ) {
+        ChatRoom chatRoom = chatRoomService.getRoom(fundingId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "채팅방 조회 성공",
+                        ChatRoomResponse.from(chatRoom)
                 )
         );
     }
