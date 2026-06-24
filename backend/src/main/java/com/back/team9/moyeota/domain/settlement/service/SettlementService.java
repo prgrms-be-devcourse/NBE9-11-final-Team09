@@ -3,6 +3,8 @@ package com.back.team9.moyeota.domain.settlement.service;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.payment.entity.PaymentStatus;
+import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementCreateRequest;
 import com.back.team9.moyeota.domain.settlement.dto.SettlementResponse;
 import com.back.team9.moyeota.domain.settlement.entity.Settlement;
@@ -11,6 +13,7 @@ import com.back.team9.moyeota.domain.settlement.repository.SettlementRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -23,10 +26,12 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SettlementService {
 
     private final SettlementRepository settlementRepository;
     private final FundingRepository fundingRepository;
+    private final PaymentRepository paymentRepository;
     private final Clock clock;
 
     @Value("${platform.fee-rate}")
@@ -117,6 +122,38 @@ public class SettlementService {
         settlement.reject();
         return SettlementResponse.from(settlement);
 
+    }
+
+    @Transactional
+    public void createByScheduler(Long fundingId) {
+        if (settlementRepository.existsByFunding_FundingId(fundingId)) {
+            return;
+        }
+
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        BigDecimal totalAmount = paymentRepository.sumAmountByFundingIdAndStatus(
+                fundingId, PaymentStatus.PAID);
+        BigDecimal platformFee = totalAmount.multiply(platformFeeRate).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal hostPaybackAmount = totalAmount.subtract(platformFee);
+
+        LocalDateTime now = LocalDateTime.now(clock);
+        boolean hold = funding.getPaybackHold();
+
+        Settlement settlement = Settlement.builder()
+                .member(funding.getMember())
+                .funding(funding)
+                .totalAmount(totalAmount)
+                .platformFee(platformFee)
+                .hostPaybackAmount(hostPaybackAmount)
+                .status(hold ? SettlementStatus.CALCULATED : SettlementStatus.COMPLETED)
+                .paybackHold(hold)
+                .paybackPaidAt(hold ? null : now)
+                .build();
+
+        settlementRepository.save(settlement);
+        log.info("정산 생성 완료 — fundingId={}, status={}, totalAmount={}", fundingId, settlement.getStatus(), totalAmount);
     }
 
 
