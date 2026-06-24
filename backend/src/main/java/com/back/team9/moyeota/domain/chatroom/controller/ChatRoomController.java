@@ -44,4 +44,17 @@ public class ChatRoomController {
                 )
         );
     }
+    @GetMapping("/funding/{fundingId}")
+    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomByFundingId(
+            @PathVariable Long fundingId
+    ) {
+        ChatRoomResponse response = chatRoomService.getRoomResponse(fundingId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "채팅방 조회 성공",
+                        response
+                )
+        );
+    }
 }

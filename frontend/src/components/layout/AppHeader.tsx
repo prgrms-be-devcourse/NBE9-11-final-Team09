@@ -51,6 +51,12 @@ export default function AppHeader() {
         });
 
         if (!response.ok) {
+          if (response.status === 401 && !ignore) {
+            clearAccessToken();
+            setHasToken(false);
+            setMember(null);
+          }
+
           throw new Error("failed");
         }
 
@@ -119,7 +125,16 @@ export default function AppHeader() {
           모여타
         </Link>
 
-        <nav className="flex items-center gap-3 text-sm">
+        <nav className="flex items-center gap-2 text-sm sm:gap-3">
+          {(member || hasToken) && (
+            <Link
+              href="/mypage"
+              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+            >
+              마이페이지
+            </Link>
+          )}
+
           {member ? (
             <>
               <span className="hidden font-semibold text-gray-700 sm:inline">
@@ -128,7 +143,7 @@ export default function AppHeader() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800"
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
               >
                 로그아웃
               </button>
@@ -137,17 +152,25 @@ export default function AppHeader() {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800"
+              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
             >
               로그아웃
             </button>
           ) : (
-            <Link
-              href="/login"
-              className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
-            >
-              로그인
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                회원가입
+              </Link>
+            </>
           )}
         </nav>
       </div>
