@@ -68,6 +68,14 @@ export function toDatetimeLocal(value?: string | null) {
   return value.slice(0, 16);
 }
 
+export function toTimeInput(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
+}
+
 export function fromDetailToPayload(
   detail: FundingDetail
 ): FundingPayload {
@@ -84,7 +92,7 @@ export function fromDetailToPayload(
     hostReturnSeatNumber: detail.tripType === "ROUND" ? "" : null,
     route: {
       departureTime: toDatetimeLocal(outbound?.departureTime),
-      returnTime: toDatetimeLocal(returned?.departureTime) || null,
+      returnTime: toTimeInput(returned?.departureTime) || null,
       departureAddress: outbound?.departureAddress ?? "",
       departureRegion: outbound?.departureRegion ?? "SEOUL",
       arrivalAddress: outbound?.arrivalAddress ?? "",
@@ -101,6 +109,21 @@ export function normalizePayload(payload: FundingPayload): FundingPayload {
 
     return value.length === 16 ? `${value}:00` : value;
   };
+  const toReturnDateTime = (
+    departureTime: string,
+    returnTime?: string | null
+  ) => {
+    if (!returnTime) {
+      return null;
+    }
+
+    if (returnTime.length === 5) {
+      return `${departureTime.slice(0, 10)}T${returnTime}:00`;
+    }
+
+    return toApiDateTime(returnTime);
+  };
+  const departureTime = toApiDateTime(payload.route.departureTime) ?? "";
 
   return {
     ...payload,
@@ -113,10 +136,10 @@ export function normalizePayload(payload: FundingPayload): FundingPayload {
         : null,
     route: {
       ...payload.route,
-      departureTime: toApiDateTime(payload.route.departureTime) ?? "",
+      departureTime,
       returnTime:
         payload.tripType === "ROUND" && payload.route.returnTime
-          ? toApiDateTime(payload.route.returnTime)
+          ? toReturnDateTime(departureTime, payload.route.returnTime)
           : null,
       departureAddress: payload.route.departureAddress.trim(),
       arrivalAddress: payload.route.arrivalAddress.trim(),
