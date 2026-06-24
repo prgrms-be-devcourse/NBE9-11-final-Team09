@@ -164,7 +164,7 @@ class PaymentServiceTest {
         given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
                 .willReturn(tossResponse);
 
-        PaymentResponse response = paymentService.confirmDeposit(request);
+        PaymentResponse response = paymentService.confirmDeposit(request, 1L);
 
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
         assertThat(response.paymentType()).isEqualTo(PaymentType.DEPOSIT);
@@ -193,7 +193,7 @@ class PaymentServiceTest {
         willThrow(new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED))
                 .given(participationService).confirmAfterPayment(anyLong());
 
-        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SEAT_HOLD_EXPIRED));
@@ -211,7 +211,7 @@ class PaymentServiceTest {
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
                 .willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ORDER_NOT_FOUND));
@@ -226,7 +226,7 @@ class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest(
                 "test_paymentKey", new BigDecimal("50000"), 1L
         );
-        Payment pendingPayment = pendingPaymentOf(mock(Participation.class));
+        Payment pendingPayment = pendingPaymentOf(mockParticipationForConfirm(new BigDecimal("50000")));
 
         given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
                 .willReturn(Optional.of(pendingPayment));
@@ -235,7 +235,7 @@ class PaymentServiceTest {
                         .tossPaymentKey("test_paymentKey").status(PaymentStatus.PAID)
                         .build()));
 
-        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.DUPLICATE_PAYMENT));
@@ -257,7 +257,7 @@ class PaymentServiceTest {
                 .willReturn(Optional.of(pendingPayment));
         given(paymentRepository.findByTossPaymentKey("test_paymentKey")).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.PAYMENT_AMOUNT_MISMATCH));
@@ -281,7 +281,7 @@ class PaymentServiceTest {
         given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
                 .willThrow(new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED));
 
-        assertThatThrownBy(() -> paymentService.confirmDeposit(request))
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));
@@ -309,8 +309,29 @@ class PaymentServiceTest {
         willThrow(new RuntimeException("알림 발송 실패"))
                 .given(notificationService).sendMimeMessage(any(), any(), any());
 
-        assertThatCode(() -> paymentService.confirmDeposit(request))
+        assertThatCode(() -> paymentService.confirmDeposit(request, 1L))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("보증금 결제 승인 - 타인의 참여 결제 승인 요청 시 PAYMENT_ACCESS_DENIED 예외")
+    void confirmDeposit_타인결제_PAYMENT_ACCESS_DENIED예외() {
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", new BigDecimal("50000"), 1L
+        );
+        Participation participation = mockParticipationForConfirm(new BigDecimal("50000"));
+        Payment pendingPayment = pendingPaymentOf(participation);
+
+        given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
+                .willReturn(Optional.of(pendingPayment));
+
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 2L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));
+
+        verify(tossPaymentClient, never()).confirm(anyString(), anyString(), any());
+        verify(paymentWriter, never()).save(any());
     }
 
     // ===== confirmBalance =====
@@ -334,7 +355,7 @@ class PaymentServiceTest {
         given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
                 .willReturn(tossResponse);
 
-        PaymentResponse response = paymentService.confirmBalance(request);
+        PaymentResponse response = paymentService.confirmBalance(request, 1L);
 
         assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
         assertThat(response.paymentType()).isEqualTo(PaymentType.BALANCE);
@@ -356,7 +377,7 @@ class PaymentServiceTest {
         given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
                 .willThrow(new BusinessException(ErrorCode.TOSS_PAYMENT_FAILED));
 
-        assertThatThrownBy(() -> paymentService.confirmBalance(request))
+        assertThatThrownBy(() -> paymentService.confirmBalance(request, 1L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.TOSS_PAYMENT_FAILED));

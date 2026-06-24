@@ -39,23 +39,26 @@ public class PaymentService {
     private final NotificationService notificationService;
 
     @Transactional
-    public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
-        return confirmPayment(request, PaymentType.DEPOSIT);
+    public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
+        return confirmPayment(request, PaymentType.DEPOSIT, memberId);
     }
 
     @Transactional
-    public PaymentResponse confirmBalance(PaymentConfirmRequest request) {
-        PaymentResponse response = confirmPayment(request, PaymentType.BALANCE);
+    public PaymentResponse confirmBalance(PaymentConfirmRequest request,  Long memberId) {
+        PaymentResponse response = confirmPayment(request, PaymentType.BALANCE, memberId);
         participationService.completeBalancePayment(request.participationId());
         return response;
     }
 
-    private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType) {
+    private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType, Long memberId) {
 
         Payment pendingPayment = paymentRepository
                 .findByParticipation_ParticipationIdAndStatus(request.participationId(), PaymentStatus.PENDING)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
+        if (!pendingPayment.getParticipation().getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
         if (paymentRepository.findByTossPaymentKey(request.paymentKey()).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
         }

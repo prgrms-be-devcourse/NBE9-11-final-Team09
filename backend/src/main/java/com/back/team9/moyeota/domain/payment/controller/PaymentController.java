@@ -28,17 +28,19 @@ public class PaymentController {
 
     @PostMapping("/deposit/confirm")
     public ResponseEntity<ApiResponse<PaymentResponse>> confirmDeposit(
-            @RequestBody @Valid PaymentConfirmRequest request
-            ) {
-        PaymentResponse response = paymentService.confirmDeposit(request);
+            @RequestBody @Valid PaymentConfirmRequest request,
+            @AuthenticationPrincipal Long memberId
+    ) {
+        PaymentResponse response = paymentService.confirmDeposit(request, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS","보증금 결제가 완료되었습니다.", response));
     }
 
     @PostMapping("/balance/confirm")
     public ResponseEntity<ApiResponse<PaymentResponse>> confirmBalance(
-            @RequestBody @Valid PaymentConfirmRequest request
+            @RequestBody @Valid PaymentConfirmRequest request,
+            @AuthenticationPrincipal Long memberId
     ) {
-        PaymentResponse response = paymentService.confirmBalance(request);
+        PaymentResponse response = paymentService.confirmBalance(request, memberId);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS","잔액 결제가 완료되었습니다.", response));
     }
 
