@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import PasswordField from "@/components/ui/PasswordField";
 
 const EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
@@ -24,6 +25,8 @@ export default function SignupPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -246,17 +249,17 @@ export default function SignupPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-bold">비밀번호</label>
-              <input
-                type="password"
+              <PasswordField
+                label="비밀번호"
                 placeholder="비밀번호 입력"
                 value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
+                visible={showPassword}
+                disabled={fieldsDisabled}
+                onChange={(value) => {
+                  setPassword(value);
                   clearMessage();
                 }}
-                disabled={fieldsDisabled}
-                className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+                onToggleVisible={() => setShowPassword((current) => !current)}
               />
               {password && !passwordValid && (
                 <p className="mt-1 text-xs text-red-500">
@@ -265,19 +268,19 @@ export default function SignupPage() {
               )}
             </div>
             <div>
-              <label className="mb-2 block text-sm font-bold">
-                비밀번호 확인
-              </label>
-              <input
-                type="password"
+              <PasswordField
+                label="비밀번호 확인"
                 placeholder="비밀번호 재입력"
                 value={passwordConfirm}
-                onChange={(event) => {
-                  setPasswordConfirm(event.target.value);
+                visible={showPasswordConfirm}
+                disabled={fieldsDisabled}
+                onChange={(value) => {
+                  setPasswordConfirm(value);
                   clearMessage();
                 }}
-                disabled={fieldsDisabled}
-                className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+                onToggleVisible={() =>
+                  setShowPasswordConfirm((current) => !current)
+                }
               />
               {passwordConfirm && !passwordsMatch && (
                 <p className="mt-1 text-xs text-red-500">
