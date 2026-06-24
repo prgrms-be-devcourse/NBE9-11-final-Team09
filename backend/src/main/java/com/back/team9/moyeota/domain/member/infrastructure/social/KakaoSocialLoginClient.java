@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.http.MediaType;
@@ -38,7 +39,7 @@ public class KakaoSocialLoginClient {
 
     public KakaoUserInfoResponse getUserInfo(String accessToken) {
         try {
-            return restClient
+            KakaoUserInfoResponse response = restClient
                     .get()
                     .uri(userInfoUri)
                     .header(
@@ -47,9 +48,21 @@ public class KakaoSocialLoginClient {
                     )
                     .retrieve()
                     .body(KakaoUserInfoResponse.class);
-        } catch (RestClientException exception) {
+
+            if (response == null) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_SOCIAL_ACCESS_TOKEN
+                );
+            }
+
+            return response;
+        } catch (HttpClientErrorException exception) {
             throw new BusinessException(
                     ErrorCode.INVALID_SOCIAL_ACCESS_TOKEN
+            );
+        } catch (RestClientException exception) {
+            throw new BusinessException(
+                    ErrorCode.INTERNAL_SERVER_ERROR
             );
         }
     }
@@ -71,16 +84,28 @@ public class KakaoSocialLoginClient {
                 formData.add("client_secret", clientSecret);
             }
 
-            return restClient
+            KakaoTokenResponse response = restClient
                     .post()
                     .uri(tokenUri)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(formData)
                     .retrieve()
                     .body(KakaoTokenResponse.class);
-        } catch (RestClientException exception) {
+
+            if (response == null) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_SOCIAL_ACCESS_TOKEN
+                );
+            }
+
+            return response;
+        } catch (HttpClientErrorException exception) {
             throw new BusinessException(
                     ErrorCode.INVALID_SOCIAL_ACCESS_TOKEN
+            );
+        } catch (RestClientException exception) {
+            throw new BusinessException(
+                    ErrorCode.INTERNAL_SERVER_ERROR
             );
         }
     }
