@@ -51,6 +51,12 @@ export default function AppHeader() {
         });
 
         if (!response.ok) {
+          if (response.status === 401 && !ignore) {
+            clearAccessToken();
+            setHasToken(false);
+            setMember(null);
+          }
+
           throw new Error("failed");
         }
 
