@@ -83,24 +83,11 @@ public class MemberAuthController {
     ) {
         MemberLoginResult result = memberLoginService.login(request);
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", result.refreshToken())
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofSeconds(
-                        result.refreshTokenExpiresIn()
-                ))
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-                .body(new ApiResponse<>(
-                        "USR_LOGIN_SUCCESS",
-                        "로그인 성공",
-                        result.response()
-                ));
+        return createLoginResponse(
+                result,
+                "USR_LOGIN_SUCCESS",
+                "로그인 성공"
+        );
     }
 
     @PostMapping("/social-login/kakao")
@@ -110,24 +97,11 @@ public class MemberAuthController {
         MemberLoginResult result =
                 memberSocialLoginService.loginWithKakaoAuthorizationCode(request);
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", result.refreshToken())
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofSeconds(
-                        result.refreshTokenExpiresIn()
-                ))
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-                .body(new ApiResponse<>(
-                        "USR_SOCIAL_LOGIN_SUCCESS",
-                        "소셜 로그인 성공",
-                        result.response()
-                ));
+        return createLoginResponse(
+                result,
+                "USR_SOCIAL_LOGIN_SUCCESS",
+                "소셜 로그인 성공"
+        );
     }
 
     @PostMapping("/logout")
@@ -154,5 +128,34 @@ public class MemberAuthController {
                         "USR_LOGOUT_SUCCESS",
                         "로그아웃 되었습니다."
                 ));
+    }
+
+    private ResponseEntity<ApiResponse<MemberLoginResponse>> createLoginResponse(
+            MemberLoginResult result,
+            String resultCode,
+            String message
+    ) {
+        ResponseCookie refreshTokenCookie = createRefreshTokenCookie(result);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(new ApiResponse<>(
+                        resultCode,
+                        message,
+                        result.response()
+                ));
+    }
+
+    private ResponseCookie createRefreshTokenCookie(MemberLoginResult result) {
+        return ResponseCookie
+                .from("refreshToken", result.refreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofSeconds(
+                        result.refreshTokenExpiresIn()
+                ))
+                .build();
     }
 }
