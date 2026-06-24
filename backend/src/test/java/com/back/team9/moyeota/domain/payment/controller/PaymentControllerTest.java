@@ -65,7 +65,7 @@ class PaymentControllerTest {
     @Test
     @DisplayName("보증금 결제 승인 - 정상 요청 200 OK")
     void confirmDeposit_정상요청_200OK() throws Exception {
-        given(paymentService.confirmDeposit(any(PaymentConfirmRequest.class)))
+        given(paymentService.confirmDeposit(any(PaymentConfirmRequest.class), any()))
                 .willReturn(sampleResponse(PaymentType.DEPOSIT, PaymentStatus.PAID));
 
         mockMvc.perform(post("/api/payments/deposit/confirm")
@@ -91,7 +91,7 @@ class PaymentControllerTest {
     @Test
     @DisplayName("잔액 결제 승인 - 정상 요청 200 OK")
     void confirmBalance_정상요청_200OK() throws Exception {
-        given(paymentService.confirmBalance(any(PaymentConfirmRequest.class)))
+        given(paymentService.confirmBalance(any(PaymentConfirmRequest.class), any()))
                 .willReturn(sampleResponse(PaymentType.BALANCE, PaymentStatus.PAID));
 
         mockMvc.perform(post("/api/payments/balance/confirm")

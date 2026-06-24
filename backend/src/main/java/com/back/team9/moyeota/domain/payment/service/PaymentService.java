@@ -39,18 +39,18 @@ public class PaymentService {
     private final NotificationService notificationService;
 
     @Transactional
-    public PaymentResponse confirmDeposit(PaymentConfirmRequest request) {
-        return confirmPayment(request, PaymentType.DEPOSIT);
+    public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
+        return confirmPayment(request, PaymentType.DEPOSIT, memberId);
     }
 
     @Transactional
-    public PaymentResponse confirmBalance(PaymentConfirmRequest request) {
-        PaymentResponse response = confirmPayment(request, PaymentType.BALANCE);
+    public PaymentResponse confirmBalance(PaymentConfirmRequest request, Long memberId) {
+        PaymentResponse response = confirmPayment(request, PaymentType.BALANCE, memberId);
         participationService.completeBalancePayment(request.participationId());
         return response;
     }
 
-    private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType) {
+    private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType, Long memberId) {
 
         Payment pendingPayment = paymentRepository
                 .findByParticipation_ParticipationIdAndStatus(request.participationId(), PaymentStatus.PENDING)
@@ -61,6 +61,9 @@ public class PaymentService {
         }
 
         Participation participation = pendingPayment.getParticipation();
+        if (!participation.getMember().getMemberId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
         if (request.amount().compareTo(participation.getFinalAmount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
@@ -117,11 +120,16 @@ public class PaymentService {
 
         payment.startRefund();
         paymentWriter.save(payment);
-
-        tossPaymentClient.cancel(
-                payment.getTossPaymentKey(),
-                request.cancelReason()
-        );
+        try {
+            tossPaymentClient.cancel(
+                    payment.getTossPaymentKey(),
+                    request.cancelReason()
+            );
+        } catch (Exception e) {
+            log.error("[REFUND_FAILED] paymentId={}, reason={}: {}",
+                    paymentId, request.cancelReason(), e.getMessage(), e);
+            throw e;
+        }
 
         payment.completeRefund();
         Payment updatedPayment = paymentWriter.save(payment);
