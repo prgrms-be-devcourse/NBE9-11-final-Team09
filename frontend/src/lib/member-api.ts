@@ -71,7 +71,7 @@ function getErrorDetails(payload: unknown) {
   return { message, code };
 }
 
-async function authorizedRequest<T>(
+export async function authorizedRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
