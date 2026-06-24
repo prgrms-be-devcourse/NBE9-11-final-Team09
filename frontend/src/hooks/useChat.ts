@@ -21,8 +21,12 @@ export function useChat({ chatRoomId, memberId }: UseChatProps): UseChatReturn {
     const clientRef = useRef<Client | null>(null);
 
     useEffect(() => {
+        let ignore = false;
+
         getChatMessages(chatRoomId)
-            .then(setMessages)
+            .then((msgs) => {
+                if (!ignore) setMessages(msgs);
+            })
             .catch((error) => {
                 console.error("채팅 메시지 조회 실패:", error);
             });
@@ -59,6 +63,7 @@ export function useChat({ chatRoomId, memberId }: UseChatProps): UseChatReturn {
         clientRef.current = client;
 
         return () => {
+            ignore = true;
             client.deactivate();
             clientRef.current = null;
         };

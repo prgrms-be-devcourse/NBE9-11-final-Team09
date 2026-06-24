@@ -15,7 +15,7 @@ export default async function ChatPage({ params, searchParams }: ChatPageProps) 
 
     const chatRoomIdNum = Number(chatRoomId);
 
-    if (Number.isNaN(chatRoomIdNum)) {
+    if (Number.isNaN(chatRoomIdNum) || chatRoomIdNum <= 0) {
         return <div>잘못된 채팅방입니다.</div>;
     }
 

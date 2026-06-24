@@ -30,6 +30,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                     {content}
                 </div>
                 <span
+                    suppressHydrationWarning
                     className={`text-xs text-gray-400 mt-1 ${
                         isHost ? "text-left ml-1" : "text-right mr-1"
                     }`}
