@@ -64,7 +64,7 @@ class ChatRoomControllerTest {
         given(chatRoomService.createRoom(fundingId))
                 .willReturn(response);
 
-        mockMvc.perform(post("/chatrooms/{fundingId}", fundingId))
+        mockMvc.perform(post("/api/chatrooms/{fundingId}", fundingId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("채팅방 생성 성공"))
@@ -99,7 +99,7 @@ class ChatRoomControllerTest {
         given(chatMessageService.getMessages(chatRoomId))
                 .willReturn(List.of(response1, response2));
 
-        mockMvc.perform(get("/chatrooms/{chatRoomId}/messages", chatRoomId))
+        mockMvc.perform(get("/api/chatrooms/{chatRoomId}/messages", chatRoomId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("채팅 메시지 조회 성공"))

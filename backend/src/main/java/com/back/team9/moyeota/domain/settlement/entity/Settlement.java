@@ -54,4 +54,9 @@ public class Settlement extends BaseEntity {
     public void reject() {
         this.status = SettlementStatus.REJECTED;
     }
+
+    public void complete(LocalDateTime paybackPaidAt) {
+        this.status = SettlementStatus.COMPLETED;
+        this.paybackPaidAt = paybackPaidAt;
+    }
 }
