@@ -2,7 +2,6 @@ package com.back.team9.moyeota.domain.member.service.auth;
 
 import com.back.team9.moyeota.domain.member.dto.auth.KakaoUserInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResult;
-import com.back.team9.moyeota.domain.member.dto.auth.MemberSocialLoginRequest;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.entity.Provider;
@@ -20,9 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;

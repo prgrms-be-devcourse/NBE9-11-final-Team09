@@ -5,7 +5,6 @@ import com.back.team9.moyeota.domain.member.dto.auth.KakaoTokenResponse;
 import com.back.team9.moyeota.domain.member.dto.auth.KakaoUserInfoResponse;
 import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResponse;
 import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResult;
-import com.back.team9.moyeota.domain.member.dto.auth.MemberSocialLoginRequest;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.infrastructure.social.KakaoSocialLoginClient;
@@ -23,24 +22,6 @@ public class MemberSocialLoginService {
     private final KakaoSocialLoginClient kakaoSocialLoginClient;
     private final MemberSocialLoginTransactionService transactionService;
     private final JwtTokenProvider jwtTokenProvider;
-
-    public MemberLoginResult login(MemberSocialLoginRequest request) {
-        if (request.provider() != Provider.KAKAO) {
-            throw new BusinessException(
-                    ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER
-            );
-        }
-
-        KakaoUserInfoResponse userInfo =
-                kakaoSocialLoginClient.getUserInfo(request.accessToken());
-
-        Member member = transactionService.findOrCreateSocialMember(
-                request.provider(),
-                userInfo
-        );
-
-        return createLoginResult(member);
-    }
 
     public MemberLoginResult loginWithKakaoAuthorizationCode(
             KakaoAuthorizationCodeLoginRequest request

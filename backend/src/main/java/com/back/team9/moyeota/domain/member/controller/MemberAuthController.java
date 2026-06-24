@@ -103,32 +103,6 @@ public class MemberAuthController {
                 ));
     }
 
-    @PostMapping("/social-login")
-    public ResponseEntity<ApiResponse<MemberLoginResponse>> socialLogin(
-            @Valid @RequestBody MemberSocialLoginRequest request
-    ) {
-        MemberLoginResult result = memberSocialLoginService.login(request);
-
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", result.refreshToken())
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofSeconds(
-                        result.refreshTokenExpiresIn()
-                ))
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-                .body(new ApiResponse<>(
-                        "USR_SOCIAL_LOGIN_SUCCESS",
-                        "소셜 로그인 성공",
-                        result.response()
-                ));
-    }
-
     @PostMapping("/social-login/kakao")
     public ResponseEntity<ApiResponse<MemberLoginResponse>> kakaoLogin(
             @Valid @RequestBody KakaoAuthorizationCodeLoginRequest request
