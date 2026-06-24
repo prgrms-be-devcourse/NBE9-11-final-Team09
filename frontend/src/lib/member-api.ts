@@ -8,7 +8,6 @@
   MemberParticipation,
   MemberPayment,
   MemberProfile,
-  MemberSocialLoginRequest,
   MemberUpdateRequest,
   MemberUpdateResponse,
   MemberWithdrawRequest,
@@ -175,18 +174,6 @@ async function authorizedRequest<T>(
   }
 
   return payload as T;
-}
-
-export async function socialLoginMember(request: MemberSocialLoginRequest) {
-  const response = await publicRequest<ApiResponse<MemberLoginResponse>>(
-    "/api/members/social-login",
-    {
-      method: "POST",
-      body: JSON.stringify(request),
-    },
-  );
-
-  return response.data;
 }
 
 export async function kakaoAuthorizationCodeLogin(

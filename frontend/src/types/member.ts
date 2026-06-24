@@ -57,11 +57,6 @@ export interface MemberLoginResponse {
   user: MemberLoginUser;
 }
 
-export interface MemberSocialLoginRequest {
-  provider: "KAKAO";
-  accessToken: string;
-}
-
 export interface MemberKakaoCodeLoginRequest {
   code: string;
   redirectUri: string;
