@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useFundingLoggedIn } from "@/lib/fundingAuth";
 import { deleteFunding, getFunding } from "@/lib/fundingApi";
 import { getChatRoomByFundingId } from "@/lib/chatApi";
 import {
@@ -28,6 +29,7 @@ export default function FundingDetailPage() {
     const [error, setError] = useState("");
 
     const isHost = Boolean(funding?.isHost);
+    const isLoggedIn = useFundingLoggedIn();
     const isJoined = Boolean(funding?.isJoined);
     const isRecruiting = funding?.status === "RECRUITING";
 
@@ -210,24 +212,33 @@ export default function FundingDetailPage() {
                             </>
                         )}
                         {!isHost && !isJoined && isRecruiting && (
-                            <Link
-                                href={`/funding/${funding.fundingId}/seats`}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!isLoggedIn) {
+                                        router.push("/login");
+                                        return;
+                                    }
+                                    router.push(`/funding/${funding.fundingId}/seats`);
+                                }}
                                 className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
                             >
                                 참여하기
-                            </Link>
+                            </button>
                         )}
                     </div>
 
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={handleChatClick}
-                            className="rounded border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100"
-                        >
+                    {isLoggedIn && (
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={handleChatClick}
+                                className="rounded border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                            >
                             💬 주최자에게 문의하기
                         </button>
-                    </div>
+                        </div>
+                        )}
 
                     <div className="grid gap-4 md:grid-cols-4">
                         <Summary label="현재 인원" value={`${funding.currentParticipants}명`} />
