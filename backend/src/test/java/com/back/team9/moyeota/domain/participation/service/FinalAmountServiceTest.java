@@ -120,10 +120,10 @@ class FinalAmountServiceTest {
 
         finalAmountService.processFunding(2L);
 
-        // 100000 / 3 = 33333.33... → 올림 → 33334
-        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33334"));
-        assertThat(p2.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33334"));
-        assertThat(p3.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33334"));
+        // 100000 / 3 = 33333.33... → 100원 올림 → 33400
+        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
+        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
+        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
     }
 
     @Test

@@ -39,7 +39,7 @@ public class Participation extends BaseEntity {
     private ParticipationPaymentStatus paymentStatus;
 
     // 참여 신청 시점에는 아직 인원이 확정되지 않아 BigDecimal.ZERO로 저장
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 0)
     private BigDecimal finalAmount;
 
     // 참여 상태
