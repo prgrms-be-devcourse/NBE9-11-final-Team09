@@ -31,9 +31,9 @@ public class PaymentCancellationRefundListener {
                 paymentService.refundByParticipationId(event.participationId());
                 return;
             } catch (Exception e) {
-                if (isNonRetriable(e)) {
+                if (e instanceof BusinessException be && be.getErrorCode() != ErrorCode.REFUND_FAILED) {
                     log.error("환불 처리 실패 - 재시도 불필요 ({}), participationId: {}",
-                            ((BusinessException) e).getErrorCode(), event.participationId());
+                            be.getErrorCode(), event.participationId());
                     return;
                 }
                 log.warn("환불 처리 실패 (시도 {}/{}), participationId: {}",
@@ -58,9 +58,5 @@ public class PaymentCancellationRefundListener {
         } catch (Exception mailEx) {
             log.error("어드민 알림 발송 실패: {}", mailEx.getMessage(), mailEx);
         }
-    }
-
-    private boolean isNonRetriable(Exception e) {
-        return e instanceof BusinessException be && be.getErrorCode() != ErrorCode.REFUND_FAILED;
     }
 }
