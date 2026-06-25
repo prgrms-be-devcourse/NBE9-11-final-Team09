@@ -35,6 +35,7 @@ public enum ErrorCode {
     UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "USR016", "지원하지 않는 소셜 로그인입니다."),
     INVALID_SOCIAL_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "USR017", "유효하지 않은 소셜 로그인 토큰입니다."),
     SOCIAL_EMAIL_NOT_PROVIDED(HttpStatus.BAD_REQUEST, "USR018", "소셜 계정에서 이메일 정보를 제공하지 않았습니다."),
+    EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "USR019", "이메일 인증 요청 빈도가 높습니다. 잠시 후 다시 시도해주세요."),
 
     // [ADM] 관리자
     ADMIN_PERMISSION_REQUIRED(HttpStatus.FORBIDDEN,"ADM001", "관리자 권한이 필요합니다."),
