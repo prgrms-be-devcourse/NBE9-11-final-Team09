@@ -28,15 +28,17 @@ public class PaymentCancellationRefundListener {
     public void handleParticipationCancelled(ParticipationCancelledEvent event) {
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
             try {
-                paymentService.refundByParticipationId(event.participationId());
-                return;
-            } catch (BusinessException e) {
-                if (e.getErrorCode() == ErrorCode.REFUND_FAILED) {
-                    throw new RuntimeException("Toss 환불 API 실패 (재시도 대상)", e);
+                try {
+                    paymentService.refundByParticipationId(event.participationId());
+                    return;
+                } catch (BusinessException e) {
+                    if (e.getErrorCode() == ErrorCode.REFUND_FAILED) {
+                        throw new RuntimeException("Toss 환불 API 실패 (재시도 대상)", e);
+                    }
+                    log.error("환불 처리 실패 - 재시도 불필요 ({}), participationId: {}",
+                            e.getErrorCode(), event.participationId());
+                    return;
                 }
-                log.error("환불 처리 실패 - 재시도 불필요 ({}), participationId: {}",
-                        e.getErrorCode(), event.participationId());
-                return;
             } catch (Exception e) {
                 log.warn("환불 처리 실패 (시도 {}/{}), participationId: {}",
                         attempt, MAX_RETRY, event.participationId(), e);
