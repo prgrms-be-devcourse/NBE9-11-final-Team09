@@ -357,14 +357,14 @@ class FundingControllerTest {
     @Test
     @DisplayName("펀딩 취소 이미 취소된 펀딩 400 반환")
     void cancelFunding_whenServiceThrowsAlreadyCancelled_returnsFnd004() throws Exception {
-        willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE_OR_CANCEL))
+        willThrow(new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED))
                 .given(fundingService)
                 .cancelFunding(any(), eq(1L));
 
         mockMvc.perform(delete("/api/fundings/{id}", 1L)
         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("FND006"))
+                .andExpect(jsonPath("$.code").value("FND008"))
                 .andExpect(jsonPath("$.message").exists());
     }
 

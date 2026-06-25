@@ -196,7 +196,7 @@ public class FundingService {
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        FundingValidator.validateRecruitingStatus(funding);
+        FundingValidator.validateModifiableStatus(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
@@ -208,7 +208,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        FundingValidator.validateRecruitingStatus(funding);
+        FundingValidator.validateModifiableStatus(funding);
 
         int currentParticipants = countActiveParticipants(fundingId);
 

@@ -56,7 +56,7 @@ public enum ErrorCode {
     FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS(HttpStatus.BAD_REQUEST, "FND005", "참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."),
     FUNDING_RESTRICTED_UPDATE_OR_CANCEL(HttpStatus.BAD_REQUEST, "FND006", "확정 이전의 펀딩만 수정 또는 취소할 수 있습니다."),
     FUNDING_FORBIDDEN(HttpStatus.FORBIDDEN, "FND007", "해당 펀딩에 대한 권한이 없습니다."),
-
+    FUNDING_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "FND008", "이미 취소된 펀딩입니다."),
     // [PTH] 운행노선
     SAME_DEPARTURE_ARRIVAL(HttpStatus.BAD_REQUEST,"PTH001", "출발지와 도착지가 동일할 수 없습니다."),
     PATH_NOT_FOUND(HttpStatus.NOT_FOUND,"PTH002", "존재하지 않는 노선입니다."),
