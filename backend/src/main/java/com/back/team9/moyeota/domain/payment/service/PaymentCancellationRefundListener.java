@@ -28,18 +28,14 @@ public class PaymentCancellationRefundListener {
     public void handleParticipationCancelled(ParticipationCancelledEvent event) {
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
             try {
-                try {
-                    paymentService.refundByParticipationId(event.participationId());
-                    return;
-                } catch (BusinessException e) {
-                    if (e.getErrorCode() == ErrorCode.REFUND_FAILED) {
-                        throw new RuntimeException("Toss 환불 API 실패 (재시도 대상)", e);
-                    }
+                paymentService.refundByParticipationId(event.participationId());
+                return;
+            } catch (Exception e) {
+                if (isNonRetriable(e)) {
                     log.error("환불 처리 실패 - 재시도 불필요 ({}), participationId: {}",
-                            e.getErrorCode(), event.participationId());
+                            ((BusinessException) e).getErrorCode(), event.participationId());
                     return;
                 }
-            } catch (Exception e) {
                 log.warn("환불 처리 실패 (시도 {}/{}), participationId: {}",
                         attempt, MAX_RETRY, event.participationId(), e);
                 if (attempt < MAX_RETRY) {
@@ -62,5 +58,9 @@ public class PaymentCancellationRefundListener {
         } catch (Exception mailEx) {
             log.error("어드민 알림 발송 실패: {}", mailEx.getMessage(), mailEx);
         }
+    }
+
+    private boolean isNonRetriable(Exception e) {
+        return e instanceof BusinessException be && be.getErrorCode() != ErrorCode.REFUND_FAILED;
     }
 }
