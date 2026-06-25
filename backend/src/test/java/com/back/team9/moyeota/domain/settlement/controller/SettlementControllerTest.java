@@ -70,7 +70,7 @@ class SettlementControllerTest {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, new BigDecimal("100000")))))
+                                new SettlementCreateRequest(1L))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.msg").value("정산 내역이 생성되었습니다."))
@@ -90,26 +90,16 @@ class SettlementControllerTest {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, new BigDecimal("100000")))))
+                                new SettlementCreateRequest(1L))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("정산 생성 - 필수 필드(fundingId, totalAmount) 누락 시 400")
+    @DisplayName("정산 생성 - 필수 필드(fundingId) 누락 시 400")
     void create_필수필드누락_400() throws Exception {
         mockMvc.perform(post("/api/settlements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("정산 생성 - totalAmount 0 이하 시 400 (@Positive 검증)")
-    void create_totalAmount0이하_400() throws Exception {
-        mockMvc.perform(post("/api/settlements")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new SettlementCreateRequest(1L, BigDecimal.ZERO))))
                 .andExpect(status().isBadRequest());
     }
 
