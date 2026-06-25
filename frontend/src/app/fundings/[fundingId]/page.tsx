@@ -29,6 +29,7 @@ export default function FundingDetailPage() {
 
     const isHost = Boolean(funding?.isHost);
     const isJoined = Boolean(funding?.isJoined);
+    const isRecruiting = funding?.status === "RECRUITING";
 
     useEffect(() => {
         let ignore = false;
@@ -190,7 +191,7 @@ export default function FundingDetailPage() {
                     )}
 
                     <div className="flex gap-2">
-                        {isHost && (
+                        {isHost && isRecruiting && (
                             <>
                                 <Link
                                     href={`/fundings/${funding.fundingId}/edit`}
@@ -208,7 +209,7 @@ export default function FundingDetailPage() {
                                 </button>
                             </>
                         )}
-                        {!isHost && !isJoined && funding.status === "RECRUITING" && (
+                        {!isHost && !isJoined && isRecruiting && (
                             <Link
                                 href={`/funding/${funding.fundingId}/seats`}
                                 className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
