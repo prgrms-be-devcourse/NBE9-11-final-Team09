@@ -24,27 +24,15 @@ public class EmailVerificationRateLimitRedisRepository {
 
     private final StringRedisTemplate redisTemplate;
 
-    public boolean isRequestLocked(String email) {
+    public boolean tryLockRequest(String email) {
         try {
-            Boolean exists = redisTemplate.hasKey(generateRequestLockKey(email));
-
-            return Boolean.TRUE.equals(exists);
-        } catch (DataAccessException exception) {
-            log.error("이메일 인증 요청 제한 정보 Redis 조회 실패", exception);
-
-            throw new BusinessException(
-                    ErrorCode.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    public void lockRequest(String email) {
-        try {
-            redisTemplate.opsForValue().set(
+            Boolean success = redisTemplate.opsForValue().setIfAbsent(
                     generateRequestLockKey(email),
                     "1",
                     REQUEST_COOLDOWN
             );
+
+            return Boolean.TRUE.equals(success);
         } catch (DataAccessException exception) {
             log.error("이메일 인증 요청 제한 정보 Redis 저장 실패", exception);
 

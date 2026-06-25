@@ -79,8 +79,6 @@ public class MemberService {
             );
         }
 
-        validateEmailVerificationRequestRateLimit(email);
-
         PendingSignupData signupData = pendingSignupRepository
                 .findByEmail(email)
                 .orElseThrow(() -> new BusinessException(
@@ -101,17 +99,22 @@ public class MemberService {
                         verificationCodeHasher.hash(verificationCode)
                 );
 
-        verificationRepository.save(email, verificationData);
+        if (!rateLimitRepository.tryLockRequest(email)) {
+            throw new BusinessException(
+                    ErrorCode.EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT
+            );
+        }
 
         try {
+            verificationRepository.save(email, verificationData);
+
             emailVerificationService.sendVerificationCode(
                     email,
                     verificationCode
             );
-
-            rateLimitRepository.lockRequest(email);
         } catch (RuntimeException exception) {
             safelyDeleteVerification(email);
+            safelyDeleteRateLimit(email);
             throw exception;
         }
     }
@@ -221,14 +224,6 @@ public class MemberService {
             log.warn(
                     "이메일 인증 정보 Redis 삭제 실패",
                     exception
-            );
-        }
-    }
-
-    private void validateEmailVerificationRequestRateLimit(String email) {
-        if (rateLimitRepository.isRequestLocked(email)) {
-            throw new BusinessException(
-                    ErrorCode.EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT
             );
         }
     }

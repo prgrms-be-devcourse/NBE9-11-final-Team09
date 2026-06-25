@@ -3,7 +3,11 @@ package com.back.team9.moyeota.domain.member.service.auth;
 import com.back.team9.moyeota.domain.member.dto.auth.EmailVerificationConfirmRequest;
 import com.back.team9.moyeota.domain.member.dto.auth.EmailVerificationRequest;
 import com.back.team9.moyeota.domain.member.dto.auth.MemberSignupRequest;
-import com.back.team9.moyeota.domain.member.infrastructure.redis.*;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.EmailVerificationData;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.EmailVerificationRateLimitRedisRepository;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.EmailVerificationRedisRepository;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupData;
+import com.back.team9.moyeota.domain.member.infrastructure.redis.PendingSignupRedisRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -143,10 +147,13 @@ class MemberServiceTest {
         EmailVerificationRequest request =
                 new EmailVerificationRequest("moyeota@example.com");
         PendingSignupData signupData = createPendingSignupData();
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationCodeHasher.hash(anyString()))
                 .thenReturn("hashed-code");
+        when(rateLimitRepository.tryLockRequest(request.email()))
+                .thenReturn(true);
 
         memberService.requestEmailVerification(request);
 
@@ -154,12 +161,15 @@ class MemberServiceTest {
                 ArgumentCaptor.forClass(EmailVerificationData.class);
         ArgumentCaptor<String> codeCaptor =
                 ArgumentCaptor.forClass(String.class);
+
         InOrder inOrder = inOrder(
                 pendingSignupRepository,
+                rateLimitRepository,
                 verificationRepository,
                 emailVerificationService
         );
         inOrder.verify(pendingSignupRepository).save(signupData);
+        inOrder.verify(rateLimitRepository).tryLockRequest(request.email());
         inOrder.verify(verificationRepository).save(
                 eq(request.email()),
                 dataCaptor.capture()
@@ -172,9 +182,6 @@ class MemberServiceTest {
         assertThat(dataCaptor.getValue().verificationCodeHash())
                 .isEqualTo("hashed-code");
         assertThat(codeCaptor.getValue()).hasSize(6);
-
-        verify(rateLimitRepository).isRequestLocked(request.email());
-        verify(rateLimitRepository).lockRequest(request.email());
     }
 
     @Test
@@ -182,6 +189,7 @@ class MemberServiceTest {
     void requestEmailVerificationWithoutPendingSignupThrowsException() {
         EmailVerificationRequest request =
                 new EmailVerificationRequest("moyeota@example.com");
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.empty());
 
@@ -190,21 +198,28 @@ class MemberServiceTest {
                 ErrorCode.SIGNUP_REQUEST_NOT_FOUND
         );
 
-        verifyNoInteractions(verificationRepository, emailVerificationService);
+        verifyNoInteractions(
+                rateLimitRepository,
+                verificationRepository,
+                emailVerificationService
+        );
     }
 
     @Test
-    @DisplayName("메일 발송 실패 시 인증정보만 삭제한다")
-    void requestEmailVerificationWhenSendingFailsDeletesCodeOnly() {
+    @DisplayName("메일 발송 실패 시 인증정보와 요청 제한 락을 삭제한다")
+    void requestEmailVerificationWhenSendingFailsDeletesCodeAndRateLimit() {
         EmailVerificationRequest request =
                 new EmailVerificationRequest("moyeota@example.com");
         PendingSignupData signupData = createPendingSignupData();
         BusinessException mailException =
                 new BusinessException(ErrorCode.EMAIL_SEND_FAILED);
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationCodeHasher.hash(anyString()))
                 .thenReturn("hashed-code");
+        when(rateLimitRepository.tryLockRequest(request.email()))
+                .thenReturn(true);
         doThrow(mailException).when(emailVerificationService)
                 .sendVerificationCode(eq(request.email()), anyString());
 
@@ -213,8 +228,31 @@ class MemberServiceTest {
         ).isSameAs(mailException);
 
         verify(verificationRepository).deleteByEmail(request.email());
+        verify(rateLimitRepository).deleteRequestLock(request.email());
         verify(pendingSignupRepository, never()).deleteByEmail(anyString());
-        verify(rateLimitRepository, never()).lockRequest(anyString());
+    }
+
+    @Test
+    @DisplayName("이메일 인증 요청 제한 중이면 메일을 발송하지 않는다")
+    void requestEmailVerificationWhenRequestLockedThrowsException() {
+        EmailVerificationRequest request =
+                new EmailVerificationRequest("moyeota@example.com");
+        PendingSignupData signupData = createPendingSignupData();
+
+        when(pendingSignupRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(signupData));
+        when(rateLimitRepository.tryLockRequest(request.email()))
+                .thenReturn(false);
+
+        assertBusinessException(
+                () -> memberService.requestEmailVerification(request),
+                ErrorCode.EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT
+        );
+
+        verifyNoInteractions(
+                verificationRepository,
+                emailVerificationService
+        );
     }
 
     @Test
@@ -228,6 +266,7 @@ class MemberServiceTest {
         PendingSignupData signupData = createPendingSignupData();
         EmailVerificationData verificationData =
                 new EmailVerificationData("encoded-code");
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
@@ -265,6 +304,7 @@ class MemberServiceTest {
         PendingSignupData signupData = createPendingSignupData();
         EmailVerificationData verificationData =
                 new EmailVerificationData("encoded-code");
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
@@ -297,6 +337,7 @@ class MemberServiceTest {
                         "A1B2C3"
                 );
         PendingSignupData signupData = createPendingSignupData();
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
@@ -323,6 +364,7 @@ class MemberServiceTest {
                 new EmailVerificationData("encoded-code");
         BusinessException registrationException =
                 new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+
         when(pendingSignupRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(signupData));
         when(verificationRepository.findByEmail(request.email()))
@@ -341,6 +383,7 @@ class MemberServiceTest {
 
         verify(verificationRepository, never()).deleteByEmail(anyString());
         verify(pendingSignupRepository, never()).deleteByEmail(anyString());
+        verify(rateLimitRepository, never()).deleteRequestLock(anyString());
     }
 
     @Test
@@ -373,27 +416,6 @@ class MemberServiceTest {
 
         verify(verificationRepository).deleteByEmail(request.email());
         verifyNoInteractions(memberRegistrationService);
-    }
-
-    @Test
-    @DisplayName("이메일 인증 요청 제한 중이면 메일을 발송하지 않는다")
-    void requestEmailVerificationWhenRequestLockedThrowsException() {
-        EmailVerificationRequest request =
-                new EmailVerificationRequest("moyeota@example.com");
-
-        when(rateLimitRepository.isRequestLocked(request.email()))
-                .thenReturn(true);
-
-        assertBusinessException(
-                () -> memberService.requestEmailVerification(request),
-                ErrorCode.EMAIL_VERIFICATION_REQUEST_TOO_FREQUENT
-        );
-
-        verifyNoInteractions(
-                pendingSignupRepository,
-                verificationRepository,
-                emailVerificationService
-        );
     }
 
     private void assertBusinessException(
