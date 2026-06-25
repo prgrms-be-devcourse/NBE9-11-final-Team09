@@ -58,7 +58,6 @@ public class SettlementService {
         BigDecimal platformFee = totalAmount.multiply(platformFeeRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal hostPaybackAmount = totalAmount.subtract(platformFee);
 
-
         Settlement settlement = Settlement.builder()
                 .member(funding.getMember())
                 .funding(funding)
