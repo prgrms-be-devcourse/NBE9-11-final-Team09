@@ -65,6 +65,9 @@ jobs:
             echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
             echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
             
+            echo "KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}" >> .env
+            echo "SOCIAL_KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_SECRET }}" >> .env
+            
             echo "REDIS_HOST=redis" >> .env
             
             # 배포 스크립트에 실행 권한을 주고 실행합니다.
