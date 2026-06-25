@@ -82,7 +82,7 @@ export default function BalancePaymentPage() {
 
     setPaying(true);
     try {
-      const { orderId } = await preparePayment(participationId);
+      const { orderId, amount } = await preparePayment(participationId);
       const memberId = getFundingMemberId();
       const tossPayments = await loadTossPayments(CLIENT_KEY);
       const payment = tossPayments.payment({
@@ -91,7 +91,7 @@ export default function BalancePaymentPage() {
 
       await payment.requestPayment({
         method: "CARD",
-        amount: { currency: "KRW", value: context.amount },
+        amount: { currency: "KRW", value: amount },
         orderId,
         orderName: "모여타 버스 잔금 결제",
         successUrl: `${window.location.origin}/payment/balance/result?participationId=${participationId}`,
