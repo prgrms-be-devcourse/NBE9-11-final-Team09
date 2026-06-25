@@ -128,6 +128,16 @@ export default function AppHeader() {
         <nav className="flex items-center gap-2 text-sm sm:gap-3">
           {member ? (
             <>
+              {/* 🔔 추가 */}
+              <Link
+                href="/notification"
+                className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
+                aria-label="알림"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z" />
+                </svg>
+              </Link>
               <span className="hidden rounded-full bg-gray-100 px-3 py-2 font-semibold text-gray-700 sm:inline-flex">
                 {member.nickname}님
               </span>
@@ -147,6 +157,16 @@ export default function AppHeader() {
             </>
           ) : hasToken ? (
             <>
+              {/* 🔔 추가 */}
+              <Link
+                href="/notification"
+                className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
+                aria-label="알림"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z" />
+                </svg>
+              </Link>
               <Link
                 href="/mypage"
                 className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
