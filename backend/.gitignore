@@ -13,6 +13,9 @@ src/main/generated/
 # macOS
 .DS_Store
 
+# Dev tools (local only, share manually)
+src/main/resources/static/paytest.html
+
 # Spring Boot
 application-local.properties
 application-local.yml
