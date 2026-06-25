@@ -38,8 +38,12 @@ public class FinalAmountService {
                 .allMatch(p -> p.getFinalAmount().compareTo(BigDecimal.ZERO) > 0);
         if (alreadySet) return;
 
-        BigDecimal finalAmount = funding.getTotalPrice()
-                .divide(BigDecimal.valueOf(participations.size()), 0, RoundingMode.CEILING);
+        BigDecimal amountPerPerson = funding.getTotalPrice()
+                .divide(BigDecimal.valueOf(participations.size()), 2, RoundingMode.CEILING);
+
+        BigDecimal finalAmount = amountPerPerson
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING)
+                .multiply(BigDecimal.valueOf(100));
 
         participations.forEach(p -> p.updateFinalAmount(finalAmount));
         log.info("finalAmount 설정 완료 — fundingId={}, 인원={}, finalAmount={}",
