@@ -187,9 +187,6 @@ export default function LoginPage() {
                 />
                 로그인 상태 유지
               </label>
-              <span className="cursor-pointer text-sm text-gray-700 underline">
-                비밀번호 찾기
-              </span>
             </div>
 
             {error && <p className="text-xs text-red-500">{error}</p>}
