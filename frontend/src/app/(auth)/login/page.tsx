@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import PasswordField from "@/components/ui/PasswordField";
 import { storeAccessToken } from "@/lib/member-api";
+import { createApiUrl } from "@/lib/api-url";
 
 type KakaoSdk = {
   isInitialized: () => boolean;
@@ -74,7 +75,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/members/login", {
+      const res = await fetch(createApiUrl("/api/members/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
