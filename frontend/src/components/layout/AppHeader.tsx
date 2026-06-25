@@ -77,9 +77,7 @@ export default function AppHeader() {
 
       await Promise.resolve();
 
-      if (ignore) {
-        return;
-      }
+      if (ignore) return;
 
       setHasToken(Boolean(token));
 
@@ -127,12 +125,36 @@ export default function AppHeader() {
 
         <nav className="flex items-center gap-2 text-sm sm:gap-3">
           {(member || hasToken) && (
-            <Link
-              href="/mypage"
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              마이페이지
-            </Link>
+            <>
+              <Link
+                href="/mypage"
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                마이페이지
+              </Link>
+
+              {/* 🔔 알림 버튼 추가 */}
+              <Link
+                href="/notification"
+                className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
+                aria-label="알림"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.8}
+                  stroke="currentColor"
+                  className="h-5 w-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z"
+                  />
+                </svg>
+              </Link>
+            </>
           )}
 
           {member ? (
