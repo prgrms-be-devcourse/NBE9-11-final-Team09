@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SeatMap from "@/components/seat/SeatMap";
 import {
   busTypeLabels,
@@ -18,6 +18,7 @@ type FundingFormProps = {
   mode: "create" | "edit";
   textOnly?: boolean;
   submitting?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (payload: FundingPayload) => Promise<void>;
 };
 
@@ -66,6 +67,7 @@ export default function FundingForm({
   mode,
   textOnly = false,
   submitting = false,
+  onDirtyChange,
   onSubmit,
 }: FundingFormProps) {
   const [payload, setPayload] = useState<FundingPayload>(
@@ -97,6 +99,10 @@ export default function FundingForm({
   const seatSelectorGridClass = isRoundTrip
     ? "grid grid-cols-2 gap-4"
     : "grid gap-5";
+  const isDirty = useMemo(
+    () => JSON.stringify(payload) !== JSON.stringify(originalPayload),
+    [originalPayload, payload]
+  );
   const minimumDepartureDateTime = useMemo(
     () => toDatetimeLocalValue(addDays(new Date(), MIN_DEPARTURE_OFFSET_DAYS)),
     []
@@ -192,6 +198,27 @@ export default function FundingForm({
     returnTimeError,
     routeLocked,
   ]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (!isDirty || submitting) {
+      return;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty, submitting]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

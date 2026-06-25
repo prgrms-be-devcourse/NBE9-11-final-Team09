@@ -54,10 +54,21 @@ export default function FundingEditPage() {
   );
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
   const [error, setError] = useState("");
 
   const isHost = Boolean(funding?.isHost);
   const textOnly = Boolean(funding && funding.currentParticipants > 0);
+
+  function handleLeave(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (
+      formDirty &&
+      !submitting &&
+      !window.confirm("변경사항이 저장되지 않을 수 있습니다. 페이지를 나가시겠습니까?")
+    ) {
+      event.preventDefault();
+    }
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -101,6 +112,7 @@ export default function FundingEditPage() {
 
     try {
       await updateFunding(fundingId, payload);
+      setFormDirty(false);
       router.push(`/fundings/${fundingId}`);
     } finally {
       setSubmitting(false);
@@ -149,6 +161,7 @@ export default function FundingEditPage() {
       <div className="mx-auto grid w-full max-w-4xl gap-6 px-5 py-8">
         <Link
           href={`/fundings/${fundingId}`}
+          onClick={handleLeave}
           className="w-fit text-sm font-medium text-gray-600"
         >
           상세로
@@ -165,6 +178,7 @@ export default function FundingEditPage() {
               textOnly={textOnly}
               initialValue={initialPayload}
               submitting={submitting}
+              onDirtyChange={setFormDirty}
               onSubmit={handleSubmit}
             />
           </div>
