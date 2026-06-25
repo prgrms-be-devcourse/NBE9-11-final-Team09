@@ -34,6 +34,7 @@ export default function SeatsPage() {
     const [outboundRouteInfo, setOutboundRouteInfo] = useState("");
     const [returnRouteInfo, setReturnRouteInfo] = useState("");
     const [finalAmount, setFinalAmount] = useState(0);
+    const [outboundPathId, setOutboundPathId] = useState<number | null>(null);
     const [returnPathId, setReturnPathId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -56,6 +57,8 @@ export default function SeatsPage() {
                     setError("노선 정보를 찾을 수 없습니다.");
                     return;
                 }
+
+                setOutboundPathId(outbound.pathinfoId);
 
                 if (returnPath) {
                     setReturnPathId(returnPath.pathinfoId);
@@ -165,6 +168,15 @@ export default function SeatsPage() {
                 setSelectedSeat(null);
                 setReturnSeat(null);
                 setStep("outbound");
+
+                if (outboundPathId) {
+                    try {
+                        const outboundLayout = await getSeatLayout(outboundPathId);
+                        setSeatLayout(outboundLayout);
+                    } catch {
+                        setModal({ title: "오류", message: "가는편 좌석 정보를 불러오지 못했습니다." });
+                    }
+                }
             } else if (err instanceof Error) {
                 setModal({ title: "참여 신청 실패", message: err.message });
             } else {
