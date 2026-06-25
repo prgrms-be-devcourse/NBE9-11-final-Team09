@@ -7,7 +7,17 @@ import PasswordField from "@/components/ui/PasswordField";
 
 const EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
-const PHONE_REGEX = /^010-\d{4}-\d{4}$/;
+const PHONE_REGEX = /^010\d{8}$/;
+
+function formatPhoneNumber(phoneNumber: string) {
+  const numbers = phoneNumber.replace(/\D/g, "");
+
+  if (numbers.length !== 11) {
+    return numbers;
+  }
+
+  return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+}
 
 async function readErrorMessage(response: Response, fallback: string) {
   try {
@@ -85,7 +95,7 @@ export default function SignupPage() {
           password,
           name: name.trim(),
           nickname: nickname.trim(),
-          phoneNumber: phoneNumber.trim(),
+          phoneNumber: formatPhoneNumber(phoneNumber),
         }),
       });
 
@@ -309,18 +319,22 @@ export default function SignupPage() {
               <label className="mb-2 block text-sm font-bold">연락처</label>
               <input
                 type="tel"
-                placeholder="010-0000-0000"
+                placeholder="01012345678"
                 value={phoneNumber}
                 onChange={(event) => {
-                  setPhoneNumber(event.target.value);
+                  setPhoneNumber(
+                    event.target.value.replace(/\D/g, "").slice(0, 11),
+                  );
                   clearMessage();
                 }}
+                inputMode="numeric"
+                maxLength={11}
                 disabled={fieldsDisabled}
                 className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
               />
               {phoneNumber && !phoneValid && (
                 <p className="mt-1 text-xs text-red-500">
-                  010-0000-0000 형식으로 입력해주세요.
+                  하이픈 없이 01012345678 형식으로 입력해주세요.
                 </p>
               )}
             </div>
