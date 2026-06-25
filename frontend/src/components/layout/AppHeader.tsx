@@ -126,20 +126,17 @@ export default function AppHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 text-sm sm:gap-3">
-          {(member || hasToken) && (
-            <Link
-              href="/mypage"
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              마이페이지
-            </Link>
-          )}
-
           {member ? (
             <>
-              <span className="hidden font-semibold text-gray-700 sm:inline">
-                {member.nickname}
+              <span className="hidden rounded-full bg-gray-100 px-3 py-2 font-semibold text-gray-700 sm:inline-flex">
+                {member.nickname}님
               </span>
+              <Link
+                href="/mypage"
+                className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
+              >
+                마이페이지
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -149,13 +146,21 @@ export default function AppHeader() {
               </button>
             </>
           ) : hasToken ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              로그아웃
-            </button>
+            <>
+              <Link
+                href="/mypage"
+                className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
+              >
+                마이페이지
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                로그아웃
+              </button>
+            </>
           ) : (
             <>
               <Link
