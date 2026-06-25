@@ -8,9 +8,10 @@ import {
   regionLabels,
   tripTypeLabels,
 } from "@/lib/fundingFormat";
-import type { FundingPayload } from "@/types/funding";
+import type { BusType, FundingPayload, Region } from "@/types/funding";
 import { REGIONS } from "@/types/funding";
 import type { Seat } from "@/types/funding";
+import { toTimeInput } from "@/lib/fundingFormat";
 
 type FundingFormProps = {
   initialValue?: FundingPayload;
@@ -24,6 +25,23 @@ const MAX_PARTICIPANTS_BY_BUS_TYPE = {
   BUS_25: 23,
   BUS_45: 43,
 } as const;
+
+const MIN_DEPARTURE_OFFSET_DAYS = 14;
+
+const ONE_WAY_PRICES: Record<string, number> = {
+  [priceKey("SEOUL", "BUSAN", "BUS_45")]: 1742400,
+  [priceKey("SEOUL", "BUSAN", "BUS_25")]: 1210000,
+  [priceKey("SEOUL", "DAEJEON", "BUS_45")]: 774400,
+  [priceKey("SEOUL", "DAEJEON", "BUS_25")]: 550000,
+  [priceKey("SEOUL", "INCHEON", "BUS_45")]: 726000,
+  [priceKey("SEOUL", "INCHEON", "BUS_25")]: 495000,
+  [priceKey("SEOUL", "DAEGU", "BUS_45")]: 1369720,
+  [priceKey("SEOUL", "DAEGU", "BUS_25")]: 959200,
+  [priceKey("SEOUL", "GWANGJU", "BUS_45")]: 1452000,
+  [priceKey("SEOUL", "GWANGJU", "BUS_25")]: 1016400,
+  [priceKey("SEOUL", "ULSAN", "BUS_45")]: 1650440,
+  [priceKey("SEOUL", "ULSAN", "BUS_25")]: 1155000,
+};
 
 const defaultPayload: FundingPayload = {
   title: "",
@@ -79,6 +97,27 @@ export default function FundingForm({
   const seatSelectorGridClass = isRoundTrip
     ? "grid grid-cols-2 gap-4"
     : "grid gap-5";
+  const minimumDepartureDateTime = useMemo(
+    () => toDatetimeLocalValue(addDays(new Date(), MIN_DEPARTURE_OFFSET_DAYS)),
+    []
+  );
+  const departureTimeError = getDepartureTimeError(
+    payload.route.departureTime,
+    minimumDepartureDateTime
+  );
+  const returnTimeError = getReturnTimeError(
+    payload.tripType,
+    payload.route.departureTime,
+    payload.route.returnTime
+  );
+  const priceSummary = getPriceSummary(
+    payload.route.departureRegion,
+    payload.route.arrivalRegion,
+    payload.busType,
+    payload.tripType,
+    payload.minParticipants,
+    maxParticipants
+  );
 
   function getRestoredOutboundSeat(busType: FundingPayload["busType"]) {
     if (mode === "edit" && busType === originalPayload.busType) {
@@ -127,6 +166,10 @@ export default function FundingForm({
       return false;
     }
 
+    if (departureTimeError || returnTimeError) {
+      return false;
+    }
+
     if (payload.minParticipants < 1 || payload.minParticipants > maxParticipants) {
       return false;
     }
@@ -144,7 +187,9 @@ export default function FundingForm({
     maxParticipants,
     outboundSeatRequired,
     payload,
+    departureTimeError,
     returnSeatRequired,
+    returnTimeError,
     routeLocked,
   ]);
 
@@ -325,6 +370,7 @@ export default function FundingForm({
               출발 시간
               <input
                 type="datetime-local"
+                min={minimumDepartureDateTime}
                 value={payload.route.departureTime}
                 onChange={(event) =>
                   setPayload((current) => ({
@@ -337,13 +383,20 @@ export default function FundingForm({
                 }
                 className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
               />
+              <span
+                className={`min-h-4 text-xs ${
+                  departureTimeError ? "text-red-600" : "text-gray-500"
+                }`}
+              >
+                {departureTimeError || "출발일은 현재 시점으로부터 14일 이후만 가능합니다."}
+              </span>
             </label>
             {payload.tripType === "ROUND" && (
               <label className="grid gap-2 text-sm font-medium text-gray-700">
                 복귀 출발 시간
                 <input
-                  type="datetime-local"
-                  value={payload.route.returnTime ?? ""}
+                  type="time"
+                  value={toTimeInput(payload.route.returnTime)}
                   onChange={(event) =>
                     setPayload((current) => ({
                       ...current,
@@ -355,6 +408,13 @@ export default function FundingForm({
                   }
                   className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
                 />
+                <span
+                  className={`min-h-4 text-xs ${
+                    returnTimeError ? "text-red-600" : "text-gray-500"
+                  }`}
+                >
+                  {returnTimeError || "가는 편과 같은 날짜의 시간만 선택합니다."}
+                </span>
               </label>
             )}
           </div>
@@ -420,6 +480,40 @@ export default function FundingForm({
               />
             </label>
           </div>
+        </section>
+
+        <section className="grid gap-3 rounded border border-gray-200 bg-gray-50 p-4">
+          <h2 className="text-lg font-semibold">예상 요금</h2>
+          {priceSummary ? (
+            <div className="grid gap-3 text-sm md:grid-cols-3">
+              <div>
+                <p className="text-gray-500">총 가격</p>
+                <p className="text-lg font-bold text-gray-950">
+                  {formatWon(priceSummary.totalPrice)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">
+                  최소 예상가 ({maxParticipants}명 기준)
+                </p>
+                <p className="text-lg font-bold text-gray-950">
+                  {formatWon(priceSummary.minPrice)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">
+                  최대 예상가 ({payload.minParticipants}명 기준)
+                </p>
+                <p className="text-lg font-bold text-gray-950">
+                  {formatWon(priceSummary.maxPrice)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              선택한 노선의 요금을 계산할 수 없습니다.
+            </p>
+          )}
         </section>
 
         <section className="grid gap-4">
@@ -533,8 +627,7 @@ function HostSeatSelector({
           <SeatMap
             busType={busType}
             seats={seats}
-            selectedSeatId={seats.find((s) => s.seatNumber ===
-                selectedSeatNumber)?.seatId ?? null}
+            selectedSeatId={seats.find((s) => s.seatNumber === selectedSeatNumber)?.seatId ?? null}
             onSeatClick={(seat) => {
               if (!disabled) {
                 onChange(seat.seatNumber);
@@ -569,6 +662,102 @@ function createHostSeatMapSeats(
   }
 
   return seats;
+}
+
+function priceKey(departureRegion: Region, arrivalRegion: Region, busType: BusType) {
+  return [[departureRegion, arrivalRegion].sort().join("-"), busType].join("-");
+}
+
+function getPriceSummary(
+  departureRegion: Region,
+  arrivalRegion: Region,
+  busType: BusType,
+  tripType: FundingPayload["tripType"],
+  minParticipants: number,
+  maxParticipants: number
+) {
+  const oneWayPrice =
+    ONE_WAY_PRICES[priceKey(departureRegion, arrivalRegion, busType)];
+
+  if (!oneWayPrice || minParticipants < 1 || maxParticipants < 1) {
+    return null;
+  }
+
+  const totalPrice = tripType === "ROUND" ? oneWayPrice * 2 : oneWayPrice;
+
+  return {
+    totalPrice,
+    minPrice: roundUpToHundred(totalPrice / maxParticipants),
+    maxPrice: roundUpToHundred(totalPrice / minParticipants),
+  };
+}
+
+function roundUpToHundred(value: number) {
+  return Math.ceil(value / 100) * 100;
+}
+
+function formatWon(value: number) {
+  return `${value.toLocaleString("ko-KR")}원`;
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function toDatetimeLocalValue(date: Date) {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
+function getDepartureTimeError(
+  departureTime: string,
+  minimumDepartureDateTime: string
+) {
+  if (!departureTime) {
+    return "";
+  }
+
+  if (new Date(departureTime) < new Date(minimumDepartureDateTime)) {
+    return "출발날짜가 너무 빠릅니다.";
+  }
+
+  return "";
+}
+
+function getReturnTimeError(
+  tripType: FundingPayload["tripType"],
+  departureTime: string,
+  returnTime?: string | null
+) {
+  if (tripType !== "ROUND" || !departureTime || !returnTime) {
+    return "";
+  }
+
+  const returnDateTime = combineDepartureDateAndReturnTime(
+    departureTime,
+    returnTime
+  );
+
+  if (returnDateTime && new Date(returnDateTime) <= new Date(departureTime)) {
+    return "돌아오는 출발시간은 가는 편 출발시간보다 늦어야 합니다.";
+  }
+
+  return "";
+}
+
+function combineDepartureDateAndReturnTime(
+  departureTime: string,
+  returnTime: string
+) {
+  const time = toTimeInput(returnTime);
+
+  if (!departureTime || !time) {
+    return "";
+  }
+
+  return `${departureTime.slice(0, 10)}T${time}`;
 }
 
 function clamp(value: number, min: number, max: number) {

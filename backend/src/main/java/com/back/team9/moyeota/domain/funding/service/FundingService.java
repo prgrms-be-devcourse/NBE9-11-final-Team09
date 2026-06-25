@@ -4,6 +4,8 @@ import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
@@ -13,6 +15,8 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -22,6 +26,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static com.back.team9.moyeota.domain.participation.entity.ParticipationStatus.ACTIVE;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FundingService {
@@ -48,6 +54,7 @@ public class FundingService {
     private final ApplicationEventPublisher eventPublisher;
     private final ParticipationRepository participationRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final NotificationService notificationService;
 
     // 펀딩 생성
     @Transactional
@@ -203,6 +210,20 @@ public class FundingService {
         FundingValidator.validateUpdatable(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
+
+        List<Participation> activeParticipations =
+                participationRepository.findByFunding_FundingIdAndStatus(fundingId, ACTIVE);
+        for (Participation participation : activeParticipations) {
+            eventPublisher.publishEvent(new ParticipationCancelledEvent(participation.getParticipationId()));
+        }
+
+        if (!activeParticipations.isEmpty()) {
+            try {
+                notificationService.sendToFundingParticipants(fundingId, NotificationType.FUNDING_CANCELLED);
+            } catch (Exception e) {
+                log.warn("FUNDING_CANCELLED 알림 발송 실패 (fundingId={}): {}", fundingId, e.getMessage(), e);
+            }
+        }
     }
 
     // 펀딩 수정

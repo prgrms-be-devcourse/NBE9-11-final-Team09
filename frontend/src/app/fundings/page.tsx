@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { getFundingList, type FundingListParams } from "@/lib/fundingApi";
 import { useFundingLoggedIn } from "@/lib/fundingAuth";
 import {
-  formatDateTime,
   formatMoney,
   getParticipantRatio,
   regionLabels,
@@ -296,31 +295,41 @@ function FilterRegion({
 }
 
 function FundingCard({ funding }: { funding: FundingListItem }) {
-  const deadline = getFundingDeadline(funding.departureTime);
+  const confirmation = getFundingConfirmationInfo(funding.departureTime);
+  const addressRoute = formatAddressRoute(funding);
+  const departureLabel = formatDepartureLabel(funding.departureTime);
 
   return (
     <Link
       href={`/fundings/${funding.fundingId}`}
       className="grid gap-5 rounded border border-gray-200 bg-white p-5 transition hover:border-gray-400 md:grid-cols-[1fr_340px]"
     >
-      <div className="grid gap-4">
-        <div>
+      <div className="grid content-start gap-8">
+        <div className="grid gap-7">
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded bg-gray-100 px-2 py-1">
               {statusLabels[funding.status]}
             </span>
           </div>
-          <h2 className="mt-3 text-xl font-bold">{funding.title}</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {funding.departureAddress ?? "-"} → {funding.arrivalAddress ?? "-"}
-          </p>
+
+          <div className="grid gap-1">
+            <h2 className="text-xl font-bold">{funding.title}</h2>
+            <p className="text-sm font-semibold text-gray-700">
+              방장 {funding.hostNickname}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <p className="text-xl font-bold text-gray-950">{addressRoute}</p>
+            <p className="text-lg font-bold text-gray-950">{departureLabel}</p>
+          </div>
         </div>
 
-        <div className="grid gap-2 text-sm text-gray-600 md:grid-cols-2">
-          <p>출발 {formatDateTime(funding.departureTime)}</p>
-          <p>방장 {funding.hostNickname}</p>
-          <p>펀딩 마감 {deadline.label}</p>
-          <p className="font-semibold text-gray-900">{deadline.dDay}</p>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+          <p className="text-gray-700">펀딩 확정일 {confirmation.label}</p>
+          <p className="font-semibold text-red-600">
+            {confirmation.remainingLabel}
+          </p>
         </div>
       </div>
 
@@ -387,11 +396,35 @@ function FundingProgress({ funding }: { funding: FundingListItem }) {
   );
 }
 
-function getFundingDeadline(departureTime: string | null) {
+function formatAddressRoute(funding: FundingListItem) {
+  return `${funding.departureAddress ?? "-"} → ${funding.arrivalAddress ?? "-"}`;
+}
+
+function formatDepartureLabel(departureTime: string | null) {
+  if (!departureTime) {
+    return "출발일 미정";
+  }
+
+  const departure = new Date(departureTime);
+
+  if (Number.isNaN(departure.getTime())) {
+    return departureTime.replace("T", " ");
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(departure);
+}
+
+function getFundingConfirmationInfo(departureTime: string | null) {
   if (!departureTime) {
     return {
       label: "-",
-      dDay: "마감일 미정",
+      remainingLabel: "확정일 미정",
     };
   }
 
@@ -400,17 +433,19 @@ function getFundingDeadline(departureTime: string | null) {
   if (Number.isNaN(departure.getTime())) {
     return {
       label: "-",
-      dDay: "마감일 미정",
+      remainingLabel: "확정일 미정",
     };
   }
 
-  const deadline = new Date(departure);
-  deadline.setDate(deadline.getDate() - CONFIRMATION_DAYS_BEFORE_DEPARTURE);
+  const confirmationDate = new Date(departure);
+  confirmationDate.setDate(
+    confirmationDate.getDate() - CONFIRMATION_DAYS_BEFORE_DEPARTURE
+  );
 
   const today = startOfDay(new Date());
-  const deadlineDay = startOfDay(deadline);
+  const confirmationDay = startOfDay(confirmationDate);
   const diffDays = Math.ceil(
-    (deadlineDay.getTime() - today.getTime()) / 86_400_000
+    (confirmationDay.getTime() - today.getTime()) / 86_400_000
   );
 
   return {
@@ -418,8 +453,8 @@ function getFundingDeadline(departureTime: string | null) {
       month: "short",
       day: "numeric",
       weekday: "short",
-    }).format(deadline),
-    dDay: formatDday(diffDays),
+    }).format(confirmationDate),
+    remainingLabel: formatConfirmationRemaining(diffDays),
   };
 }
 
@@ -427,14 +462,14 @@ function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function formatDday(diffDays: number) {
+function formatConfirmationRemaining(diffDays: number) {
   if (diffDays > 0) {
-    return `D-${diffDays}`;
+    return `확정까지 ${diffDays}일`;
   }
 
   if (diffDays === 0) {
-    return "D-Day";
+    return "오늘 확정";
   }
 
-  return `D+${Math.abs(diffDays)}`;
+  return `확정일 ${Math.abs(diffDays)}일 지남`;
 }

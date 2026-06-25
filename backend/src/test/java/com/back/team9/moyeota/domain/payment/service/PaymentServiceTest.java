@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -19,12 +20,14 @@ import com.back.team9.moyeota.domain.payment.entity.PaymentType;
 import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,9 +58,15 @@ class PaymentServiceTest {
     @Mock private PaymentWriter paymentWriter;
     @Mock private ParticipationService participationService;
     @Mock private NotificationService notificationService;
+    @Mock private MailService mailService;
 
     @InjectMocks
     private PaymentService paymentService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(paymentService, "adminEmail", "admin@test.com");
+    }
 
     private Participation mockParticipationForConfirm(BigDecimal finalAmount) {
         Member member = mock(Member.class);
@@ -83,8 +92,9 @@ class PaymentServiceTest {
 
     private Participation mockParticipationForPrepareWithFunding(Long memberId, BigDecimal totalPrice) {
         Funding funding = mock(Funding.class);
-        given(funding.getFundingId()).willReturn(1L);
+        lenient().when(funding.getFundingId()).thenReturn(1L);
         given(funding.getTotalPrice()).willReturn(totalPrice);
+        given(funding.getMaxParticipants()).willReturn(43); // BUS_45 방장 제외 정원
         Participation participation = mockParticipationForPrepare(memberId);
         given(participation.getFunding()).willReturn(funding);
         return participation;
@@ -116,12 +126,13 @@ class PaymentServiceTest {
         BigDecimal totalPrice = new BigDecimal("500000");
         Participation participation = mockParticipationForPrepareWithFunding(1L, totalPrice);
         given(participationRepository.findById(1L)).willReturn(Optional.of(participation));
-        given(participationRepository.countByFunding_FundingIdAndStatus(1L, ParticipationStatus.ACTIVE))
-                .willReturn(10L);
 
         PaymentPrepareResponse response = paymentService.prepare(1L, 1L);
 
-        BigDecimal expectedAmount = totalPrice.divide(BigDecimal.valueOf(10), 0, RoundingMode.CEILING);
+        // 보증금 = totalPrice / (maxParticipants+1) / 2 = 500000 / 44 / 2
+        BigDecimal expectedAmount = totalPrice
+                .divide(BigDecimal.valueOf(44), 0, RoundingMode.CEILING)
+                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
         assertThat(response.orderId()).isNotBlank();
         assertThat(response.orderId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
         assertThat(response.amount()).isEqualByComparingTo(expectedAmount);
@@ -590,5 +601,51 @@ class PaymentServiceTest {
 
         verify(tossPaymentClient, never()).cancel(anyString(), anyString());
         verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("참여 ID 환불 - BALANCE 타입 결제는 환불 없이 스킵")
+    void refundByParticipationId_잔액결제_스킵() {
+        Payment balancePayment = Payment.builder()
+                .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.BALANCE)
+                .amount(new BigDecimal("450000")).tossPaymentKey("test_paymentKey")
+                .orderId("test_orderId").status(PaymentStatus.PAID).build();
+
+        given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(balancePayment));
+
+        paymentService.refundByParticipationId(1L);
+
+        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
+        verify(paymentWriter, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("보증금 결제 승인 - 좌석 HOLD 만료 시 Toss cancel 실패하면 어드민 알림 발송 후 SEAT_HOLD_EXPIRED 예외")
+    void confirmDeposit_좌석HOLD만료_Toss_cancel_실패_어드민알림발송() {
+        PaymentConfirmRequest request = new PaymentConfirmRequest(
+                "test_paymentKey", new BigDecimal("50000"), 1L
+        );
+        Participation participation = mockParticipationForConfirm(BigDecimal.valueOf(50000));
+        Payment pendingPayment = pendingPaymentOf(participation);
+        TossConfirmResponse tossResponse = new TossConfirmResponse(
+                "test_paymentKey", "uuid-order-id", "DONE", new BigDecimal("50000")
+        );
+
+        given(paymentRepository.findByParticipation_ParticipationIdAndStatus(1L, PaymentStatus.PENDING))
+                .willReturn(Optional.of(pendingPayment));
+        given(paymentRepository.findByTossPaymentKey("test_paymentKey")).willReturn(Optional.empty());
+        given(tossPaymentClient.confirm("test_paymentKey", "uuid-order-id", new BigDecimal("50000")))
+                .willReturn(tossResponse);
+        willThrow(new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED))
+                .given(participationService).confirmAfterPayment(anyLong());
+        willThrow(new RuntimeException("Toss cancel 실패"))
+                .given(tossPaymentClient).cancel(anyString(), anyString());
+
+        assertThatThrownBy(() -> paymentService.confirmDeposit(request, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.SEAT_HOLD_EXPIRED));
+
+        verify(mailService).send(anyString(), anyString(), anyString());
     }
 }

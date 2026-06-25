@@ -68,6 +68,9 @@ jwt:
 platform:
   fee-rate: "0.10"
 
+admin:
+  email: ${ADMIN_EMAIL}
+
 app:
   mail:
     retry:

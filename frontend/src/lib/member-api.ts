@@ -100,8 +100,8 @@ async function parseJsonResponse(response: Response) {
 }
 
 async function publicRequest<T>(
-  path: string,
-  init: RequestInit = {},
+    path: string,
+    init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
 
@@ -121,16 +121,16 @@ async function publicRequest<T>(
     const { message, code } = getErrorDetails(payload);
 
     throw new ApiRequestError(
-      message ?? "요청을 처리하지 못했습니다.",
-      response.status,
-      code,
+        message ?? "요청을 처리하지 못했습니다.",
+        response.status,
+        code,
     );
   }
 
   return payload as T;
 }
 
-async function authorizedRequest<T>(
+export async function authorizedRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {

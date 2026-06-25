@@ -23,3 +23,6 @@ jwt:
 
 platform:
   fee-rate: "0.10"
+
+admin:
+  email: admin@test.com

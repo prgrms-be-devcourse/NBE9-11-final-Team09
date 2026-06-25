@@ -1,6 +1,8 @@
 package com.back.team9.moyeota.domain.payment.service;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -20,6 +22,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +42,10 @@ public class PaymentService {
     private final ParticipationRepository participationRepository;
     private final ParticipationService participationService;
     private final NotificationService notificationService;
+    private final MailService mailService;
+
+    @Value("${admin.email}")
+    private String adminEmail;
 
     @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
@@ -85,10 +92,24 @@ public class PaymentService {
             if (e.getErrorCode() == ErrorCode.SEAT_HOLD_EXPIRED) {
                 pendingPayment.startRefund();
                 paymentWriter.saveRefundStatus(pendingPayment);
-                tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
-                pendingPayment.completeRefund();
-                paymentWriter.saveRefundStatus(pendingPayment);
-                participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
+                try {
+                    tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
+                    pendingPayment.completeRefund();
+                    paymentWriter.saveRefundStatus(pendingPayment);
+                    participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
+                } catch (Exception cancelEx) {
+                    log.error("[SEAT_HOLD_EXPIRED] Toss cancel 실패 — 수동 처리 필요. paymentId={}: {}",
+                            pendingPayment.getPaymentId(), cancelEx.getMessage(), cancelEx);
+                    try {
+                        mailService.send(
+                                adminEmail,
+                                "[긴급] SEAT_HOLD_EXPIRED 환불 실패 — 수동 처리 필요",
+                                "paymentId: " + pendingPayment.getPaymentId() + " 좌석 만료 자동 취소 중 Toss cancel 실패. DB는 REFUND_PENDING 상태."
+                        );
+                    } catch (Exception mailEx) {
+                        log.error("어드민 알림 발송 실패: {}", mailEx.getMessage(), mailEx);
+                    }
+                }
             }
             throw e;
         }
@@ -150,6 +171,9 @@ public class PaymentService {
             if (payment.getStatus() != PaymentStatus.PAID) {
                 continue;
             }
+            if (payment.getPaymentType() != PaymentType.DEPOSIT) {
+                continue;
+            }
             payment.startRefund();
             paymentWriter.save(payment);
 
@@ -170,17 +194,18 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
+        Funding funding = participation.getFunding();
+        BigDecimal deposit = funding.getTotalPrice()
+                .divide(BigDecimal.valueOf(funding.getMaxParticipants() + 1), 0, RoundingMode.CEILING)
+                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
+
         BigDecimal amount;
         if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
-            // 잔액 결제 단계: 스케줄러가 출발 -7일에 계산한 확정 금액 사용
-            amount = participation.getFinalAmount();
+            amount = participation.getFinalAmount().subtract(deposit);
         } else {
-            // 보증금 결제 단계: totalPrice / 현재 활성 참여자 수로 서버 계산
-            long activeCount = participationRepository.countByFunding_FundingIdAndStatus(
-                    participation.getFunding().getFundingId(), ParticipationStatus.ACTIVE);
-            amount = participation.getFunding().getTotalPrice()
-                    .divide(BigDecimal.valueOf(activeCount), 0, RoundingMode.CEILING);
+            amount = deposit;
         }
+
 
         List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
                 PaymentStatus.PENDING);

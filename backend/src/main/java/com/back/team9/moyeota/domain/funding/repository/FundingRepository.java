@@ -23,4 +23,13 @@ public interface FundingRepository extends JpaRepository<Funding, Long>, Funding
   
     @Query("select f.member.memberId from Funding f where f.fundingId = :fundingId")
     Long findHostIdByFundingId(@Param("fundingId") Long fundingId);
+
+    @Query("""
+            select f from Funding f
+            where f.status = 'COMPLETED'
+              and f.departureDate < :today
+              and not exists (select 1 from Settlement s where s.funding = f)
+            """)
+    List<Funding> findCompletedWithoutSettlement(@Param("today") LocalDate today);
+    List<Funding> findByStatusAndDepartureDate(FundingStatus status, LocalDate departureDate);
 }
