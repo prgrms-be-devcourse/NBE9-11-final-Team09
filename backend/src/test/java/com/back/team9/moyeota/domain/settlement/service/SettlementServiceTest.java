@@ -95,7 +95,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 정상 요청 시 CALCULATED 상태로 정산 내역 생성, 수수료 계산 정확")
     void create_정상요청_정산내역생성성공() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(1L);
 
         Settlement savedSettlement = Settlement.builder()
                 .settlementId(1L)
@@ -111,6 +111,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(false);
+        given(paymentRepository.sumAmountByFundingIdAndStatus(1L, PaymentStatus.PAID)).willReturn(new BigDecimal("100000"));
         given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
@@ -152,7 +153,7 @@ class SettlementServiceTest {
 
                 .build();
 
-        SettlementCreateRequest request = new SettlementCreateRequest(2L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(2L);
 
         Settlement savedSettlement = Settlement.builder()
                 .settlementId(2L)
@@ -168,6 +169,7 @@ class SettlementServiceTest {
 
         given(fundingRepository.findById(2L)).willReturn(Optional.of(holdFunding));
         given(settlementRepository.existsByFunding_FundingId(2L)).willReturn(false);
+        given(paymentRepository.sumAmountByFundingIdAndStatus(2L, PaymentStatus.PAID)).willReturn(new BigDecimal("100000"));
         given(settlementRepository.saveAndFlush(any(Settlement.class))).willReturn(savedSettlement);
 
         // When
@@ -185,7 +187,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 방장이 아닌 멤버 요청 시 SETTLEMENT_ACCESS_DENIED 예외, save 미실행")
     void create_방장이아닌멤버요청_SETTLEMENT_ACCESS_DENIED예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(1L);
         Long otherMemberId = 999L;
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
@@ -203,7 +205,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 이미 정산 내역 존재 시 SETTLEMENT_ALREADY_EXISTS 예외, save 미실행")
     void create_이미정산내역존재_SETTLEMENT_ALREADY_EXISTS예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(1L);
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(funding));
         given(settlementRepository.existsByFunding_FundingId(1L)).willReturn(true);
@@ -234,7 +236,7 @@ class SettlementServiceTest {
 
                 .build();
 
-        SettlementCreateRequest request = new SettlementCreateRequest(1L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(1L);
 
         given(fundingRepository.findById(1L)).willReturn(Optional.of(recruitingFunding));
 
@@ -251,7 +253,7 @@ class SettlementServiceTest {
     @DisplayName("정산 생성 - 존재하지 않는 펀딩 ID 요청 시 FUNDING_NOT_FOUND 예외, save 미실행")
     void create_존재하지않는펀딩_FUNDING_NOT_FOUND예외() {
         // Given
-        SettlementCreateRequest request = new SettlementCreateRequest(999L, new BigDecimal("100000"));
+        SettlementCreateRequest request = new SettlementCreateRequest(999L);
 
         given(fundingRepository.findById(999L)).willReturn(Optional.empty());
 

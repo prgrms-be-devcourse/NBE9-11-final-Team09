@@ -53,13 +53,16 @@ public class SettlementService {
             throw new BusinessException(ErrorCode.SETTLEMENT_ALREADY_EXISTS);
         }
 
-        BigDecimal platformFee = request.totalAmount().multiply(platformFeeRate).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal hostPaybackAmount = request.totalAmount().subtract(platformFee);
+        BigDecimal totalAmount = paymentRepository.sumAmountByFundingIdAndStatus(
+                request.fundingId(), PaymentStatus.PAID);
+        BigDecimal platformFee = totalAmount.multiply(platformFeeRate).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal hostPaybackAmount = totalAmount.subtract(platformFee);
+
 
         Settlement settlement = Settlement.builder()
                 .member(funding.getMember())
                 .funding(funding)
-                .totalAmount(request.totalAmount())
+                .totalAmount(totalAmount)
                 .platformFee(platformFee)
                 .hostPaybackAmount(hostPaybackAmount)
                 .status(SettlementStatus.CALCULATED)
