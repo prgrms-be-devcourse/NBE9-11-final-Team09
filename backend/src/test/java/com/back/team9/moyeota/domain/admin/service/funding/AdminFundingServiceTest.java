@@ -7,7 +7,12 @@ import com.back.team9.moyeota.domain.admin.repository.funding.AdminFundingQueryR
 import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
@@ -18,11 +23,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +39,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +49,18 @@ class AdminFundingServiceTest {
 
     @Mock
     private AdminFundingQueryRepository fundingRepository;
+
+    @Mock
+    private PathinfoService pathinfoService;
+
+    @Mock
+    private ParticipationRepository participationRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private AdminFundingService adminFundingService;
@@ -101,6 +123,8 @@ class AdminFundingServiceTest {
 
         when(fundingRepository.findById(10L))
                 .thenReturn(Optional.of(funding));
+        when(participationRepository.findByFunding_FundingIdAndStatus(10L, ParticipationStatus.ACTIVE))
+                .thenReturn(List.of());
 
         // When
         AdminFundingCancelResponse response =
@@ -110,6 +134,36 @@ class AdminFundingServiceTest {
         assertThat(response.fundingId()).isEqualTo(10L);
         assertThat(response.status()).isEqualTo(FundingStatus.CANCELLED);
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
+        verify(pathinfoService).cancelPathinfos(10L);
+    }
+
+    @Test
+    @DisplayName("취소 시 ACTIVE 참여자가 있으면 환불 이벤트를 발행하고 알림을 발송한다")
+    void cancelFunding_ACTIVE참여자있을때_이벤트발행_알림발송() {
+        // Given
+        Funding funding = createFunding(FundingStatus.RECRUITING);
+        AdminFundingCancelRequest request = new AdminFundingCancelRequest("운영 정책 위반");
+
+        Participation p1 = mock(Participation.class);
+        Participation p2 = mock(Participation.class);
+        given(p1.getParticipationId()).willReturn(1L);
+        given(p2.getParticipationId()).willReturn(2L);
+
+        when(fundingRepository.findById(10L)).thenReturn(Optional.of(funding));
+        when(participationRepository.findByFunding_FundingIdAndStatus(10L, ParticipationStatus.ACTIVE))
+                .thenReturn(List.of(p1, p2));
+
+        // When
+        adminFundingService.cancelFunding(10L, request);
+
+        // Then
+        ArgumentCaptor<ParticipationCancelledEvent> captor =
+                ArgumentCaptor.forClass(ParticipationCancelledEvent.class);
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues())
+                .extracting(ParticipationCancelledEvent::participationId)
+                .containsExactlyInAnyOrder(1L, 2L);
+        verify(notificationService).sendToFundingParticipants(eq(10L), any());
     }
 
     @Test

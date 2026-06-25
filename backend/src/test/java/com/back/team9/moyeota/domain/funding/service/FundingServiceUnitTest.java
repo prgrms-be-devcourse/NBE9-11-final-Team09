@@ -18,7 +18,11 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
@@ -49,8 +53,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -80,6 +87,9 @@ class FundingServiceUnitTest {
 
     @Mock
     private ParticipationRepository participationRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Test
     @DisplayName("펀딩 생성 성공")
@@ -417,11 +427,13 @@ class FundingServiceUnitTest {
     }
 
     @Test
-    @DisplayName("펀딩 취소 성공")
+    @DisplayName("펀딩 취소 성공 - 참여자 없을 때 이벤트 미발행")
     void cancelFunding_success() {
         // Given
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.findByFunding_FundingIdAndStatus(10L, ParticipationStatus.ACTIVE))
+                .willReturn(List.of());
 
         // When
         fundingService.cancelFunding(1L, 10L);
@@ -429,6 +441,36 @@ class FundingServiceUnitTest {
         // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CANCELLED);
         verify(pathinfoService).cancelPathinfos(10L);
+        verify(eventPublisher, never()).publishEvent(any(ParticipationCancelledEvent.class));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("펀딩 취소 - ACTIVE 참여자가 있으면 환불 이벤트 발행 및 알림 발송")
+    void cancelFunding_ACTIVE참여자있을때_이벤트발행_알림발송() {
+        // Given
+        Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
+
+        Participation p1 = mock(Participation.class);
+        Participation p2 = mock(Participation.class);
+        given(p1.getParticipationId()).willReturn(1L);
+        given(p2.getParticipationId()).willReturn(2L);
+
+        given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
+        given(participationRepository.findByFunding_FundingIdAndStatus(10L, ParticipationStatus.ACTIVE))
+                .willReturn(List.of(p1, p2));
+
+        // When
+        fundingService.cancelFunding(1L, 10L);
+
+        // Then
+        ArgumentCaptor<ParticipationCancelledEvent> captor =
+                ArgumentCaptor.forClass(ParticipationCancelledEvent.class);
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues())
+                .extracting(ParticipationCancelledEvent::participationId)
+                .containsExactlyInAnyOrder(1L, 2L);
+        verify(notificationService).sendToFundingParticipants(eq(10L), eq(NotificationType.FUNDING_CANCELLED));
     }
 
     @Test
