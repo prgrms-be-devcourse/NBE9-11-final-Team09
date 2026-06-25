@@ -18,7 +18,9 @@ type MemberInfo = {
 };
 
 function getAccessToken() {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
 
   return (
     localStorage.getItem("accessToken") ??
@@ -34,7 +36,6 @@ function clearAccessToken() {
 export default function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [hasToken, setHasToken] = useState(false);
 
@@ -55,6 +56,7 @@ export default function AppHeader() {
             setHasToken(false);
             setMember(null);
           }
+
           throw new Error("failed");
         }
 
@@ -64,7 +66,9 @@ export default function AppHeader() {
           setMember(body.data);
         }
       } catch {
-        if (!ignore) setMember(null);
+        if (!ignore) {
+          setMember(null);
+        }
       }
     }
 
@@ -73,7 +77,9 @@ export default function AppHeader() {
 
       await Promise.resolve();
 
-      if (ignore) return;
+      if (ignore) {
+        return;
+      }
 
       setHasToken(Boolean(token));
 
@@ -112,8 +118,6 @@ export default function AppHeader() {
     }
   }
 
-  const isLoggedIn = !!member;
-
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-5">
@@ -122,64 +126,61 @@ export default function AppHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 text-sm sm:gap-3">
-          {/* 마이페이지 */}
-          {isLoggedIn && (
-            <Link
-              href="/mypage"
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              마이페이지
-            </Link>
-          )}
-
-          {/* 🔔 알림 (완전 분리) */}
-          {isLoggedIn && (
-            <Link
-              href="/notification"
-              className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
-              aria-label="알림"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.8}
-                stroke="currentColor"
-                className="h-5 w-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z"
-                />
-              </svg>
-            </Link>
-          )}
-
-          {/* 닉네임 (완전 분리) */}
-          {member && (
-            <span className="font-semibold text-gray-700">
-              {member.nickname}
-            </span>
-          )}
-
-          {/* 로그아웃 / 로그인 */}
           {member ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              로그아웃
-            </button>
+            <>
+              {/* 🔔 추가 */}
+              <Link
+                href="/notification"
+                className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
+                aria-label="알림"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z" />
+                </svg>
+              </Link>
+              <span className="hidden rounded-full bg-gray-100 px-3 py-2 font-semibold text-gray-700 sm:inline-flex">
+                {member.nickname}님
+              </span>
+              <Link
+                href="/mypage"
+                className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
+              >
+                마이페이지
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                로그아웃
+              </button>
+            </>
           ) : hasToken ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
-            >
-              로그아웃
-            </button>
+            <>
+              {/* 🔔 추가 */}
+              <Link
+                href="/notification"
+                className="rounded border border-gray-300 p-2 text-gray-700 hover:bg-gray-50"
+                aria-label="알림"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 21h-4m8-4V11a6 6 0 10-12 0v6l-2 2h16l-2-2z" />
+                </svg>
+              </Link>
+              <Link
+                href="/mypage"
+                className="rounded bg-gray-950 px-3 py-2 font-semibold text-white"
+              >
+                마이페이지
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                로그아웃
+              </button>
+            </>
           ) : (
             <>
               <Link
