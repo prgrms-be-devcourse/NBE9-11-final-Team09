@@ -66,7 +66,8 @@ jobs:
             echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
             
             echo "KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}" >> .env
-            echo "SOCIAL_KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_SECRET }}" >> .env
+            echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}" >> .env
+            echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}" >> .env
             
             echo "REDIS_HOST=redis" >> .env
             
