@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -21,6 +22,7 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,10 @@ public class PaymentService {
     private final ParticipationRepository participationRepository;
     private final ParticipationService participationService;
     private final NotificationService notificationService;
+    private final MailService mailService;
+
+    @Value("${admin.email}")
+    private String adminEmail;
 
     @Transactional
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
@@ -86,10 +92,24 @@ public class PaymentService {
             if (e.getErrorCode() == ErrorCode.SEAT_HOLD_EXPIRED) {
                 pendingPayment.startRefund();
                 paymentWriter.saveRefundStatus(pendingPayment);
-                tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
-                pendingPayment.completeRefund();
-                paymentWriter.saveRefundStatus(pendingPayment);
-                participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
+                try {
+                    tossPaymentClient.cancel(pendingPayment.getTossPaymentKey(), "좌석 선점 시간 만료로 인한 자동 취소");
+                    pendingPayment.completeRefund();
+                    paymentWriter.saveRefundStatus(pendingPayment);
+                    participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
+                } catch (Exception cancelEx) {
+                    log.error("[SEAT_HOLD_EXPIRED] Toss cancel 실패 — 수동 처리 필요. paymentId={}: {}",
+                            pendingPayment.getPaymentId(), cancelEx.getMessage(), cancelEx);
+                    try {
+                        mailService.send(
+                                adminEmail,
+                                "[긴급] SEAT_HOLD_EXPIRED 환불 실패 — 수동 처리 필요",
+                                "paymentId: " + pendingPayment.getPaymentId() + " 좌석 만료 자동 취소 중 Toss cancel 실패. DB는 REFUND_PENDING 상태."
+                        );
+                    } catch (Exception mailEx) {
+                        log.error("어드민 알림 발송 실패: {}", mailEx.getMessage(), mailEx);
+                    }
+                }
             }
             throw e;
         }
@@ -149,6 +169,9 @@ public class PaymentService {
 
         for(Payment payment : payments){
             if (payment.getStatus() != PaymentStatus.PAID) {
+                continue;
+            }
+            if (payment.getPaymentType() != PaymentType.DEPOSIT) {
                 continue;
             }
             payment.startRefund();

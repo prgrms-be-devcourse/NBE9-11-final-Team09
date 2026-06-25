@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -25,11 +26,12 @@ class PathinfoTimeValidatorTest {
             new PathinfoTimeValidator(CLOCK);
 
     @Test
-    @DisplayName("출발일 검증 - 현재 시각 기준 14일 이후면 통과한다")
-    void validateDepartureDate_whenAfterMinimumDate_doesNotThrow() {
+    @DisplayName("출발일 검증 - 오늘 날짜 기준 14일 이후 00시부터 통과한다")
+    void validateDepartureDate_whenMinimumDateStartOfDay_doesNotThrow() {
         // Given
-        LocalDateTime departureTime = LocalDateTime.now(CLOCK)
-                .plusDays(14);
+        LocalDateTime departureTime = LocalDate.now(CLOCK)
+                .plusDays(14)
+                .atStartOfDay();
 
         // When / Then
         assertThatCode(() ->
@@ -38,11 +40,12 @@ class PathinfoTimeValidatorTest {
     }
 
     @Test
-    @DisplayName("출발일 검증 - 현재 시각 기준 14일 이전이면 예외")
+    @DisplayName("출발일 검증 - 오늘 날짜 기준 14일 이전 날짜면 예외")
     void validateDepartureDate_whenBeforeMinimumDate_throwsException() {
         // Given
-        LocalDateTime departureTime = LocalDateTime.now(CLOCK)
-                .plusDays(13);
+        LocalDateTime departureTime = LocalDate.now(CLOCK)
+                .plusDays(13)
+                .atTime(23, 59);
 
         // When / Then
         assertThatThrownBy(() ->

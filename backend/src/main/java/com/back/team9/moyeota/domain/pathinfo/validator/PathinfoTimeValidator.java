@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Component
@@ -19,7 +20,9 @@ public class PathinfoTimeValidator {
             throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
         }
 
-        if (departureTime.isBefore(LocalDateTime.now(clock).plusDays(14))) {
+        LocalDate minimumDepartureDate = LocalDate.now(clock).plusDays(14);
+
+        if (departureTime.toLocalDate().isBefore(minimumDepartureDate)) {
             throw new BusinessException(
                     ErrorCode.DEPARTURE_DATE_TOO_SOON
             );

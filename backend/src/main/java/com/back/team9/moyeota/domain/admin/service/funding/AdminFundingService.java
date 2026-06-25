@@ -6,17 +6,28 @@ import com.back.team9.moyeota.domain.admin.dto.funding.AdminFundingListResponse;
 import com.back.team9.moyeota.domain.admin.repository.funding.AdminFundingQueryRepository;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
+import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
+import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
+import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminFundingService {
@@ -27,6 +38,10 @@ public class AdminFundingService {
     );
 
     private final AdminFundingQueryRepository fundingRepository;
+    private final PathinfoService pathinfoService;
+    private final ParticipationRepository participationRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminFundingListResponse> getFundings(Pageable pageable) {
@@ -53,6 +68,21 @@ public class AdminFundingService {
         validateCancellableStatus(funding);
 
         funding.cancel();
+        pathinfoService.cancelPathinfos(fundingId);
+
+        List<Participation> activeParticipations =
+                participationRepository.findByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
+        for (Participation participation : activeParticipations) {
+            eventPublisher.publishEvent(new ParticipationCancelledEvent(participation.getParticipationId()));
+        }
+
+        if (!activeParticipations.isEmpty()) {
+            try {
+                notificationService.sendToFundingParticipants(fundingId, NotificationType.FUNDING_CANCELLED);
+            } catch (Exception e) {
+                log.warn("FUNDING_CANCELLED 알림 발송 실패 (fundingId={}): {}", fundingId, e.getMessage(), e);
+            }
+        }
 
         return AdminFundingCancelResponse.from(funding);
     }
