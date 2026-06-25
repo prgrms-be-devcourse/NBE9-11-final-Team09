@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.funding.dto;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
 
@@ -19,6 +20,7 @@ public record FundingListResponse(
         Integer currentParticipants,
         Integer minParticipants,
         Integer maxParticipants,
+        TripType tripType,
         BigDecimal totalPrice,
         BigDecimal currentPrice,
         BigDecimal minPrice,
@@ -55,6 +57,7 @@ public record FundingListResponse(
                 currentParticipants,
                 funding.getMinParticipants(),
                 funding.getMaxParticipants(),
+                funding.getTripType(),
                 funding.getTotalPrice(),
                 currentPrice,
                 minPrice,

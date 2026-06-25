@@ -204,10 +204,8 @@ public class FundingService {
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        if (funding.getStatus() == FundingStatus.CANCELLED) {
-            throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
-        }
-        FundingValidator.validateUpdatable(funding);
+        FundingValidator.validateModifiableStatus(funding);
+
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
 
@@ -233,7 +231,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        FundingValidator.validateUpdatable(funding);
+        FundingValidator.validateModifiableStatus(funding);
 
         int currentParticipants = countActiveParticipants(fundingId);
 
@@ -277,7 +275,7 @@ public class FundingService {
 
         if (changed) {
             throw new BusinessException(
-                    ErrorCode.FUNDING_RESTRICTED_UPDATE
+                    ErrorCode.FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS
             );
         }
 

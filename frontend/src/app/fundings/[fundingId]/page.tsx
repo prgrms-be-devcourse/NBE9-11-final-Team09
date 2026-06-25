@@ -24,10 +24,12 @@ export default function FundingDetailPage() {
     const [funding, setFunding] = useState<FundingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [error, setError] = useState("");
 
     const isHost = Boolean(funding?.isHost);
     const isJoined = Boolean(funding?.isJoined);
+    const isRecruiting = funding?.status === "RECRUITING";
 
     useEffect(() => {
         let ignore = false;
@@ -90,6 +92,31 @@ export default function FundingDetailPage() {
         }
     }
 
+    async function handleShare() {
+        const url = window.location.href;
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = url;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "fixed";
+                textarea.style.left = "-9999px";
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+            }
+
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1800);
+        } catch {
+            setError("공유 링크를 복사하지 못했습니다.");
+        }
+    }
+
     if (loading) {
         return (
             <main className="min-h-screen bg-gray-50 px-5 py-10 text-center text-sm text-gray-500">
@@ -115,9 +142,18 @@ export default function FundingDetailPage() {
     return (
         <main className="min-h-screen bg-gray-50 text-gray-950">
             <div className="mx-auto grid w-full max-w-5xl gap-8 px-5 py-8">
-                <Link href="/fundings" className="w-fit text-sm font-medium text-gray-600">
-                    목록으로
-                </Link>
+                <div className="flex items-center justify-between gap-3">
+                    <Link href="/fundings" className="w-fit text-sm font-medium text-gray-600">
+                        목록으로
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={handleShare}
+                        className="rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                    >
+                        {copied ? "링크 복사됨" : "공유"}
+                    </button>
+                </div>
 
                 <section className="grid gap-6 rounded border border-gray-200 bg-white p-6">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -155,7 +191,7 @@ export default function FundingDetailPage() {
                     )}
 
                     <div className="flex gap-2">
-                        {isHost && (
+                        {isHost && isRecruiting && (
                             <>
                                 <Link
                                     href={`/fundings/${funding.fundingId}/edit`}
@@ -173,7 +209,7 @@ export default function FundingDetailPage() {
                                 </button>
                             </>
                         )}
-                        {!isHost && !isJoined && funding.status === "RECRUITING" && (
+                        {!isHost && !isJoined && isRecruiting && (
                             <Link
                                 href={`/funding/${funding.fundingId}/seats`}
                                 className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"

@@ -68,6 +68,7 @@ export type FundingListItem = {
   arrivalAddress: string | null;
   departureTime: string | null;
   status: FundingStatus;
+  tripType: TripType;
   currentParticipants: number;
   minParticipants: number;
   maxParticipants: number;

@@ -9,6 +9,7 @@ import {
   getParticipantRatio,
   regionLabels,
   statusLabels,
+  tripTypeLabels,
 } from "@/lib/fundingFormat";
 import type {
   FundingListItem,
@@ -309,6 +310,15 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded bg-gray-100 px-2 py-1">
               {statusLabels[funding.status]}
+            </span>
+            <span
+              className={`rounded px-2 py-1 ${
+                funding.tripType === "ROUND"
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {tripTypeLabels[funding.tripType]}
             </span>
           </div>
 

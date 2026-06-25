@@ -11,13 +11,25 @@ import type { FundingPayload } from "@/types/funding";
 export default function FundingCreatePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
   const loggedIn = useFundingLoggedIn();
+
+  function handleLeave(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (
+      formDirty &&
+      !submitting &&
+      !window.confirm("변경사항이 저장되지 않을 수 있습니다. 페이지를 나가시겠습니까?")
+    ) {
+      event.preventDefault();
+    }
+  }
 
   async function handleSubmit(payload: FundingPayload) {
     setSubmitting(true);
 
     try {
       const response = await createFunding(payload);
+      setFormDirty(false);
       router.push(`/fundings/${response.fundingId}`);
     } finally {
       setSubmitting(false);
@@ -46,7 +58,11 @@ export default function FundingCreatePage() {
   return (
     <main className="min-h-screen bg-gray-50 text-gray-950">
       <div className="mx-auto grid w-full max-w-4xl gap-6 px-5 py-8">
-        <Link href="/fundings" className="w-fit text-sm font-medium text-gray-600">
+        <Link
+          href="/fundings"
+          onClick={handleLeave}
+          className="w-fit text-sm font-medium text-gray-600"
+        >
           목록으로
         </Link>
         <section className="rounded border border-gray-200 bg-white p-6">
@@ -58,6 +74,7 @@ export default function FundingCreatePage() {
             <FundingForm
               mode="create"
               submitting={submitting}
+              onDirtyChange={setFormDirty}
               onSubmit={handleSubmit}
             />
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SeatMap from "@/components/seat/SeatMap";
 import {
   busTypeLabels,
@@ -18,6 +18,7 @@ type FundingFormProps = {
   mode: "create" | "edit";
   textOnly?: boolean;
   submitting?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (payload: FundingPayload) => Promise<void>;
 };
 
@@ -66,6 +67,7 @@ export default function FundingForm({
   mode,
   textOnly = false,
   submitting = false,
+  onDirtyChange,
   onSubmit,
 }: FundingFormProps) {
   const [payload, setPayload] = useState<FundingPayload>(
@@ -97,8 +99,15 @@ export default function FundingForm({
   const seatSelectorGridClass = isRoundTrip
     ? "grid grid-cols-2 gap-4"
     : "grid gap-5";
+  const isDirty = useMemo(
+    () => JSON.stringify(payload) !== JSON.stringify(originalPayload),
+    [originalPayload, payload]
+  );
   const minimumDepartureDateTime = useMemo(
-    () => toDatetimeLocalValue(addDays(new Date(), MIN_DEPARTURE_OFFSET_DAYS)),
+    () =>
+      toDatetimeLocalValue(
+        startOfDay(addDays(new Date(), MIN_DEPARTURE_OFFSET_DAYS))
+      ),
     []
   );
   const departureTimeError = getDepartureTimeError(
@@ -192,6 +201,59 @@ export default function FundingForm({
     returnTimeError,
     routeLocked,
   ]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (!isDirty || submitting) {
+      return;
+    }
+
+    const confirmMessage =
+      "변경사항이 저장되지 않을 수 있습니다. 페이지를 나가시겠습니까?";
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const link = target.closest("a[href]");
+
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (
+        link.target === "_blank" ||
+        link.hasAttribute("download") ||
+        link.href === window.location.href
+      ) {
+        return;
+      }
+
+      if (!window.confirm(confirmMessage)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [isDirty, submitting]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -703,6 +765,12 @@ function formatWon(value: number) {
 function addDays(date: Date, days: number) {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function startOfDay(date: Date) {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
   return nextDate;
 }
 

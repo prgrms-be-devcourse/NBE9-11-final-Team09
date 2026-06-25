@@ -273,7 +273,7 @@ class FundingControllerTest {
     @Test
     @DisplayName("펀딩 수정 참가자 존재 400 반환")
     void updateFunding_whenServiceThrowsRestrictedUpdate_returnsFnd006() throws Exception {
-        willThrow(new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE))
+        willThrow(new BusinessException(ErrorCode.FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS))
                 .given(fundingService)
                 .updateFunding(
                         any(),
@@ -287,7 +287,7 @@ class FundingControllerTest {
                                 .content(objectMapper.writeValueAsString(oneWayUpdateRequest()))
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("FND006"))
+                .andExpect(jsonPath("$.code").value("FND005"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -364,7 +364,7 @@ class FundingControllerTest {
         mockMvc.perform(delete("/api/fundings/{id}", 1L)
         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("FND004"))
+                .andExpect(jsonPath("$.code").value("FND008"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -417,6 +417,7 @@ class FundingControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.content[0].fundingId").value(1L))
                 .andExpect(jsonPath("$.data.content[0].status").value("RECRUITING"))
+                .andExpect(jsonPath("$.data.content[0].tripType").value("ONE_WAY"))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
@@ -535,6 +536,7 @@ class FundingControllerTest {
                                 0,
                                 20,
                                 45,
+                                TripType.ONE_WAY,
                                 BigDecimal.valueOf(500000),
                                 null,
                                 BigDecimal.valueOf(11200),

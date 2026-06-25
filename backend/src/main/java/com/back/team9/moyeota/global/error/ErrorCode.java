@@ -52,11 +52,11 @@ public enum ErrorCode {
     FUNDING_NOT_FOUND(HttpStatus.NOT_FOUND,"FND001", "존재하지 않는 펀딩입니다."),
     FUNDING_NOT_RECRUITING(HttpStatus.BAD_REQUEST,"FND002", "현재 모집 중인 펀딩이 아닙니다."),
     FUNDING_MIN_INVALID(HttpStatus.BAD_REQUEST,"FND003", "최소 인원을 좌석 수보다 높게 설정할 수 없습니다."),
-    FUNDING_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST,"FND004", "이미 취소/삭제된 펀딩입니다."),
-    PATHINFO_REQUIRED(HttpStatus.BAD_REQUEST,"FND005", "최소 1개의 노선이 필요합니다."),
-    FUNDING_RESTRICTED_UPDATE(HttpStatus.BAD_REQUEST, "FND006", "참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."),
+    PATHINFO_REQUIRED(HttpStatus.BAD_REQUEST,"FND004", "최소 1개의 노선이 필요합니다."),
+    FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS(HttpStatus.BAD_REQUEST, "FND005", "참가자가 존재하는 펀딩은 제목과 내용만 수정할 수 있습니다."),
+    FUNDING_RESTRICTED_UPDATE_OR_CANCEL(HttpStatus.BAD_REQUEST, "FND006", "확정 이전의 펀딩만 수정 또는 취소할 수 있습니다."),
     FUNDING_FORBIDDEN(HttpStatus.FORBIDDEN, "FND007", "해당 펀딩에 대한 권한이 없습니다."),
-
+    FUNDING_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "FND008", "이미 취소된 펀딩입니다."),
     // [PTH] 운행노선
     SAME_DEPARTURE_ARRIVAL(HttpStatus.BAD_REQUEST,"PTH001", "출발지와 도착지가 동일할 수 없습니다."),
     PATH_NOT_FOUND(HttpStatus.NOT_FOUND,"PTH002", "존재하지 않는 노선입니다."),

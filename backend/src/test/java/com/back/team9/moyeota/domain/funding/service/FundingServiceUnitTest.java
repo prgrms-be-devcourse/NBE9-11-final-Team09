@@ -321,8 +321,7 @@ class FundingServiceUnitTest {
         assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(550000));
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
 
-        verify(pathinfoService)
-                .updatePathinfos(funding, TripType.ONE_WAY, request.route());
+        verify(pathinfoService).updatePathinfos(funding, TripType.ONE_WAY, request.route());
         verify(pathinfoService).syncBusType(10L, BusType.BUS_25);
         verify(eventPublisher, never())
                 .publishEvent(any(FundingSeatsRecreateEvent.class));
@@ -421,7 +420,7 @@ class FundingServiceUnitTest {
         )
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE);
+                .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE_OR_CANCEL);
 
         verifyNoInteractions(pathinfoService);
     }

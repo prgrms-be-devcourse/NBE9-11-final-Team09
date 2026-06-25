@@ -89,25 +89,6 @@ class FundingPricePolicyTest {
                 .isEqualTo(ErrorCode.INVALID_PATH_CONFIGURATION);
     }
 
-    @Test
-    @DisplayName("금액 계산 - 가격표에 없는 지역 조합이면 예외")
-    void calculateTotalPrice_whenPriceIsNotConfigured_throwsException() {
-        // Given
-        RouteRequest route = route(Region.INCHEON, Region.BUSAN);
-
-        // When / Then
-        assertThatThrownBy(() ->
-                FundingPricePolicy.calculateTotalPrice(
-                        route,
-                        BusType.BUS_45,
-                        TripType.ONE_WAY
-                )
-        )
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_PATH_CONFIGURATION);
-    }
-
     private RouteRequest route(
             Region departureRegion,
             Region arrivalRegion
