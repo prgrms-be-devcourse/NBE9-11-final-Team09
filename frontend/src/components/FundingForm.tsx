@@ -208,15 +208,47 @@ export default function FundingForm({
       return;
     }
 
+    const confirmMessage =
+      "변경사항이 저장되지 않을 수 있습니다. 페이지를 나가시겠습니까?";
+
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       event.preventDefault();
       event.returnValue = "";
     }
 
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const link = target.closest("a[href]");
+
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (
+        link.target === "_blank" ||
+        link.hasAttribute("download") ||
+        link.href === window.location.href
+      ) {
+        return;
+      }
+
+      if (!window.confirm(confirmMessage)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
     window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
     };
   }, [isDirty, submitting]);
 
