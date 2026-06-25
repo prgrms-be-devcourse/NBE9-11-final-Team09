@@ -35,4 +35,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             Long memberId,
             Pageable pageable
     );
+    @Query(
+            value = """
+        select n
+        from Notification n
+        join fetch n.funding
+        where n.member.memberId = :memberId
+        order by n.createdAt desc
+    """,
+            countQuery = """
+        select count(n)
+        from Notification n
+        where n.member.memberId = :memberId
+    """
+    )
+    Page<Notification> findAllWithFunding(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
 }

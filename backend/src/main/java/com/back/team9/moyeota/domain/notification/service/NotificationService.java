@@ -207,10 +207,7 @@ public class NotificationService {
             Pageable pageable
     ) {
         return notificationRepository
-                .findByMember_MemberIdOrderByCreatedAtDesc(
-                        memberId,
-                        pageable
-                )
+                .findAllWithFunding(memberId, pageable)
                 .map(NotificationResponse::from);
     }
 }
