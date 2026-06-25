@@ -21,22 +21,67 @@ public class FundingPricePolicy {
     // 지역1, 지역2, 버스타입, 총 금액
     private static final Map<PriceKey, BigDecimal> ONE_WAY_PRICES = Map.ofEntries(
             Map.entry(key(Region.SEOUL, Region.BUSAN, BusType.BUS_45), price(1742400)),
-            Map.entry(key(Region.SEOUL, Region.BUSAN, BusType.BUS_25), price(1210000)),
+            Map.entry(key(Region.SEOUL, Region.BUSAN, BusType.BUS_25), price(1219700)),
 
             Map.entry(key(Region.SEOUL, Region.DAEJEON, BusType.BUS_45), price(774400)),
-            Map.entry(key(Region.SEOUL, Region.DAEJEON, BusType.BUS_25), price(550000)),
+            Map.entry(key(Region.SEOUL, Region.DAEJEON, BusType.BUS_25), price(542100)),
 
             Map.entry(key(Region.SEOUL, Region.INCHEON, BusType.BUS_45), price(726000)),
-            Map.entry(key(Region.SEOUL, Region.INCHEON, BusType.BUS_25), price(495000)),
+            Map.entry(key(Region.SEOUL, Region.INCHEON, BusType.BUS_25), price(508200)),
 
             Map.entry(key(Region.SEOUL, Region.DAEGU, BusType.BUS_45), price(1369720)),
-            Map.entry(key(Region.SEOUL, Region.DAEGU, BusType.BUS_25), price(959200)),
+            Map.entry(key(Region.SEOUL, Region.DAEGU, BusType.BUS_25), price(958900)),
 
             Map.entry(key(Region.SEOUL, Region.GWANGJU, BusType.BUS_45), price(1452000)),
             Map.entry(key(Region.SEOUL, Region.GWANGJU, BusType.BUS_25), price(1016400)),
 
             Map.entry(key(Region.SEOUL, Region.ULSAN, BusType.BUS_45), price(1650440)),
-            Map.entry(key(Region.SEOUL, Region.ULSAN, BusType.BUS_25), price(1155000))
+            Map.entry(key(Region.SEOUL, Region.ULSAN, BusType.BUS_25), price(1155400)),
+
+            Map.entry(key(Region.BUSAN, Region.DAEJEON, BusType.BUS_45), price(1056000)),
+            Map.entry(key(Region.BUSAN, Region.DAEJEON, BusType.BUS_25), price(739200)),
+
+            Map.entry(key(Region.BUSAN, Region.INCHEON, BusType.BUS_45), price(1848000)),
+            Map.entry(key(Region.BUSAN, Region.INCHEON, BusType.BUS_25), price(1293600)),
+
+            Map.entry(key(Region.BUSAN, Region.DAEGU, BusType.BUS_45), price(484000)),
+            Map.entry(key(Region.BUSAN, Region.DAEGU, BusType.BUS_25), price(338800)),
+
+            Map.entry(key(Region.BUSAN, Region.GWANGJU, BusType.BUS_45), price(1144000)),
+            Map.entry(key(Region.BUSAN, Region.GWANGJU, BusType.BUS_25), price(800800)),
+
+            Map.entry(key(Region.BUSAN, Region.ULSAN, BusType.BUS_45), price(363000)),
+            Map.entry(key(Region.BUSAN, Region.ULSAN, BusType.BUS_25), price(254100)),
+
+            Map.entry(key(Region.DAEJEON, Region.INCHEON, BusType.BUS_45), price(858000)),
+            Map.entry(key(Region.DAEJEON, Region.INCHEON, BusType.BUS_25), price(600600)),
+
+            Map.entry(key(Region.DAEJEON, Region.DAEGU, BusType.BUS_45), price(726000)),
+            Map.entry(key(Region.DAEJEON, Region.DAEGU, BusType.BUS_25), price(508200)),
+
+            Map.entry(key(Region.DAEJEON, Region.GWANGJU, BusType.BUS_45), price(748000)),
+            Map.entry(key(Region.DAEJEON, Region.GWANGJU, BusType.BUS_25), price(523600)),
+
+            Map.entry(key(Region.DAEJEON, Region.ULSAN, BusType.BUS_45), price(1034000)),
+            Map.entry(key(Region.DAEJEON, Region.ULSAN, BusType.BUS_25), price(723800)),
+
+            Map.entry(key(Region.INCHEON, Region.DAEGU, BusType.BUS_45), price(1452000)),
+            Map.entry(key(Region.INCHEON, Region.DAEGU, BusType.BUS_25), price(1016400)),
+
+            Map.entry(key(Region.INCHEON, Region.GWANGJU, BusType.BUS_45), price(1507000)),
+            Map.entry(key(Region.INCHEON, Region.GWANGJU, BusType.BUS_25), price(1054900)),
+
+            Map.entry(key(Region.INCHEON, Region.ULSAN, BusType.BUS_45), price(1749000)),
+            Map.entry(key(Region.INCHEON, Region.ULSAN, BusType.BUS_25), price(1224300)),
+
+            Map.entry(key(Region.DAEGU, Region.GWANGJU, BusType.BUS_45), price(935000)),
+            Map.entry(key(Region.DAEGU, Region.GWANGJU, BusType.BUS_25), price(654500)),
+
+            Map.entry(key(Region.DAEGU, Region.ULSAN, BusType.BUS_45), price(594000)),
+            Map.entry(key(Region.DAEGU, Region.ULSAN, BusType.BUS_25), price(415800)),
+
+            Map.entry(key(Region.GWANGJU, Region.ULSAN, BusType.BUS_45), price(1232000)),
+            Map.entry(key(Region.GWANGJU, Region.ULSAN, BusType.BUS_25), price(862400))
     );
 
     private FundingPricePolicy() {

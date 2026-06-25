@@ -32,9 +32,10 @@ public final class FundingValidator {
         }
     }
 
-    public static void validateUpdatable(Funding funding) {
+    // 확정 이전의 펀딩만 수정 및 삭제 가능
+    public static void validateRecruitingStatus(Funding funding) {
         if (funding.getStatus() != FundingStatus.RECRUITING) {
-            throw new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE);
+            throw new BusinessException(ErrorCode.FUNDING_RESTRICTED_UPDATE_OR_CANCEL);
         }
     }
 }

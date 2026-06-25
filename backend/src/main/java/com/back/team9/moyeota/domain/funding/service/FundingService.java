@@ -4,7 +4,6 @@ import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
-import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
@@ -197,10 +196,7 @@ public class FundingService {
     public void cancelFunding(Long memberId, Long fundingId) {
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        if (funding.getStatus() == FundingStatus.CANCELLED) {
-            throw new BusinessException(ErrorCode.FUNDING_ALREADY_CANCELLED);
-        }
-        FundingValidator.validateUpdatable(funding);
+        FundingValidator.validateRecruitingStatus(funding);
         funding.cancel();
         pathinfoService.cancelPathinfos(fundingId);
     }
@@ -212,7 +208,7 @@ public class FundingService {
 
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
-        FundingValidator.validateUpdatable(funding);
+        FundingValidator.validateRecruitingStatus(funding);
 
         int currentParticipants = countActiveParticipants(fundingId);
 
@@ -256,7 +252,7 @@ public class FundingService {
 
         if (changed) {
             throw new BusinessException(
-                    ErrorCode.FUNDING_RESTRICTED_UPDATE
+                    ErrorCode.FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS
             );
         }
 

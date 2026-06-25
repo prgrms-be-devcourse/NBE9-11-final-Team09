@@ -265,7 +265,7 @@ class FundingServiceUnitTest {
         assertThat(funding.getMinParticipants()).isEqualTo(10);
         assertThat(funding.getMaxParticipants())
                 .isEqualTo(BusType.BUS_25.getCapacity());
-        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(495000));
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(508200));
 
         verify(pathinfoService)
                 .validatePathinfoRequest(TripType.ONE_WAY, request.route());
@@ -289,7 +289,7 @@ class FundingServiceUnitTest {
                 member(1L),
                 FundingStatus.RECRUITING,
                 BusType.BUS_25,
-                BigDecimal.valueOf(495000)
+                BigDecimal.valueOf(508200)
         );
         FundingUpdateRequest request = updateRequest(
                 BusType.BUS_25,
@@ -308,7 +308,7 @@ class FundingServiceUnitTest {
         fundingService.updateFunding(1L, 10L, request);
 
         // Then
-        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(550000));
+        assertThat(funding.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(542100));
         assertThat(funding.getBusType()).isEqualTo(BusType.BUS_25);
 
         verify(pathinfoService)
@@ -411,7 +411,7 @@ class FundingServiceUnitTest {
         )
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE);
+                .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE_OR_CANCEL);
 
         verifyNoInteractions(pathinfoService);
     }
@@ -442,7 +442,7 @@ class FundingServiceUnitTest {
         assertThatThrownBy(() -> fundingService.cancelFunding(1L, 10L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.FUNDING_ALREADY_CANCELLED);
+                .isEqualTo(ErrorCode.FUNDING_RESTRICTED_UPDATE_OR_CANCEL);
 
         verify(pathinfoService, never()).cancelPathinfos(10L);
     }
