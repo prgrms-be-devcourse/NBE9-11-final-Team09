@@ -216,9 +216,6 @@ export default function MypageClient() {
         joined.getMonth() +
         1,
     );
-    return months >= 12
-      ? `${Math.floor(months / 12)}년째 함께하는 중`
-      : `${months}개월째 함께하는 중`;
   }, [profile]);
 
   async function handleUpdateProfile(event: React.FormEvent) {
