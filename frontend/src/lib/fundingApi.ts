@@ -5,12 +5,15 @@ import type {
   FundingDetail,
   FundingListItem,
   FundingPayload,
+  FundingPricePreviewResponse,
   FundingStatus,
   PageResponse,
   ParticipationCreateResponse,
   Region,
+  TripType,
   Seat,
   SeatLayout,
+  BusType,
 } from "@/types/funding";
 
 export type FundingListParams = {
@@ -84,6 +87,24 @@ export function getFundingList(params: FundingListParams) {
 
 export function getFunding(fundingId: number) {
   return request<FundingDetail>(`/api/fundings/${fundingId}`);
+}
+
+export function getFundingPricePreview(params: {
+  departureRegion: Region;
+  arrivalRegion: Region;
+  busType: BusType;
+  tripType: TripType;
+}) {
+  const search = new URLSearchParams({
+    departureRegion: params.departureRegion,
+    arrivalRegion: params.arrivalRegion,
+    busType: params.busType,
+    tripType: params.tripType,
+  });
+
+  return request<FundingPricePreviewResponse>(
+    `/api/fundings/price-preview?${search.toString()}`
+  );
 }
 
 export function createFunding(payload: FundingPayload) {
