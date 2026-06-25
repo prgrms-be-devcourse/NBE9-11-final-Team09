@@ -172,6 +172,14 @@ export default function AppHeader() {
             >
               로그아웃
             </button>
+          ) : hasToken ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded border border-gray-300 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50"
+            >
+              로그아웃
+            </button>
           ) : (
             <>
               <Link
