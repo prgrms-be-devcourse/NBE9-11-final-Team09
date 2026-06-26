@@ -17,6 +17,16 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     // 특정 회원의 중복 참여 확인
     boolean existsByFunding_FundingIdAndMember_MemberId(Long fundingId, Long memberId);
 
+    // 펀딩 + 회원으로 내 참여 이력 조회
+    Optional<Participation> findByFunding_FundingIdAndMember_MemberId(
+            Long fundingId, Long memberId);
+
+    // CANCELED 제외 중복 참여 검사용
+    boolean existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+            Long fundingId,
+            Long memberId,
+            List<ParticipationPaymentStatus> paymentStatuses);
+
     // (참여 ID와 회원 ID로) 본인 참여 내역 조회 (N+1 방지)
     @EntityGraph(attributePaths = {"outboundSeat", "outboundSeat.pathinfo", "returnSeat"})
     Optional<Participation> findByParticipationIdAndMember_MemberId(Long participationId, Long memberId);

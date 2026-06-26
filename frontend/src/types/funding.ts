@@ -110,7 +110,17 @@ export type FundingDetail = {
   isHost: boolean;
   isJoined: boolean;
   createdAt: string;
+  myParticipationId: number | null;
+  myPaymentStatus: ParticipationPaymentStatus | null;
+  isCanceled: boolean;
 };
+
+export type ParticipationPaymentStatus =
+    | "PENDING"
+    | "ACTIVE"
+    | "COMPLETED"
+    | "CANCELED"
+    | "NO_SHOW";
 
 export type FundingCreateResponse = {
   fundingId: number;

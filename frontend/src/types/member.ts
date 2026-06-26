@@ -117,4 +117,5 @@ export interface MyParticipation {
   status: ParticipationStatus;
   paymentStatus: ParticipationPaymentStatus;
   canBoard: boolean;
+  departureTime: string;
 }
