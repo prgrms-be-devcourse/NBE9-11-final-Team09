@@ -804,8 +804,8 @@ function getPriceSummary(
 
   return {
     totalPrice,
-    minPrice: roundUpToHundred(totalPrice / maxParticipants),
-    maxPrice: roundUpToHundred(totalPrice / minParticipants),
+    minPrice: roundUpToHundred(totalPrice / (maxParticipants + 1)),
+    maxPrice: roundUpToHundred(totalPrice / (minParticipants + 1)),
   };
 }
 

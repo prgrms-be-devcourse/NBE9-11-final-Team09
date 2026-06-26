@@ -274,7 +274,7 @@ export default function FundingDetailPage() {
                                     funding.currentParticipants >= funding.minParticipants
                                         ? formatMoney(
                                             Math.ceil(
-                                                Number(funding.totalPrice) / funding.currentParticipants
+                                                Number(funding.totalPrice) / (funding.currentParticipants + 1)
                                             )
                                         )
                                         : "최소 인원 모집 후 표시"
