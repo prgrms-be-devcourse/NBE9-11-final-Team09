@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.global.jwt;
+package com.back.team9.moyeota.global.jwt.blacklist;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/members")
-public class AdminMemberController {
+public class AdminMemberController implements AdminMemberControllerDocs {
 
     private final AdminMemberService adminMemberService;
 

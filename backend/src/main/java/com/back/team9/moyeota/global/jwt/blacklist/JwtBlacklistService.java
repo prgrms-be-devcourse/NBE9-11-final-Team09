@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.global.jwt;
+package com.back.team9.moyeota.global.jwt.blacklist;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

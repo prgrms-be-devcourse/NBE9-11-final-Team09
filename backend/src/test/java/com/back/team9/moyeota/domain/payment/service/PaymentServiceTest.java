@@ -60,6 +60,7 @@ class PaymentServiceTest {
     @Mock private ParticipationService participationService;
     @Mock private NotificationService notificationService;
     @Mock private MailService mailService;
+    @Mock private PaymentRedisService paymentRedisService;
 
     @InjectMocks
     private PaymentService paymentService;

@@ -6,9 +6,9 @@ import com.back.team9.moyeota.domain.settlement.service.SettlementService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.exception.GlobalExceptionHandler;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
-import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
+import com.back.team9.moyeota.global.jwt.blacklist.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.resolver.JwtTokenResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ class AdminSettlementControllerTest {
 
     // @PreAuthorize 메서드 레벨 인가를 @WebMvcTest 슬라이스에서 활성화 (HttpSecurity 불필요)
     @TestConfiguration
-    @EnableMethodSecurity
+    @EnableMethodSecurity(proxyTargetClass = true)
     static class MethodSecurityTestConfig {
     }
 

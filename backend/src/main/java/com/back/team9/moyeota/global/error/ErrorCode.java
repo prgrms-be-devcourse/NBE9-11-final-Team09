@@ -96,6 +96,7 @@ public enum ErrorCode {
     ALREADY_REFUNDED(HttpStatus.CONFLICT, "PAY009", "이미 환불된 결제입니다."),
     PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PAY010", "해당 결제에 대한 접근 권한이 없습니다."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAY011", "존재하지 않는 결제입니다."),
+    PAYMENT_IN_PROGRESS(HttpStatus.CONFLICT, "PAY012", "결제 준비가 이미 진행 중입니다. 잠시 후 다시 시도해주세요."),
 
     // [STL] 정산
     SETTLEMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST,"STL001", "이미 방장 페이백이 완료된 펀딩입니다."),

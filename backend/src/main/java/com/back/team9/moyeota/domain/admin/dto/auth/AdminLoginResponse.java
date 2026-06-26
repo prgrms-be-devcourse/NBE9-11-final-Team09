@@ -1,7 +1,7 @@
 package com.back.team9.moyeota.domain.admin.dto.auth;
 
 import com.back.team9.moyeota.domain.admin.entity.Admin;
-import com.back.team9.moyeota.global.jwt.JwtAccessTokenResponse;
+import com.back.team9.moyeota.global.jwt.dto.JwtAccessTokenResponse;
 
 public record AdminLoginResponse(
         String accessToken,

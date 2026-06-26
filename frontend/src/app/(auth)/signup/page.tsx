@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import PasswordField from "@/components/ui/PasswordField";
+import { createApiUrl } from "@/lib/api-url";
 
 const EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
@@ -87,7 +88,7 @@ export default function SignupPage() {
 
     setSignupLoading(true);
     try {
-      const response = await fetch("/api/members/signup", {
+      const response = await fetch(createApiUrl("/api/members/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -131,7 +132,7 @@ export default function SignupPage() {
     setRequestLoading(true);
     try {
       const response = await fetch(
-        "/api/members/email-verification/request",
+        createApiUrl("/api/members/email-verification/request"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -173,7 +174,7 @@ export default function SignupPage() {
     setSubmitLoading(true);
     try {
       const response = await fetch(
-        "/api/members/email-verification/confirm",
+        createApiUrl("/api/members/email-verification/confirm"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

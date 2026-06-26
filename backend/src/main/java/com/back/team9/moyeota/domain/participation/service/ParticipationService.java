@@ -56,25 +56,24 @@ public class ParticipationService {
     @Transactional
     public ParticipationResponse createParticipation(Long memberId, ParticipationCreateRequest request) {
 
-        //펀딩 조회 - 존재하지 않으면 FND001
+        //펀딩 조회
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
-        //회원 조회 - 존재하지 않으면 USR001
+        //회원 조회
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 펀딩 상태 확인
         validateFundingStatus(funding);
 
-        //중복 참여 검증 - 이미 참여 중이면 PTC002
+        //중복 참여 검증
         if (participationRepository.existsByFunding_FundingIdAndMember_MemberId(
                 funding.getFundingId(), memberId)) {
             throw new BusinessException(ErrorCode.DUPLICATE_PARTICIPATION);
         }
 
-        // 정원 확인 - 모집 중 정원에 포함되는 참여자 수가 최대 정원 이상이면 PTC003
-        // PENDING(결제 대기) + ACTIVE(보증금 결제 완료)만 포함
+        // 정원 확인 - PENDING(결제 대기) + ACTIVE(보증금 결제 완료)만 포함
         long currentParticipants = participationRepository
                 .countByFunding_FundingIdAndPaymentStatusIn(
                         funding.getFundingId(),
@@ -87,7 +86,7 @@ public class ParticipationService {
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
 
-        //가는편 좌석 확인 (필수, 방향: OUTBOUND)
+        //가는편 좌석 확인
         Seat outboundSeat = getValidatedSeat(
                 request.outboundSeatId(),
                 funding.getFundingId(),
@@ -100,7 +99,7 @@ public class ParticipationService {
                 request.returnSeatId()
         );
 
-        //오는편 좌석 확인 (왕복인 경우만, 방향: RETURN)
+        //오는편 좌석 확인 (왕복인 경우만)
         Seat returnSeat = null;
 
         if (request.returnSeatId() != null) {
@@ -112,7 +111,6 @@ public class ParticipationService {
         }
 
         //참여 생성 및 저장
-        // 이 시점에 participationId가 생성됨 (Seat.book()에서 필요)
         Participation participation = Participation.create(
                 funding,
                 member,
@@ -129,17 +127,14 @@ public class ParticipationService {
     private void validateFundingStatus(Funding funding) {
         FundingStatus status = funding.getStatus();
 
-        // 취소된 펀딩인지 확인
         if (status == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_CANCELLED);
         }
-        // 모집이 종료된 펀딩인지 확인
         if (status == FundingStatus.COMPLETED || status == FundingStatus.FAILED) {
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
     }
 
-    // 좌석별로 독립 처리하여, 한 좌석의 실패가 다른 좌석 처리를 막지 않음
     private void releaseSeatHoldSafely(Long seatId, Long memberId) {
         boolean released = seatRedisService.releaseSeat(seatId, memberId);
         if (!released) {
@@ -154,21 +149,17 @@ public class ParticipationService {
     //좌석 조회 + 검증 (outbound/return 공통 로직)
     private Seat getValidatedSeat(Long seatId, Long fundingId, Direction expectedDirection) {
 
-        //좌석 조회
         Seat seat = seatRepository.findByIdWithPathinfoAndFunding(seatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
 
-        //예약 가능한 좌석인지 확인 (이미 BOOKED면 SEA002)
         if (seat.getStatus() != SeatStatus.AVAILABLE) {
             throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED);
         }
 
-        //해당 펀딩의 좌석인지 확인
         if (!seat.getPathinfo().getFunding().getFundingId().equals(fundingId)) {
             throw new BusinessException(ErrorCode.SEAT_NOT_IN_PATH);
         }
 
-        //좌석의 노선 방향이 기대 방향과 일치하는지 확인(가는편/오는편 방향 확인)
         if (seat.getPathinfo().getDirection() != expectedDirection) {
             throw new BusinessException(ErrorCode.SEAT_NOT_IN_PATH);
         }
@@ -178,11 +169,10 @@ public class ParticipationService {
 
     // 오는편 좌석 필요 여부 확인
     private void validateReturnSeatRequirement(TripType tripType, Long returnSeatId) {
-        // 왕복은 오는편 좌석 필수
+
         if (tripType == TripType.ROUND && returnSeatId == null) {
             throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
         }
-        // 편도는 오는편 좌석 선택 불가
         if (tripType == TripType.ONE_WAY && returnSeatId != null) {
             throw new BusinessException(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED);
         }
@@ -193,13 +183,13 @@ public class ParticipationService {
     @Transactional
     public void cancelParticipation(Long memberId, Long participationId) {
 
-        // 본인 참여 내역 조회 - 없거나 본인 것이 아니면 PTC001
+        // 본인 참여 내역 조회
         Participation participation = participationRepository
                 .findByParticipationIdAndMember_MemberId(participationId, memberId)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
-        // 이미 취소된 참여인지 확인 - 중복 취소 방지
+        // 이미 취소된 참여인지 확인
         if (participation.getStatus() == ParticipationStatus.CANCELED) {
             throw new BusinessException(ErrorCode.ALREADY_CANCELED_PARTICIPATION);
         }
@@ -212,7 +202,6 @@ public class ParticipationService {
         // 현재 시각을 한 번만 구해서 재사용 (취소/환불 두 판단이 같은 순간 기준이 되도록)
         LocalDateTime now = LocalDateTime.now(clock);
 
-        // 출발 7일 전 자정 = 취소 가능 마감 시점
         LocalDateTime cancelDeadline = departureTime
                 .toLocalDate()
                 .minusDays(7)
@@ -223,13 +212,12 @@ public class ParticipationService {
             throw new BusinessException(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED);
         }
 
-        // 출발 10일 전 자정 = 보증금 환불 가능 마감 시점
         LocalDateTime refundDeadline = departureTime
                 .toLocalDate()
                 .minusDays(10)
                 .atStartOfDay();
 
-        // 환불 대상(10일 전 이전 취소)일 때만 이벤트 발행
+        // 10일 전 이전 취소일 때만 이벤트 발행(환불 대상)
         if (now.isBefore(refundDeadline)) {
             eventPublisher.publishEvent(
                     new ParticipationCancelledEvent(participationId)
@@ -247,7 +235,6 @@ public class ParticipationService {
 
     // ============================== 3. 참여자 목록 조회 ==============================
     // 로그인한 사용자의 참여 내역을 최신순으로 반환
-    // JWT 인증을 통과한 사용자만 접근 가능하므로 회원 존재 여부 검사 생략
     @Transactional(readOnly = true)
     public List<MyParticipationResponse> getMyParticipations(Long memberId) {
 
@@ -262,13 +249,13 @@ public class ParticipationService {
     @Transactional(readOnly = true)
     public List<ParticipationListResponse> getParticipations(Long memberId, Long fundingId) {
 
-        // 펀딩 조회 - 존재하지 않으면 FND001
+        // 펀딩 조회
         Funding funding = fundingRepository.findById(fundingId)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.FUNDING_NOT_FOUND)
                 );
 
-        // 방장 여부 확인 - 방장이 아니면 FND007
+        // 방장 여부 확인
         if (!funding.getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.FUNDING_FORBIDDEN);
         }
@@ -277,7 +264,6 @@ public class ParticipationService {
         List<Participation> participations =
                 participationRepository.findByFunding_FundingId(fundingId);
 
-        // DTO 변환 후 반환
         return participations.stream()
                 .map(ParticipationListResponse::from)
                 .toList();
@@ -338,11 +324,9 @@ public class ParticipationService {
             return;
         }
 
-        // Participation 취소 처리
-        // DB Seat는 처음부터 AVAILABLE이라 release() 호출 안 함
         participation.cancel();
 
-        // Redis HOLD 해제 시도 (이미 만료됐을 수 있음 - releaseSeatHoldSafely가 실패 흡수)
+        // Redis HOLD 해제 시도 (이미 만료됐을 수 있음)
         Long outboundSeatId = participation.getOutboundSeat().getSeatId();
         releaseSeatHoldSafely(outboundSeatId, memberId);
 
@@ -364,12 +348,9 @@ public class ParticipationService {
             return;
         }
 
-        // ACTIVE 상태인 경우에만 COMPLETED로 전환
         if (participation.getPaymentStatus() != ParticipationPaymentStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.INVALID_PARTICIPATION_STATUS);
         }
-
-        // 잔액 결제 완료 → COMPLETED로 전환
         participation.completePayment();
     }
 }

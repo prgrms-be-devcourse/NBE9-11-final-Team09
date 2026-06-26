@@ -52,6 +52,24 @@ springdoc:
   api-docs:
     enabled: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      http: true
+
 
 toss:
   secret-key: ${TOSS_SECRET_KEY}
@@ -78,6 +96,9 @@ app:
       delay: 500
       multiplier: 2.0
       max-delay: 2000
+  cors:
+    allowed-origins:
+      "http://localhost:3000"
 
 social:
   kakao:

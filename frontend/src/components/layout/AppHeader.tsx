@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createApiUrl } from "@/lib/api-url";
 
 type ApiResponse<T> = {
   resultCode: string;
@@ -44,7 +45,7 @@ export default function AppHeader() {
 
     async function loadMe(accessToken: string) {
       try {
-        const response = await fetch("/api/members/me", {
+        const response = await fetch(createApiUrl("/api/members/me"), {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
@@ -102,7 +103,7 @@ export default function AppHeader() {
 
     try {
       if (token) {
-        await fetch("/api/members/logout", {
+        await fetch(createApiUrl("/api/members/logout"), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
