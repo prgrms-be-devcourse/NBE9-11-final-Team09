@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@Tag(name = "Admin Settlement", description = "관리자 정산 관련 API")
+@Tag(name = "Admin Settlement", description = "관리자 페이백 승인·거절 API")
 public interface AdminSettlementControllerDocs {
 
     @Operation(

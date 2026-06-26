@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@Tag(name = "Admin Payment", description = "관리자 결제 관련 API")
+@Tag(name = "Admin Payment", description = "관리자 환불 재처리 API")
 public interface AdminPaymentControllerDocs {
 
     @Operation(

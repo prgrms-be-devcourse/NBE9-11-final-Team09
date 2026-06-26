@@ -12,7 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@Tag(name = "Settlement", description = "정산 관련 API")
+@Tag(name = "Settlement", description = "방장 페이백 정산 요청·조회 API")
 public interface SettlementControllerDocs {
 
     @Operation(

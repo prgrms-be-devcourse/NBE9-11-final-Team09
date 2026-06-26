@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-@Tag(name = "Notification", description = "알림 관련 API")
+@Tag(name = "Notification", description = "실시간 이벤트 알림 조회 API")
 public interface NotificationControllerDocs {
 
     @Operation(

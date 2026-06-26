@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-@Tag(name = "Member History", description = "회원 내역 조회 API")
+@Tag(name = "Member History", description = "회원 참여·모집·결제 내역 페이징 조회 API")
 public interface MemberHistoryControllerDocs {
 
     @Operation(

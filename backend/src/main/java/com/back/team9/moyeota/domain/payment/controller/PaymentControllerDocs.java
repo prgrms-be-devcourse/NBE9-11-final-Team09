@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Tag(name = "Payment", description = "결제 관련 API")
+@Tag(name = "Payment", description = "Toss Payments 연동 결제(보증금·잔액·환불) API")
 public interface PaymentControllerDocs {
 
     @Operation(

@@ -15,7 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@Tag(name = "Member Profile", description = "회원 프로필 관련 API")
+@Tag(name = "Member Profile", description = "회원 프로필 조회·수정·탈퇴 API")
 public interface MemberProfileControllerDocs {
 
     @Operation(

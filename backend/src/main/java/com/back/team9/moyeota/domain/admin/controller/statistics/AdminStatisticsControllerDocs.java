@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 
-@Tag(name = "Admin Statistics", description = "관리자 통계 API")
+@Tag(name = "Admin Statistics", description = "관리자 서비스 현황 통계 API")
 public interface AdminStatisticsControllerDocs {
 
     @Operation(

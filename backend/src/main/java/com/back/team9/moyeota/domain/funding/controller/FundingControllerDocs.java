@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@Tag(name = "Funding", description = "펀딩 관련 API")
+@Tag(name = "Funding", description = "버스 대절 펀딩 모집 생성·조회·수정·취소 API")
 public interface FundingControllerDocs {
 
     @Operation(

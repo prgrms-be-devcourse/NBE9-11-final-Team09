@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@Tag(name = "Admin Member", description = "관리자 회원 관리 API")
+@Tag(name = "Admin Member", description = "관리자 회원 조회·강제 탈퇴 API")
 public interface AdminMemberControllerDocs {
 
     @Operation(

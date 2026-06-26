@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@Tag(name = "Seat", description = "좌석 관련 API")
+@Tag(name = "Seat", description = "버스 좌석 배치도 조회 및 Redis 기반 5분 선점 API")
 public interface SeatControllerDocs {
 
     @Operation(

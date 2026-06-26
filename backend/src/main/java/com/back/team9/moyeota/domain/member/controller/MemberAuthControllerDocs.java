@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@Tag(name = "Member Auth", description = "회원 인증 관련 API")
+@Tag(name = "Member Auth", description = "회원 이메일 인증·로그인·소셜 로그인 API")
 public interface MemberAuthControllerDocs {
 
     @Operation(

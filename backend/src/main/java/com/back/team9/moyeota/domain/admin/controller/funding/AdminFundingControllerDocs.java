@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@Tag(name = "Admin Funding", description = "관리자 펀딩 관리 API")
+@Tag(name = "Admin Funding", description = "관리자 펀딩 조회·강제 취소 API")
 public interface AdminFundingControllerDocs {
 
     @Operation(

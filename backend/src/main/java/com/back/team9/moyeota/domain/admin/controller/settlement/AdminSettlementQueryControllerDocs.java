@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@Tag(name = "Admin Settlement Query", description = "관리자 정산 조회 API")
+@Tag(name = "Admin Settlement Query", description = "관리자 정산 내역 조회 API")
 public interface AdminSettlementQueryControllerDocs {
 
     @Operation(

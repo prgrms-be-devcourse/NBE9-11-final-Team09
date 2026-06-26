@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@Tag(name = "ChatRoom", description = "채팅방 관련 API")
+@Tag(name = "ChatRoom", description = "WebSocket 기반 실시간 채팅방 REST API")
 public interface ChatRoomControllerDocs {
 
     @Operation(

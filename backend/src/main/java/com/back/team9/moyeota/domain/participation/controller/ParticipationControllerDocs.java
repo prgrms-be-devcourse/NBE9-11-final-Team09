@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-@Tag(name = "Participation", description = "참여 관련 API")
+@Tag(name = "Participation", description = "펀딩 참여 신청·취소 및 참여자 목록 조회 API")
 public interface ParticipationControllerDocs {
 
     @Operation(
