@@ -2,10 +2,10 @@ package com.back.team9.moyeota.domain.admin.service.auth;
 
 import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.error.ErrorCode;
-import com.back.team9.moyeota.global.jwt.JwtAuthenticationInfo;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
-import com.back.team9.moyeota.global.jwt.PrincipalType;
+import com.back.team9.moyeota.global.jwt.dto.JwtAuthenticationInfo;
+import com.back.team9.moyeota.global.jwt.blacklist.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.type.PrincipalType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

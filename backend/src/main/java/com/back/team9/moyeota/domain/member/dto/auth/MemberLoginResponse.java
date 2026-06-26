@@ -1,7 +1,7 @@
 package com.back.team9.moyeota.domain.member.dto.auth;
 
 import com.back.team9.moyeota.domain.member.entity.Member;
-import com.back.team9.moyeota.global.jwt.JwtTokenResponse;
+import com.back.team9.moyeota.global.jwt.dto.JwtTokenResponse;
 
 public record MemberLoginResponse(
         String accessToken,

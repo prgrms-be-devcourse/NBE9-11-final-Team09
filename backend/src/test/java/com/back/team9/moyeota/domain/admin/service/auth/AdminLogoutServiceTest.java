@@ -1,10 +1,10 @@
 package com.back.team9.moyeota.domain.admin.service.auth;
 
 import com.back.team9.moyeota.global.exception.BusinessException;
-import com.back.team9.moyeota.global.jwt.JwtAuthenticationInfo;
-import com.back.team9.moyeota.global.jwt.JwtBlacklistService;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
-import com.back.team9.moyeota.global.jwt.PrincipalType;
+import com.back.team9.moyeota.global.jwt.dto.JwtAuthenticationInfo;
+import com.back.team9.moyeota.global.jwt.blacklist.JwtBlacklistService;
+import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.type.PrincipalType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

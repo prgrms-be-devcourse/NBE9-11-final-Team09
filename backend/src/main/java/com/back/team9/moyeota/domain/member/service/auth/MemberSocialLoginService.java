@@ -10,8 +10,8 @@ import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.infrastructure.social.KakaoSocialLoginClient;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
-import com.back.team9.moyeota.global.jwt.JwtTokenResponse;
+import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.dto.JwtTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

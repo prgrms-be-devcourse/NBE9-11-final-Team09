@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.global.jwt;
+package com.back.team9.moyeota.global.jwt.resolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
