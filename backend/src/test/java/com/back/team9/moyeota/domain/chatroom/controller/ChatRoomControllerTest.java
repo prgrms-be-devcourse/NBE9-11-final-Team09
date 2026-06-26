@@ -49,32 +49,6 @@ class ChatRoomControllerTest {
     private ChatMessageService chatMessageService;
 
     @Test
-    @DisplayName("채팅방 생성에 성공한다")
-    void 채팅방_생성_성공() throws Exception {
-
-        Long fundingId = 1L;
-
-        ChatRoomResponse response = ChatRoomResponse.builder()
-                .chatRoomId(1L)
-                .fundingId(fundingId)
-                .status(ChatRoomStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        given(chatRoomService.createRoom(fundingId))
-                .willReturn(response);
-
-        mockMvc.perform(post("/chatrooms/{fundingId}", fundingId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
-                .andExpect(jsonPath("$.msg").value("채팅방 생성 성공"))
-                .andExpect(jsonPath("$.data.chatRoomId").value(1))
-                .andExpect(jsonPath("$.data.fundingId").value(1));
-
-        verify(chatRoomService).createRoom(fundingId);
-    }
-
-    @Test
     @DisplayName("채팅 메시지 조회 성공")
     void 채팅메시지_조회_성공() throws Exception {
 

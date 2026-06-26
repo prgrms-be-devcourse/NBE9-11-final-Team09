@@ -53,7 +53,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         ChatRoom room = mock(ChatRoom.class);
@@ -95,7 +94,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         given(memberRepository.findById(1L))
@@ -119,7 +117,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         given(chatRoomService.getRoomById(1L))

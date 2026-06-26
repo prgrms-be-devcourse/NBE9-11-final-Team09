@@ -28,17 +28,17 @@ public class ChatMessageService {
     private final ChatRoomService chatRoomService;
 
 
-    public Message sendMessage(ChatMessageRequest request, Long memberId){
+    public Message sendMessage(ChatMessageRequest request, Long memberId) {
+
         ChatRoom room = chatRoomService.getRoomById(request.getChatRoomId());
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Message message = Message.builder()
                 .chatRoom(room)
                 .member(member)
                 .content(request.getMessage())
-                .createdAt(LocalDateTime.now())
                 .build();
 
         return messageRepository.save(message);

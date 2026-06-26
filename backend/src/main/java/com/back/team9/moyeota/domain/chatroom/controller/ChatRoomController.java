@@ -20,21 +20,6 @@ public class ChatRoomController {
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
 
-//    @PostMapping("/{fundingId}")
-//    public ResponseEntity<ApiResponse<ChatRoomResponse>> createChatRoom(
-//            @PathVariable Long fundingId,
-//            @AuthenticationPrincipal Long memberId
-//    ){
-//        ChatRoomResponse response = chatRoomService.createRoom(fundingId);
-//
-//        return ResponseEntity.ok(
-//                new ApiResponse<>(
-//                        "SUCCESS",
-//                        "채팅방 생성 성공",
-//                        response
-//                )
-//        );
-//    }
     @GetMapping("/{chatRoomId}/messages")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(@PathVariable Long chatRoomId, @AuthenticationPrincipal Long memberId) {
         List<MessageResponse> response = chatMessageService.getMessages(chatRoomId);
