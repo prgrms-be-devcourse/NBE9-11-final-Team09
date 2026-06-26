@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Propagation;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -56,24 +57,31 @@ public class ParticipationService {
     @Transactional
     public ParticipationResponse createParticipation(Long memberId, ParticipationCreateRequest request) {
 
-        //펀딩 조회
+        // 펀딩 조회
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
-        //회원 조회
+        // 회원 조회
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 펀딩 상태 확인
         validateFundingStatus(funding);
 
-        //중복 참여 검증
-        if (participationRepository.existsByFunding_FundingIdAndMember_MemberId(
-                funding.getFundingId(), memberId)) {
+        // 중복 참여 검증
+        if (participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                funding.getFundingId(),
+                memberId,
+                List.of(
+                        ParticipationPaymentStatus.PENDING,
+                        ParticipationPaymentStatus.ACTIVE,
+                        ParticipationPaymentStatus.COMPLETED
+                )
+        )) {
             throw new BusinessException(ErrorCode.DUPLICATE_PARTICIPATION);
         }
 
-        // 정원 확인 - PENDING(결제 대기) + ACTIVE(보증금 결제 완료)만 포함
+        // 정원 확인
         long currentParticipants = participationRepository
                 .countByFunding_FundingIdAndPaymentStatusIn(
                         funding.getFundingId(),
@@ -85,23 +93,16 @@ public class ParticipationService {
         if (currentParticipants >= funding.getMaxParticipants()) {
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
-
-        //가는편 좌석 확인
         Seat outboundSeat = getValidatedSeat(
                 request.outboundSeatId(),
                 funding.getFundingId(),
                 Direction.OUTBOUND
         );
-
-        //오는편 좌석 필요 여부 확인
         validateReturnSeatRequirement(
                 funding.getTripType(),
                 request.returnSeatId()
         );
-
-        //오는편 좌석 확인 (왕복인 경우만)
         Seat returnSeat = null;
-
         if (request.returnSeatId() != null) {
             returnSeat = getValidatedSeat(
                     request.returnSeatId(),
@@ -109,8 +110,20 @@ public class ParticipationService {
                     Direction.RETURN
             );
         }
+        // 기존 참여 이력 확인
+        Optional<Participation> existingParticipation = participationRepository
+                .findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId);
 
-        //참여 생성 및 저장
+        if (existingParticipation.isPresent()) {
+            Participation participation = existingParticipation.get();
+
+            if (participation.getStatus() == ParticipationStatus.CANCELED) {
+                participation.reapply(outboundSeat, returnSeat);
+                return ParticipationResponse.from(participation);
+            }
+        }
+
+        // 신규 참여 생성
         Participation participation = Participation.create(
                 funding,
                 member,
@@ -146,7 +159,7 @@ public class ParticipationService {
         }
     }
 
-    //좌석 조회 + 검증 (outbound/return 공통 로직)
+    //좌석 조회 + 검증
     private Seat getValidatedSeat(Long seatId, Long fundingId, Direction expectedDirection) {
 
         Seat seat = seatRepository.findByIdWithPathinfoAndFunding(seatId)
@@ -177,7 +190,6 @@ public class ParticipationService {
             throw new BusinessException(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED);
         }
     }
-
 
     // ============================== 2. 참여 취소 ==============================
     @Transactional
@@ -240,7 +252,6 @@ public class ParticipationService {
             participation.getReturnSeat().release();
         }
     }
-
 
     // ============================== 3. 참여자 목록 조회 ==============================
     @Transactional(readOnly = true)

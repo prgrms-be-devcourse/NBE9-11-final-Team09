@@ -5,7 +5,10 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
+
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,6 +35,9 @@ public record FundingDetailResponse(
         Long chatRoomId,
         Boolean isHost,
         Boolean isJoined,
+        Long myParticipationId,
+        ParticipationPaymentStatus myPaymentStatus,
+        Boolean isCanceled,
         LocalDateTime createdAt
 ) {
     public static FundingDetailResponse from(
@@ -40,7 +46,10 @@ public record FundingDetailResponse(
             Integer currentParticipants,
             Long chatRoomId,
             Boolean isHost,
-            Boolean isJoined
+            Boolean isJoined,
+            Long myParticipationId,
+            ParticipationPaymentStatus myPaymentStatus,
+            Boolean isCanceled
     ) {
 
         BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
@@ -73,6 +82,9 @@ public record FundingDetailResponse(
                 chatRoomId,
                 isHost,
                 isJoined,
+                myParticipationId,
+                myPaymentStatus,
+                isCanceled,
                 funding.getCreatedAt()
         );
     }
