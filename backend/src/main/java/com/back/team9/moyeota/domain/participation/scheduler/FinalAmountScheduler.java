@@ -3,6 +3,8 @@ package com.back.team9.moyeota.domain.participation.scheduler;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.service.FinalAmountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ public class FinalAmountScheduler {
 
     private final FundingRepository fundingRepository;
     private final FinalAmountService finalAmountService;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
@@ -36,6 +39,7 @@ public class FinalAmountScheduler {
         for (Funding funding : targets) {
             try {
                 finalAmountService.processFunding(funding.getFundingId());
+                notificationService.sendToFundingParticipants(funding.getFundingId(), NotificationType.PAYMENT_DEADLINE);
             } catch (Exception e) {
                 log.error("finalAmount 설정 실패 — fundingId={}", funding.getFundingId(), e);
             }

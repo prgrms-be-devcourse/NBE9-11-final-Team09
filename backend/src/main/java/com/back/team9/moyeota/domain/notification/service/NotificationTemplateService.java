@@ -16,6 +16,7 @@ public class NotificationTemplateService {
             case EMERGENCY_NOTICE -> "긴급 공지";
             case PAYMENT_COMPLETED -> "결제 완료";
             case FUNDING_CANCELLED -> "펀딩 취소";
+            case REFUND_COMPLETED -> "환불 완료";
         };
     }
 
@@ -94,6 +95,15 @@ public class NotificationTemplateService {
                     <body>
                         <h2>%s님</h2>
                         <p>[%s] 펀딩이 취소되었습니다. 결제하신 보증금은 자동 환불 처리됩니다.</p>
+                    </body>
+                    </html>
+                    """.formatted(safeNickname, safeTitle);
+
+            case REFUND_COMPLETED -> """
+                    <html>
+                    <body>
+                        <h2>%s님</h2>
+                        <p>[%s] 보증금 환불이 완료되었습니다 💰</p>
                     </body>
                     </html>
                     """.formatted(safeNickname, safeTitle);

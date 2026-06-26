@@ -21,6 +21,8 @@ import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -50,6 +52,7 @@ public class ParticipationService {
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     // ============================== 1. 참여 신청 ==============================
@@ -119,6 +122,16 @@ public class ParticipationService {
         );
 
         participationRepository.save(participation);
+
+        if (currentParticipants + 1 == funding.getMinParticipants()) {
+            try {
+                Long fundingId = funding.getFundingId();
+                notificationService.sendToFundingHost(funding.getMember().getMemberId(), fundingId, NotificationType.MIN_REACHED);
+                notificationService.sendToFundingParticipants(fundingId, NotificationType.MIN_REACHED);
+            } catch (Exception e) {
+                log.warn("MIN_REACHED 알림 발송 실패 — fundingId={}", funding.getFundingId(), e);
+            }
+        }
 
         return ParticipationResponse.from(participation);
     }
