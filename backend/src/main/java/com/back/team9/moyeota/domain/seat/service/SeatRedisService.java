@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Service //좌석 HOLD 관련 Redis 작업 전담
+@Service
 @RequiredArgsConstructor
 public class SeatRedisService {
-    private final StringRedisTemplate redisTemplate; // Redis 문자열 저장/조회
+    private final StringRedisTemplate redisTemplate;
 
-    private static final String SEAT_KEY_PREFIX = "seat:"; // Redis Key 접두사
+    private static final String SEAT_KEY_PREFIX = "seat:";
     private static final Duration HOLD_DURATION = Duration.ofSeconds(300); // HOLD 5분 유지
 
     // Lua 스크립트를 상수로 정의하여 재사용 (매 호출마다 새 객체 생성 방지)
@@ -44,12 +44,8 @@ public class SeatRedisService {
         String value = String.valueOf(memberId);
 
         try {
-            // SET NX EX: 키가 없을 때만 저장 성공 → true 반환
-            // 이미 키가 있으면 → false 반환
             Boolean success = redisTemplate.opsForValue()
                     .setIfAbsent(key, value, HOLD_DURATION); // 키가 없을 때만 저장
-
-            // success가 null이거나 false일 때 모두 예외 발생
             if (!Boolean.TRUE.equals(success)) {
                 throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED);
             }
@@ -69,7 +65,6 @@ public class SeatRedisService {
 
         try {
             // RELEASE_SCRIPT 상수 재사용 (매 호출마다 새 객체 생성 방지)
-            // 반환값 1: 본인 소유 키를 정상 삭제 / 0: 소유자가 아니거나 키가 이미 없음
             Long result = redisTemplate.execute(
                     RELEASE_SCRIPT,
                     Collections.singletonList(key),
@@ -89,10 +84,7 @@ public class SeatRedisService {
         String key = generateKey(seatId);
 
         try {
-            // Redis에서 현재 HOLD 중인 멤버 ID 조회
             String value = redisTemplate.opsForValue().get(key);
-
-            // value가 null이면 HOLD 없음 다른 memberId면 다른 사람이 선점 중
             return String.valueOf(memberId).equals(value);
 
         } catch (Exception e) {
@@ -123,11 +115,9 @@ public class SeatRedisService {
             }
 
             Map<Long, Long> holdMap = new HashMap<>();
-            // 조회 결과를 Map<seatId, memberId> 형태로 변환
             int size = Math.min(seatIds.size(), values.size());
             for (int i = 0; i < size; i++) {
                 String val = values.get(i);
-                // value가 존재하면 HOLD 중인 좌석
                 if (val != null) {
                     try {
                         holdMap.put(seatIds.get(i), Long.parseLong(val));
