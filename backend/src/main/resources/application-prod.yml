@@ -24,3 +24,6 @@ logging:
 app:
   cookie:
     secure: true
+  cors:
+    allowed-origins:
+      "https://www.moyeota.site,https://moyeota.site"

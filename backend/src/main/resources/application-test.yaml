@@ -12,3 +12,7 @@ social:
     client-secret: test-kakao-client-secret
     token-uri: https://kauth.kakao.com/oauth/token
     user-info-uri: https://kapi.kakao.com/v2/user/me
+
+app:
+  cors:
+    allowed-origins: "http://localhost:3000"
