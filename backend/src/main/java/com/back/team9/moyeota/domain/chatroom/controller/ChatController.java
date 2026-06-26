@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -31,8 +33,14 @@ public class ChatController {
             Principal principal
     ) {
 
-        Authentication auth = (Authentication) principal;
-        ChatPrincipal chatPrincipal = (ChatPrincipal) auth.getPrincipal();
+
+        if (!(principal instanceof Authentication auth)) {
+            throw new AccessDeniedException("인증 정보가 없습니다.");
+        }
+
+        if (!(auth.getPrincipal() instanceof ChatPrincipal chatPrincipal)) {
+            throw new AccessDeniedException("잘못된 인증 타입입니다.");
+        }
 
         Long memberId = chatPrincipal.getMemberId();
 

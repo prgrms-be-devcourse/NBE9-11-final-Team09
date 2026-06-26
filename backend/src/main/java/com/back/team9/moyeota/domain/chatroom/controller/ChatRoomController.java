@@ -14,19 +14,33 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/chatrooms")
-public class ChatRoomController {
+@RequestMapping("api/chatrooms")
+public class ChatRoomController implements ChatRoomControllerDocs{
 
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
 
     @GetMapping("/{chatRoomId}/messages")
-    public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(@PathVariable Long chatRoomId, @AuthenticationPrincipal Long memberId) {
+    public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(@PathVariable Long chatRoomId) {
         List<MessageResponse> response = chatMessageService.getMessages(chatRoomId);
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         "SUCCESS",
                         "채팅 메시지 조회 성공",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/funding/{fundingId}")
+    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomByFundingId(
+            @PathVariable Long fundingId
+    ) {
+        ChatRoomResponse response = chatRoomService.getRoomResponse(fundingId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "채팅방 조회 성공",
                         response
                 )
         );
