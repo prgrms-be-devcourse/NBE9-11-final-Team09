@@ -13,9 +13,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 //@Tag(name = "Seat", description = "좌석 관련 API") // Swagger 좌석 API 그룹
-@RestController // REST API 컨트롤러
-@RequestMapping("/api") // 공통 URL prefix
-@RequiredArgsConstructor // final 필드 생성자 자동 생성
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
 public class SeatController {
 
     private final SeatService seatService;
@@ -24,14 +24,11 @@ public class SeatController {
     //@Operation(summary = "특정 버스 좌석 배치도 조회") // Swagger API 설명
     @GetMapping("/pathinfos/{pathId}/seats")
     public ResponseEntity<ApiResponse<SeatLayoutResponse>> getSeatLayout(
-            @PathVariable("pathId") Long pathId, // 조회할 노선 ID
-            @AuthenticationPrincipal Long currentMemberId // JWT 인증된 사용자 ID
+            @PathVariable("pathId") Long pathId,
+            @AuthenticationPrincipal Long currentMemberId
     ) {
-        // 좌석 배치도 조회
         SeatLayoutResponse response =
                 seatService.getSeatLayout(pathId, currentMemberId);
-
-        // 공통 응답 포맷 반환
         return ResponseEntity.ok(
                 new ApiResponse<>("SUCCESS", "요청이 성공했습니다.", response)
         );
@@ -48,7 +45,6 @@ public class SeatController {
         SeatResponse response =
                 seatService.holdSeat(seatId, currentMemberId);
 
-        // 공통 응답 포맷 반환
         return ResponseEntity.ok(
                 new ApiResponse<>("SUCCESS", "요청이 성공했습니다.", response)
         );
