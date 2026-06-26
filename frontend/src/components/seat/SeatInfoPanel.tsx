@@ -66,6 +66,12 @@ export default function SeatInfoPanel({
             >
                 결제하기 →
             </button>
+
+            <div className="mt-3 rounded-lg bg-gray-50 px-3 py-3 text-xs leading-5 text-gray-600 [word-break:keep-all]">
+                <p>예약 시 최소 예상가의 50%가 보증금으로 결제됩니다.</p>
+                <p>펀딩 확정 후에는 확정 인원 기준 금액에서 보증금을 제외한 잔금을 결제합니다.</p>
+                <p>확정일 전 취소 시 결제한 보증금은 환불됩니다.</p>
+            </div>
         </div>
     );
 }

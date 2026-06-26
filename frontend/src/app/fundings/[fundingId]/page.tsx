@@ -273,7 +273,7 @@ export default function FundingDetailPage() {
                                 value={
                                     funding.currentParticipants >= funding.minParticipants
                                         ? formatMoney(
-                                            Math.ceil(
+                                            roundUpToHundred(
                                                 Number(funding.totalPrice) / (funding.currentParticipants + 1)
                                             )
                                         )
@@ -305,6 +305,10 @@ function Summary({ label, value }: { label: string; value: string }) {
             <p className="mt-2 text-lg font-bold">{value}</p>
         </div>
     );
+}
+
+function roundUpToHundred(value: number) {
+    return Math.ceil(value / 100) * 100;
 }
 
 function RouteLine({ title, pathinfo }: { title: string; pathinfo: Pathinfo }) {
