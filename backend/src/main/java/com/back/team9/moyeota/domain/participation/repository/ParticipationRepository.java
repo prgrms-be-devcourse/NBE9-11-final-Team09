@@ -89,4 +89,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     List<Participation> findByFunding_FundingIdAndStatus(Long fundingId, ParticipationStatus status);
 
+    @Query("SELECT p FROM Participation p JOIN FETCH p.member JOIN FETCH p.funding WHERE p.participationId = :id")
+    Optional<Participation> findWithMemberAndFundingById(@Param("id") Long id);
+
 }

@@ -70,7 +70,7 @@ public class PaymentCancellationRefundListener {
 
     private void sendRefundCompletedNotification(Long participationId) {
         try {
-            Participation participation = participationRepository.findById(participationId).orElse(null);
+            Participation participation = participationRepository.findWithMemberAndFundingById(participationId).orElse(null);
             if (participation == null) return;
             notificationService.sendMimeMessage(
                     participation.getMember().getMemberId(),
