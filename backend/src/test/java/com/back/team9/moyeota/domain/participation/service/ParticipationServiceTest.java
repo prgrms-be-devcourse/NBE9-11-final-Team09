@@ -80,6 +80,9 @@ class ParticipationServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private com.back.team9.moyeota.domain.notification.service.NotificationService notificationService;
+
 
     @BeforeEach
     void setUp() {
@@ -95,6 +98,7 @@ class ParticipationServiceTest {
                 seatRepository,
                 seatRedisService,
                 eventPublisher,
+                notificationService,
                 clock
         );
     }
