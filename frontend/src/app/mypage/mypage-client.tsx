@@ -1,5 +1,7 @@
 "use client";
 
+import { cancelParticipation } from "@/lib/fundingApi";
+
 import {
   AuthenticationRequiredError,
   clearAccessToken,
@@ -477,6 +479,10 @@ export default function MypageClient() {
               myParticipations={myParticipations}
               onTabChange={setActiveTab}
               onPageChange={moveHistoryPage}
+              onParticipationCanceled={async () => {
+                const data = await getMyParticipations();
+                setMyParticipations(data);
+              }}
             />
 
             <WithdrawSection
@@ -724,6 +730,7 @@ interface HistorySectionProps {
   myParticipations: MyParticipation[];
   onTabChange: (tab: HistoryTab) => void;
   onPageChange: (page: number) => void;
+  onParticipationCanceled: () => Promise<void>;
 }
 
 function HistorySection({
@@ -733,6 +740,7 @@ function HistorySection({
                           myParticipations,
                           onTabChange,
                           onPageChange,
+                          onParticipationCanceled,
                         }: HistorySectionProps) {
   const isEmpty =
       activeTab === "participations"
@@ -793,6 +801,7 @@ function HistorySection({
                         <MyParticipationItem
                             key={item.participationId}
                             item={item}
+                            onCanceled={onParticipationCanceled}
                         />
                     ))}
 
@@ -836,41 +845,147 @@ function HistorySection({
   );
 }
 
-function MyParticipationItem({ item }: { item: MyParticipation }) {
+function MyParticipationItem({
+                               item,
+                               onCanceled,
+                             }: {
+  item: MyParticipation;
+  onCanceled: () => Promise<void>;
+}) {
+  const [cancelModal, setCancelModal] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const departureTime = new Date(item.departureTime);
+  const refundDeadline = new Date(departureTime);
+  refundDeadline.setDate(refundDeadline.getDate() - 10);
+  const cancelDeadline = new Date(departureTime);
+  cancelDeadline.setDate(cancelDeadline.getDate() - 7);
+
+  const now = new Date();
+  const canCancel = now < cancelDeadline;
+  const canRefund = now < refundDeadline;
+  const canShowCancel =
+      item.status === "ACTIVE" &&
+      (item.paymentStatus === "PENDING" ||
+          item.paymentStatus === "ACTIVE") &&
+      canCancel;
+
+  function formatDeadlineDate(date: Date) {
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  async function handleCancel() {
+    setCanceling(true);
+    setError("");
+    try {
+      await cancelParticipation(item.participationId);
+      setCancelModal(false);
+      setCancelSuccess(true);
+      await onCanceled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "참여 취소에 실패했습니다.");
+    } finally {
+      setCanceling(false);
+    }
+  }
+
   return (
-      <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-bold text-slate-900">
-              {item.fundingTitle}
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">{item.routeInfo}</p>
-
-            <p className="mt-1 text-xs text-slate-400">
-              좌석:{" "}
-              {item.returnSeatNumber
-                  ? `가는편 ${item.outboundSeatNumber} / 오는편 ${item.returnSeatNumber}`
-                  : item.outboundSeatNumber}
-            </p>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <StatusBadge status={item.status} />
-              <StatusBadge status={item.paymentStatus} />
-
-              <span
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
-                      item.canBoard
-                          ? "bg-emerald-50 text-emerald-700 ring-emerald-600/15"
-                          : "bg-slate-50 text-slate-500 ring-slate-200"
-                  }`}
-              >
-              {item.canBoard ? "탑승 가능" : "탑승 불가"}
-            </span>
+      <>
+        <article className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate font-bold text-slate-900">{item.fundingTitle}</h3>
+              <p className="mt-1 text-sm text-slate-500">{item.routeInfo}</p>
+              <p className="mt-1 text-xs text-slate-400">
+                좌석:{" "}
+                {item.returnSeatNumber
+                    ? `가는편 ${item.outboundSeatNumber} / 오는편 ${item.returnSeatNumber}`
+                    : item.outboundSeatNumber}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <StatusBadge status={item.status} />
+                <StatusBadge status={item.paymentStatus} />
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
+                    item.canBoard
+                        ? "bg-emerald-50 text-emerald-700 ring-emerald-600/15"
+                        : "bg-slate-50 text-slate-500 ring-slate-200"
+                }`}>
+                                {item.canBoard ? "탑승 가능" : "탑승 불가"}
+                            </span>
+              </div>
+              {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
             </div>
+            {canShowCancel && (
+                <button
+                    type="button"
+                    onClick={() => setCancelModal(true)}
+                    className="shrink-0 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                >
+                  참여 취소
+                </button>
+            )}
           </div>
-        </div>
-      </article>
+        </article>
+
+        {cancelModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+                <h2 className="text-base font-bold text-gray-900 mb-3">참여를 취소하시겠습니까?</h2>
+                <p className="text-sm text-gray-600 mb-1">
+                  {canRefund ? (
+                      "취소 시 보증금이 전액 환불됩니다."
+                  ) : (
+                      <>
+                        <span className="font-semibold">{formatDeadlineDate(refundDeadline)}</span>{" "}
+                        자정 이후 취소되어 보증금은 환불되지 않습니다.
+                      </>
+                  )}
+                </p>
+                <p className="text-sm text-gray-600 mb-1">
+                  취소 후에는{" "}
+                  <span className="font-semibold">{formatDeadlineDate(cancelDeadline)}</span>{" "}
+                  자정까지 다시 참여할 수 있습니다.
+                </p>
+                {canRefund && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      ※ {formatDeadlineDate(refundDeadline)} 자정 이후부터는 보증금 환불이 불가능합니다.
+                    </p>
+                )}
+                <div className="flex gap-2 mt-5">
+                  <button
+                      onClick={() => setCancelModal(false)}
+                      className="flex-1 rounded border border-gray-300 py-2 text-sm font-semibold text-gray-700"
+                  >
+                    닫기
+                  </button>
+                  <button
+                      onClick={handleCancel}
+                      disabled={canceling}
+                      className="flex-1 rounded bg-red-500 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+                  >
+                    {canceling ? "취소 중..." : "확인"}
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+
+        {cancelSuccess && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl text-center">
+                <p className="text-base font-bold text-gray-900 mb-4">참여가 취소되었습니다.</p>
+                <button
+                    onClick={() => setCancelSuccess(false)}
+                    className="rounded bg-gray-950 px-6 py-2 text-sm font-semibold text-white"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+        )}
+      </>
   );
 }
 
