@@ -80,7 +80,7 @@ class FinalAmountServiceTest {
     }
 
     @Test
-    @DisplayName("processFunding - 참여자 2명일 때 totalPrice/2 (올림) 설정")
+    @DisplayName("processFunding - 참여자 2명일 때 방장 포함 totalPrice/3 (100원 올림) 설정")
     void processFunding_참여자2명_정확한금액설정() {
         Participation p1 = activeParticipation(1L);
         Participation p2 = activeParticipation(2L);
@@ -91,8 +91,8 @@ class FinalAmountServiceTest {
 
         finalAmountService.processFunding(1L);
 
-        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("250000"));
-        assertThat(p2.getFinalAmount()).isEqualByComparingTo(new BigDecimal("250000"));
+        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("166700"));
+        assertThat(p2.getFinalAmount()).isEqualByComparingTo(new BigDecimal("166700"));
     }
 
     @Test
@@ -120,10 +120,10 @@ class FinalAmountServiceTest {
 
         finalAmountService.processFunding(2L);
 
-        // 100000 / 3 = 33333.33... → 100원 올림 → 33400
-        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
-        assertThat(p2.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
-        assertThat(p3.getFinalAmount()).isEqualByComparingTo(new BigDecimal("33400"));
+        // 100000 / (참여자 3명 + 방장 1명) = 25000
+        assertThat(p1.getFinalAmount()).isEqualByComparingTo(new BigDecimal("25000"));
+        assertThat(p2.getFinalAmount()).isEqualByComparingTo(new BigDecimal("25000"));
+        assertThat(p3.getFinalAmount()).isEqualByComparingTo(new BigDecimal("25000"));
     }
 
     @Test
@@ -164,9 +164,9 @@ class FinalAmountServiceTest {
 
         finalAmountService.processFunding(1L);
 
-        // allMatch=false이므로 전체 재설정 (500000/2=250000)
-        assertThat(set.getFinalAmount()).isEqualByComparingTo(new BigDecimal("250000"));
-        assertThat(notSet.getFinalAmount()).isEqualByComparingTo(new BigDecimal("250000"));
+        // allMatch=false이므로 전체 재설정 (500000 / (참여자 2명 + 방장 1명) = 166700)
+        assertThat(set.getFinalAmount()).isEqualByComparingTo(new BigDecimal("166700"));
+        assertThat(notSet.getFinalAmount()).isEqualByComparingTo(new BigDecimal("166700"));
     }
 
     @Test

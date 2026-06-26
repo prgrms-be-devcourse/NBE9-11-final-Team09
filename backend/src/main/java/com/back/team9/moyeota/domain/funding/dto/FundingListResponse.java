@@ -33,12 +33,12 @@ public record FundingListResponse(
     ) {
         BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
-                funding.getMaxParticipants()
+                funding.getMaxParticipants() + 1
         );
 
         BigDecimal maxPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
-                funding.getMinParticipants()
+                funding.getMinParticipants() + 1
         );
 
         BigDecimal currentPrice = calculateCurrentPrice(
@@ -76,7 +76,7 @@ public record FundingListResponse(
 
         return FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
-                currentParticipants
+                currentParticipants + 1
         );
     }
 }

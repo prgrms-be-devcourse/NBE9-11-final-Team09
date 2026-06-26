@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
@@ -195,8 +196,10 @@ public class PaymentService {
         }
 
         Funding funding = participation.getFunding();
-        BigDecimal deposit = funding.getTotalPrice()
-                .divide(BigDecimal.valueOf(funding.getMaxParticipants() + 1), 0, RoundingMode.CEILING)
+        BigDecimal deposit = FundingPricePolicy.calculateRoundedPrice(
+                        funding.getTotalPrice(),
+                        funding.getMaxParticipants() + 1
+                )
                 .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
 
         BigDecimal amount;
