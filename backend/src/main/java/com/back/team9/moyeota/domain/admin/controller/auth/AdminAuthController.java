@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-public class AdminAuthController {
+public class AdminAuthController implements AdminAuthControllerDocs {
 
     private final AdminLoginService adminLoginService;
     private final AdminLogoutService adminLogoutService;

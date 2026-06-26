@@ -35,7 +35,7 @@ class AdminSettlementControllerTest {
 
     // @PreAuthorize 메서드 레벨 인가를 @WebMvcTest 슬라이스에서 활성화 (HttpSecurity 불필요)
     @TestConfiguration
-    @EnableMethodSecurity
+    @EnableMethodSecurity(proxyTargetClass = true)
     static class MethodSecurityTestConfig {
     }
 

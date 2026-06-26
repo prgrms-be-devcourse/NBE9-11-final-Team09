@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/settlements")
-public class AdminSettlementController {
+public class AdminSettlementController implements AdminSettlementControllerDocs {
 
     private final SettlementService settlementService;
 

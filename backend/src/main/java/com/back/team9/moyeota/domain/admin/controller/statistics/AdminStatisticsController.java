@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/statistics")
-public class AdminStatisticsController {
+public class AdminStatisticsController implements AdminStatisticsControllerDocs {
 
     private final AdminStatisticsService adminStatisticsService;
 

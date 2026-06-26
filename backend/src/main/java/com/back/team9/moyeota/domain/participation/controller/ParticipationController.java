@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-public class ParticipationController {
+public class ParticipationController implements ParticipationControllerDocs {
 
     private final ParticipationService participationService;
 
