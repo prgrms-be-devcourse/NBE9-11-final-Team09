@@ -21,6 +21,7 @@ import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
@@ -196,11 +197,10 @@ class FundingServiceUnitTest {
                 .willReturn(List.of(pathinfoResponse));
         given(chatRoomRepository.findByFundingFundingId(10L))
                 .willReturn(Optional.of(chatRoom(100L, funding)));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndStatus(
-                10L,
-                1L,
-                ParticipationStatus.ACTIVE
-        )).willReturn(true);
+        Participation myParticipation = mock(Participation.class);
+        given(myParticipation.getPaymentStatus()).willReturn(ParticipationPaymentStatus.ACTIVE);
+        given(participationRepository.findByFunding_FundingIdAndMember_MemberId(10L, 1L))
+                .willReturn(Optional.of(myParticipation));
 
         // When
         var response = fundingService.getFunding(10L, 1L);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFundingLoggedIn } from "@/lib/fundingAuth";
-import { deleteFunding, getFunding } from "@/lib/fundingApi";
+import { deleteFunding, getFunding, cancelParticipation } from "@/lib/fundingApi";
 import { getChatRoomByFundingId } from "@/lib/chatApi";
 import {
     busTypeLabels,
@@ -27,11 +27,49 @@ export default function FundingDetailPage() {
     const [deleting, setDeleting] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState("");
+    const [canceling, setCanceling] = useState(false);
+    const [cancelModal, setCancelModal] = useState(false);
+    const [cancelSuccess, setCancelSuccess] = useState(false);
 
     const isHost = Boolean(funding?.isHost);
     const isLoggedIn = useFundingLoggedIn();
     const isJoined = Boolean(funding?.isJoined);
+    const isCanceled = Boolean(funding?.isCanceled);
     const isRecruiting = funding?.status === "RECRUITING";
+    const myParticipationId = funding?.myParticipationId ?? null;
+
+    const outboundPathinfo = funding?.pathinfos.find((p) => p.direction === "OUTBOUND");
+    const departureTime = outboundPathinfo ? new Date(outboundPathinfo.departureTime) : null;
+
+    const refundDeadline = departureTime
+        ? (() => {
+            const d = new Date(departureTime);
+            d.setDate(d.getDate() - 10);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        })()
+        : null;
+
+    const cancelDeadline = departureTime
+        ? (() => {
+            const d = new Date(departureTime);
+            d.setDate(d.getDate() - 7);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        })()
+        : null;
+    const now = new Date();
+    const canCancel = cancelDeadline ? now < cancelDeadline : false;
+    const canRefund = refundDeadline ? now < refundDeadline : false;
+
+    const canShowCancel =
+        isJoined &&
+        canCancel &&
+        funding?.myPaymentStatus !== "NO_SHOW";
+
+    function formatDate(date: Date) {
+        return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+    }
 
     useEffect(() => {
         let ignore = false;
@@ -39,15 +77,12 @@ export default function FundingDetailPage() {
         async function load() {
             setLoading(true);
             setError("");
-
             try {
                 const data = await getFunding(fundingId);
                 if (!ignore) setFunding(data);
             } catch (err) {
                 if (!ignore) {
-                    setError(
-                        err instanceof Error ? err.message : "펀딩 상세를 불러오지 못했습니다."
-                    );
+                    setError(err instanceof Error ? err.message : "펀딩 상세를 불러오지 못했습니다.");
                 }
             } finally {
                 if (!ignore) setLoading(false);
@@ -56,17 +91,13 @@ export default function FundingDetailPage() {
 
         if (Number.isFinite(fundingId)) load();
 
-        return () => {
-            ignore = true;
-        };
+        return () => { ignore = true; };
     }, [fundingId]);
 
     async function handleDelete() {
         if (!window.confirm("이 펀딩을 취소하시겠습니까?")) return;
-
         setDeleting(true);
         setError("");
-
         try {
             await deleteFunding(fundingId);
             router.push("/fundings");
@@ -77,26 +108,35 @@ export default function FundingDetailPage() {
         }
     }
 
+    async function handleCancelParticipation() {
+        if (!myParticipationId) return;
+        setCanceling(true);
+        setError("");
+        try {
+            await cancelParticipation(myParticipationId);
+            setCancelModal(false);
+            setCancelSuccess(true);
+            const data = await getFunding(fundingId);
+            setFunding(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "참여 취소에 실패했습니다.");
+        } finally {
+            setCanceling(false);
+        }
+    }
+
     async function handleChatClick() {
         setError("");
-
         try {
             const chatRoom = await getChatRoomByFundingId(fundingId);
-            router.push(
-                `/chat/${chatRoom.chatRoomId}?title=${encodeURIComponent(
-                    funding?.title ?? "채팅방"
-                )}`
-            );
+            router.push(`/chat/${chatRoom.chatRoomId}?title=${encodeURIComponent(funding?.title ?? "채팅방")}`);
         } catch (err) {
-            setError(
-                err instanceof Error ? err.message : "채팅방으로 이동하지 못했습니다."
-            );
+            setError(err instanceof Error ? err.message : "채팅방으로 이동하지 못했습니다.");
         }
     }
 
     async function handleShare() {
         const url = window.location.href;
-
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(url);
@@ -111,7 +151,6 @@ export default function FundingDetailPage() {
                 document.execCommand("copy");
                 document.body.removeChild(textarea);
             }
-
             setCopied(true);
             window.setTimeout(() => setCopied(false), 1800);
         } catch {
@@ -161,24 +200,17 @@ export default function FundingDetailPage() {
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                <span className="rounded bg-gray-100 px-2 py-1">
-                  {statusLabels[funding.status]}
-                </span>
-                                <span className="rounded bg-gray-100 px-2 py-1">
-                  {busTypeLabels[funding.busType]}
-                </span>
-                                <span className="rounded bg-gray-100 px-2 py-1">
-                  {tripTypeLabels[funding.tripType]}
-                </span>
+                                <span className="rounded bg-gray-100 px-2 py-1">{statusLabels[funding.status]}</span>
+                                <span className="rounded bg-gray-100 px-2 py-1">{busTypeLabels[funding.busType]}</span>
+                                <span className="rounded bg-gray-100 px-2 py-1">{tripTypeLabels[funding.tripType]}</span>
                                 {isHost && (
-                                    <span className="rounded bg-gray-950 px-2 py-1 text-white">
-                    방장
-                  </span>
+                                    <span className="rounded bg-gray-950 px-2 py-1 text-white">방장</span>
                                 )}
                                 {isJoined && !isHost && (
-                                    <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-800">
-                    참가중
-                  </span>
+                                    <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-800">참가중</span>
+                                )}
+                                {isCanceled && (
+                                    <span className="rounded bg-red-100 px-2 py-1 text-red-600">취소한 펀딩</span>
                                 )}
                             </div>
                             <h1 className="mt-4 text-3xl font-bold">{funding.title}</h1>
@@ -211,20 +243,32 @@ export default function FundingDetailPage() {
                                 </button>
                             </>
                         )}
-                        {!isHost && !isJoined && isRecruiting && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (!isLoggedIn) {
-                                        router.push("/login");
-                                        return;
-                                    }
-                                    router.push(`/funding/${funding.fundingId}/seats`);
-                                }}
-                                className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
-                            >
-                                참여하기
-                            </button>
+
+                        {!isHost && isRecruiting && (
+                            <>
+                                {!isJoined && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!isLoggedIn) { router.push("/login"); return; }
+                                            router.push(`/funding/${funding.fundingId}/seats`);
+                                        }}
+                                        className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
+                                    >
+                                        {isCanceled ? "다시 참여하기" : "참여하기"}
+                                    </button>
+                                )}
+
+                                {canShowCancel && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setCancelModal(true)}
+                                        className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                                    >
+                                        참여 취소
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
 
@@ -235,10 +279,10 @@ export default function FundingDetailPage() {
                                 onClick={handleChatClick}
                                 className="rounded border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100"
                             >
-                            💬 주최자에게 문의하기
-                        </button>
+                                💬 주최자에게 문의하기
+                            </button>
                         </div>
-                        )}
+                    )}
 
                     <div className="grid gap-4 md:grid-cols-4">
                         <Summary label="현재 인원" value={`${funding.currentParticipants}명`} />
@@ -272,11 +316,7 @@ export default function FundingDetailPage() {
                                 label="현재 기준 예상가"
                                 value={
                                     funding.currentParticipants >= funding.minParticipants
-                                        ? formatMoney(
-                                            roundUpToHundred(
-                                                Number(funding.totalPrice) / (funding.currentParticipants + 1)
-                                            )
-                                        )
+                                        ? formatMoney(roundUpToHundred(Number(funding.totalPrice) / (funding.currentParticipants + 1)))
                                         : "최소 인원 모집 후 표시"
                                 }
                             />
@@ -291,9 +331,65 @@ export default function FundingDetailPage() {
                             </p>
                         </div>
                     )}
-
                 </section>
             </div>
+
+            {cancelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+                        <h2 className="text-base font-bold text-gray-900 mb-3">참여를 취소하시겠습니까?</h2>
+                        <p className="text-sm text-gray-600 mb-1">
+                            {canRefund ? (
+                                "취소 시 보증금이 전액 환불됩니다."
+                            ) : (
+                                <>
+                                    <span className="font-semibold">{formatDate(refundDeadline!)}</span>{" "}
+                                    자정 이후 취소되어 보증금은 환불되지 않습니다.
+                                </>
+                            )}
+                        </p>
+                        {cancelDeadline && (
+                            <p className="text-sm text-gray-600 mb-1">
+                                취소 후에는 <span className="font-semibold">{formatDate(cancelDeadline)}</span> 자정까지 다시 참여할 수 있습니다.
+                            </p>
+                        )}
+                        {canRefund && refundDeadline && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                ※ {formatDate(refundDeadline)} 자정 이후부터는 보증금 환불이 불가능합니다.
+                            </p>
+                        )}
+                        <div className="flex gap-2 mt-5">
+                            <button
+                                onClick={() => setCancelModal(false)}
+                                className="flex-1 rounded border border-gray-300 py-2 text-sm font-semibold text-gray-700"
+                            >
+                                닫기
+                            </button>
+                            <button
+                                onClick={handleCancelParticipation}
+                                disabled={canceling}
+                                className="flex-1 rounded bg-red-500 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+                            >
+                                {canceling ? "취소 중..." : "확인"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {cancelSuccess && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl text-center">
+                        <p className="text-base font-bold text-gray-900 mb-4">참여가 취소되었습니다.</p>
+                        <button
+                            onClick={() => setCancelSuccess(false)}
+                            className="rounded bg-gray-950 px-6 py-2 text-sm font-semibold text-white"
+                        >
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

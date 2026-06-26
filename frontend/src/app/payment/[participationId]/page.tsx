@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
 import { getMyProfile } from "@/lib/member-api";
-import { getFunding } from "@/lib/fundingApi";
+import { getFunding, cancelParticipation  } from "@/lib/fundingApi";
 import { preparePayment } from "@/lib/payment-api";
 import { formatMoney, formatDateTime } from "@/lib/fundingFormat";
 import { getFundingMemberId } from "@/lib/fundingAuth";
@@ -43,27 +43,32 @@ export default function PaymentPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const raw = sessionStorage.getItem(`paymentContext_${participationId}`);
-    if (!raw) {
-      setError("결제 정보를 찾을 수 없습니다. 좌석 선택 페이지로 돌아가 주세요.");
-      return;
-    }
-
-    let ctx: PaymentContext;
-    try {
-      ctx = JSON.parse(raw) as PaymentContext;
-    } catch {
-      setError("결제 정보가 올바르지 않습니다.");
-      return;
-    }
-    setContext(ctx);
-
-    Promise.all([getFunding(ctx.fundingId), getMyProfile()])
-      .then(([f, m]) => {
+    async function fetchData() {
+      const raw = sessionStorage.getItem(`paymentContext_${participationId}`);
+      if (!raw) {
+        setError("결제 정보를 찾을 수 없습니다. 좌석 선택 페이지로 돌아가 주세요.");
+        return;
+      }
+      let ctx: PaymentContext;
+      try {
+        ctx = JSON.parse(raw) as PaymentContext;
+      } catch {
+        setError("결제 정보가 올바르지 않습니다.");
+        return;
+      }
+      try {
+        const [f, m] = await Promise.all([
+          getFunding(ctx.fundingId),
+          getMyProfile(),
+        ]);
+        setContext(ctx);
         setFunding(f);
         setMember(m);
-      })
-      .catch(() => setError("정보를 불러오지 못했습니다."));
+      } catch {
+        setError("정보를 불러오지 못했습니다.");
+      }
+    }
+    void fetchData();
   }, [participationId]);
 
   function toggleAll(checked: boolean) {
@@ -80,6 +85,19 @@ export default function PaymentPage() {
   function handleRefund(checked: boolean) {
     setRefundAgreed(checked);
     setAllAgreed(privacyAgreed && checked);
+  }
+
+  async function handleBack() {
+    try {
+      if (funding?.myPaymentStatus === "PENDING") {
+        await cancelParticipation(participationId);
+      }
+    } catch (err) {
+      console.warn("참여 취소 실패 (이미 취소됐거나 완료):", err);
+    } finally {
+      sessionStorage.removeItem(`paymentContext_${participationId}`);
+      router.back();
+    }
   }
 
   async function handlePay() {
@@ -137,14 +155,14 @@ export default function PaymentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-sm px-4">
-          <p className="text-red-500 mb-4 text-sm">{error}</p>
-          <button onClick={() => router.back()} className="text-blue-600 underline text-sm">
-            돌아가기
-          </button>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-sm px-4">
+            <p className="text-red-500 mb-4 text-sm">{error}</p>
+            <button onClick={handleBack} className="text-blue-600 underline text-sm">
+              돌아가기
+            </button>
+          </div>
         </div>
-      </div>
     );
   }
 
@@ -160,7 +178,7 @@ export default function PaymentPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <button
-          onClick={() => router.back()}
+            onClick={handleBack}
           className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm mb-6"
         >
           ← 돌아가기

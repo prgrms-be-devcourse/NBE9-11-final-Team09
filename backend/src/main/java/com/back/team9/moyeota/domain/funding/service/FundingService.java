@@ -16,6 +16,8 @@ import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
+import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
@@ -36,10 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.back.team9.moyeota.domain.participation.entity.ParticipationStatus.ACTIVE;
@@ -130,19 +129,36 @@ public class FundingService {
         boolean isHost = memberId != null
                 && funding.getMember().getMemberId().equals(memberId);
 
-        boolean isJoined = memberId != null
-                && participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndStatus(
-                fundingId,
-                memberId,
-                ACTIVE
-        );
+        // 내 참여 이력 조회
+        Long myParticipationId = null;
+        ParticipationPaymentStatus myPaymentStatus = null;
+        boolean isJoined = false;
+        boolean isCanceled = false;
+
+        if (memberId != null) {
+            Optional<Participation> myParticipation = participationRepository
+                    .findByFunding_FundingIdAndMember_MemberId(fundingId, memberId);
+
+            if (myParticipation.isPresent()) {
+                Participation p = myParticipation.get();
+                myParticipationId = p.getParticipationId();
+                myPaymentStatus = p.getPaymentStatus();
+                isJoined = myPaymentStatus == ParticipationPaymentStatus.ACTIVE
+                        || myPaymentStatus == ParticipationPaymentStatus.COMPLETED;
+                isCanceled = p.getStatus() == ParticipationStatus.CANCELED;
+            }
+        }
+
         return FundingDetailResponse.from(
                 funding,
                 pathinfos,
                 currentParticipants,
                 chatRoomId,
                 isHost,
-                isJoined
+                isJoined,
+                myParticipationId,
+                myPaymentStatus,
+                isCanceled
         );
     }
 

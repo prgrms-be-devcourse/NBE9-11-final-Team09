@@ -86,6 +86,15 @@ public class Participation extends BaseEntity {
         this.paymentStatus = ParticipationPaymentStatus.CANCELED;
     }
 
+    // 취소된 참여를 재참여 처리
+    public void reapply(Seat outboundSeat, Seat returnSeat) {
+        this.status = ParticipationStatus.ACTIVE;
+        this.paymentStatus = ParticipationPaymentStatus.PENDING;
+        this.finalAmount = BigDecimal.ZERO;
+        this.outboundSeat = outboundSeat;
+        this.returnSeat = returnSeat;
+    }
+
     // 잔액 결제 완료 시 호출
     public void completePayment() {
         this.paymentStatus = ParticipationPaymentStatus.COMPLETED;

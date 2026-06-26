@@ -4,6 +4,8 @@ import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 
+import java.time.LocalDateTime;
+
 public record MyParticipationResponse(
         Long participationId,
         String fundingTitle,
@@ -12,7 +14,8 @@ public record MyParticipationResponse(
         String returnSeatNumber,
         ParticipationStatus status,
         ParticipationPaymentStatus paymentStatus,
-        boolean canBoard
+        boolean canBoard,
+        LocalDateTime departureTime
 ) {
 
     public static MyParticipationResponse from(Participation participation) {
@@ -38,7 +41,8 @@ public record MyParticipationResponse(
                 returnSeatNumber,
                 participation.getStatus(),
                 participation.getPaymentStatus(),
-                canBoard
+                canBoard,
+                participation.getOutboundSeat().getPathinfo().getDepartureTime()
         );
     }
 }

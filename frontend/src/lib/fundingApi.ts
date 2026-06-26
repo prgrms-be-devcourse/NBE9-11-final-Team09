@@ -173,3 +173,9 @@ export function createParticipation(
     body: JSON.stringify({ fundingId, outboundSeatId, returnSeatId }),
   });
 }
+
+export function cancelParticipation(participationId: number) {
+  return request<void>(`/api/participations/${participationId}`, {
+    method: "DELETE",
+  });
+}
