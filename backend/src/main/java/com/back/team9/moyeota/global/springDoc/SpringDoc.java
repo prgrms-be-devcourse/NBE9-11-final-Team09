@@ -2,7 +2,6 @@ package com.back.team9.moyeota.global.springDoc;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
@@ -28,11 +27,7 @@ import org.springframework.context.annotation.Configuration;
 
                         ### 인증
                         우측 상단 **Authorize** 버튼에서 `Bearer {accessToken}` 형식으로 입력 후 사용하세요.
-                        """,
-                contact = @Contact(
-                        name = "Team 9",
-                        email = "hssibs20@gmail.com"
-                )
+                        """
         ),
         servers = {
                 @Server(url = "http://localhost:8080", description = "로컬 개발 서버"),
