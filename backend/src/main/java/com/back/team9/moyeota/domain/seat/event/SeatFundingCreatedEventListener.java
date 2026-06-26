@@ -42,11 +42,9 @@ public class SeatFundingCreatedEventListener {
         log.info("펀딩 생성 이벤트 수신 - fundingId: {}, busType: {}, tripType: {}",
                 fundingId, busType, tripType);
 
-        // 해당 펀딩의 모든 노선 조회
         List<Pathinfo> pathinfos = pathinfoRepository
                 .findByFunding_FundingId(fundingId);
 
-        // 각 노선마다 좌석 생성
         for (Pathinfo pathinfo : pathinfos) {
             List<Seat> seats = createSeatsWithHostSeat(
                     pathinfo,
@@ -109,8 +107,6 @@ public class SeatFundingCreatedEventListener {
     }
 
     // 버스 종류에 따라 좌석 목록 생성
-    // BUS_25 → 1A~8C (24석)
-    // BUS_45 → 1A~11D (44석)
     private List<Seat> createSeats(Pathinfo pathinfo, BusType busType) {
         // busType null 방어 코드
         if (busType == null) {
@@ -121,11 +117,9 @@ public class SeatFundingCreatedEventListener {
         String[] columns;
 
         if (busType == BusType.BUS_25) {
-            // 25인승: 8행 × 3열 (A, B, C) = 24석
             maxRow = 8;
             columns = new String[]{"A", "B", "C"};
         } else if (busType == BusType.BUS_45) {
-            // 45인승: 11행 × 4열 (A, B, C, D) = 44석
             maxRow = 11;
             columns = new String[]{"A", "B", "C", "D"};
         } else {

@@ -8,7 +8,8 @@ import {
   regionLabels,
   tripTypeLabels,
 } from "@/lib/fundingFormat";
-import type { BusType, FundingPayload, Region } from "@/types/funding";
+import { getFundingPricePreview } from "@/lib/fundingApi";
+import type { FundingPayload } from "@/types/funding";
 import { REGIONS } from "@/types/funding";
 import type { Seat } from "@/types/funding";
 import { toTimeInput } from "@/lib/fundingFormat";
@@ -28,21 +29,6 @@ const MAX_PARTICIPANTS_BY_BUS_TYPE = {
 } as const;
 
 const MIN_DEPARTURE_OFFSET_DAYS = 14;
-
-const ONE_WAY_PRICES: Record<string, number> = {
-  [priceKey("SEOUL", "BUSAN", "BUS_45")]: 1742400,
-  [priceKey("SEOUL", "BUSAN", "BUS_25")]: 1210000,
-  [priceKey("SEOUL", "DAEJEON", "BUS_45")]: 774400,
-  [priceKey("SEOUL", "DAEJEON", "BUS_25")]: 550000,
-  [priceKey("SEOUL", "INCHEON", "BUS_45")]: 726000,
-  [priceKey("SEOUL", "INCHEON", "BUS_25")]: 495000,
-  [priceKey("SEOUL", "DAEGU", "BUS_45")]: 1369720,
-  [priceKey("SEOUL", "DAEGU", "BUS_25")]: 959200,
-  [priceKey("SEOUL", "GWANGJU", "BUS_45")]: 1452000,
-  [priceKey("SEOUL", "GWANGJU", "BUS_25")]: 1016400,
-  [priceKey("SEOUL", "ULSAN", "BUS_45")]: 1650440,
-  [priceKey("SEOUL", "ULSAN", "BUS_25")]: 1155000,
-};
 
 const defaultPayload: FundingPayload = {
   title: "",
@@ -77,6 +63,15 @@ export default function FundingForm({
     initialValue ?? defaultPayload
   );
   const [error, setError] = useState("");
+  const [pricePreview, setPricePreview] = useState<{
+    key: string;
+    totalPrice: number | null;
+    error: string;
+  }>({
+    key: "",
+    totalPrice: null,
+    error: "",
+  });
 
   const routeLocked = mode === "edit" && textOnly;
   const maxParticipants = MAX_PARTICIPANTS_BY_BUS_TYPE[payload.busType];
@@ -119,13 +114,35 @@ export default function FundingForm({
     payload.route.departureTime,
     payload.route.returnTime
   );
-  const priceSummary = getPriceSummary(
-    payload.route.departureRegion,
-    payload.route.arrivalRegion,
-    payload.busType,
-    payload.tripType,
-    payload.minParticipants,
-    maxParticipants
+  const priceRequestKey = useMemo(
+    () =>
+      [
+        payload.route.departureRegion,
+        payload.route.arrivalRegion,
+        payload.busType,
+        payload.tripType,
+      ].join(":"),
+    [
+      payload.busType,
+      payload.route.arrivalRegion,
+      payload.route.departureRegion,
+      payload.tripType,
+    ]
+  );
+  const hasSameRegion =
+    payload.route.departureRegion === payload.route.arrivalRegion;
+  const priceTotal =
+    pricePreview.key === priceRequestKey ? pricePreview.totalPrice : null;
+  const priceLoading =
+    !hasSameRegion && pricePreview.key !== priceRequestKey;
+  const priceError = hasSameRegion
+    ? "출발 지역과 도착 지역이 같으면 요금을 계산할 수 없습니다."
+    : pricePreview.key === priceRequestKey
+      ? pricePreview.error
+      : "";
+  const priceSummary = useMemo(
+    () => getPriceSummary(priceTotal, payload.minParticipants, maxParticipants),
+    [maxParticipants, payload.minParticipants, priceTotal]
   );
 
   function getRestoredOutboundSeat(busType: FundingPayload["busType"]) {
@@ -205,6 +222,54 @@ export default function FundingForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (hasSameRegion) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const preview = await getFundingPricePreview({
+          departureRegion: payload.route.departureRegion,
+          arrivalRegion: payload.route.arrivalRegion,
+          busType: payload.busType,
+          tripType: payload.tripType,
+        });
+
+        if (!ignore) {
+          setPricePreview({
+            key: priceRequestKey,
+            totalPrice: preview.totalPrice,
+            error: "",
+          });
+        }
+      } catch (err) {
+        if (!ignore) {
+          setPricePreview({
+            key: priceRequestKey,
+            totalPrice: null,
+            error:
+              err instanceof Error ? err.message : "요금을 계산하지 못했습니다.",
+          });
+        }
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    hasSameRegion,
+    payload.busType,
+    payload.route.arrivalRegion,
+    payload.route.departureRegion,
+    payload.tripType,
+    priceRequestKey,
+  ]);
 
   useEffect(() => {
     if (!isDirty || submitting) {
@@ -546,7 +611,9 @@ export default function FundingForm({
 
         <section className="grid gap-3 rounded border border-gray-200 bg-gray-50 p-4">
           <h2 className="text-lg font-semibold">예상 요금</h2>
-          {priceSummary ? (
+          {priceLoading ? (
+            <p className="text-sm text-gray-500">요금을 계산하는 중입니다.</p>
+          ) : priceSummary ? (
             <div className="grid gap-3 text-sm md:grid-cols-3">
               <div>
                 <p className="text-gray-500">총 가격</p>
@@ -573,7 +640,7 @@ export default function FundingForm({
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              선택한 노선의 요금을 계산할 수 없습니다.
+              {priceError || "선택한 노선의 요금을 계산할 수 없습니다."}
             </p>
           )}
         </section>
@@ -726,26 +793,14 @@ function createHostSeatMapSeats(
   return seats;
 }
 
-function priceKey(departureRegion: Region, arrivalRegion: Region, busType: BusType) {
-  return [[departureRegion, arrivalRegion].sort().join("-"), busType].join("-");
-}
-
 function getPriceSummary(
-  departureRegion: Region,
-  arrivalRegion: Region,
-  busType: BusType,
-  tripType: FundingPayload["tripType"],
+  totalPrice: number | null,
   minParticipants: number,
   maxParticipants: number
 ) {
-  const oneWayPrice =
-    ONE_WAY_PRICES[priceKey(departureRegion, arrivalRegion, busType)];
-
-  if (!oneWayPrice || minParticipants < 1 || maxParticipants < 1) {
+  if (!totalPrice || minParticipants < 1 || maxParticipants < 1) {
     return null;
   }
-
-  const totalPrice = tripType === "ROUND" ? oneWayPrice * 2 : oneWayPrice;
 
   return {
     totalPrice,

@@ -2,6 +2,6 @@ package com.back.team9.moyeota.domain.seat.entity;
 
 //좌석 상태 Enum - DB 저장 전용
 public enum SeatStatus {
-    AVAILABLE, //선택 가능한 빈 좌석
-    BOOKED //결제 완료된 확정 좌석
+    AVAILABLE,
+    BOOKED
 }

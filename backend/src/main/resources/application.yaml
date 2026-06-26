@@ -78,6 +78,9 @@ app:
       delay: 500
       multiplier: 2.0
       max-delay: 2000
+  cors:
+    allowed-origins:
+      "http://localhost:3000"
 
 social:
   kakao:

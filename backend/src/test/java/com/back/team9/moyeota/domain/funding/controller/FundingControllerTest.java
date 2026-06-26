@@ -429,6 +429,37 @@ class FundingControllerTest {
                 );
     }
 
+    @Test
+    @DisplayName("펀딩 금액 미리보기 성공")
+    void getPricePreview_withValidRequest_returnsTotalPrice() throws Exception {
+        // Given
+        given(fundingService.getPricePreview(
+                Region.INCHEON,
+                Region.SEOUL,
+                BusType.BUS_45,
+                TripType.ROUND
+        )).willReturn(new FundingPricePreviewResponse(BigDecimal.valueOf(1452000)));
+
+        // When / Then
+        mockMvc.perform(
+                        get("/api/fundings/price-preview")
+                                .param("departureRegion", "INCHEON")
+                                .param("arrivalRegion", "SEOUL")
+                                .param("busType", "BUS_45")
+                                .param("tripType", "ROUND")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.totalPrice").value(1452000));
+
+        verify(fundingService).getPricePreview(
+                Region.INCHEON,
+                Region.SEOUL,
+                BusType.BUS_45,
+                TripType.ROUND
+        );
+    }
+
     private void performCreateBadRequest(FundingCreateRequest request) throws Exception {
         mockMvc.perform(
                         post("/api/fundings")
