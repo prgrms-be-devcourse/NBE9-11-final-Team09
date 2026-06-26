@@ -1,6 +1,9 @@
 package com.back.team9.moyeota.domain.funding.controller;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.funding.entity.BusType;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
+import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import com.back.team9.moyeota.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,9 +16,21 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Funding", description = "버스 대절 펀딩 모집 생성·조회·수정·취소 API")
 public interface FundingControllerDocs {
+
+    @Operation(
+            summary = "펀딩 금액 미리보기",
+            description = "출발지·도착지·버스 타입·왕복 여부를 기반으로 보증금·잔액 예상 금액을 계산해 반환합니다. 펀딩 생성 전 금액 확인용입니다."
+    )
+    ResponseEntity<ApiResponse<FundingPricePreviewResponse>> getPricePreview(
+            @Parameter(description = "출발 지역", required = true) @RequestParam Region departureRegion,
+            @Parameter(description = "도착 지역", required = true) @RequestParam Region arrivalRegion,
+            @Parameter(description = "버스 타입", required = true) @RequestParam BusType busType,
+            @Parameter(description = "여행 타입 (편도/왕복)", required = true) @RequestParam TripType tripType
+    );
 
     @Operation(
             summary = "펀딩 생성",

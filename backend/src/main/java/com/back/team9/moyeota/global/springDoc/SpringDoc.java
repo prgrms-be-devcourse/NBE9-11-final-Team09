@@ -34,23 +34,23 @@ import org.springframework.context.annotation.Configuration;
                 @Server(url = "https://api.moyeota.com", description = "운영 서버")
         },
         tags = {
-                @Tag(name = "Member Auth",            description = "회원 이메일 인증·로그인·소셜 로그인 API"),
-                @Tag(name = "Member Profile",         description = "회원 프로필 조회·수정·탈퇴 API"),
-                @Tag(name = "Member History",         description = "회원 참여·모집·결제 내역 페이징 조회 API"),
-                @Tag(name = "Funding",                description = "버스 대절 펀딩 모집 생성·조회·수정·취소 API"),
-                @Tag(name = "Participation",          description = "펀딩 참여 신청·취소 및 참여자 목록 조회 API"),
-                @Tag(name = "Seat",                   description = "버스 좌석 배치도 조회 및 Redis 기반 5분 선점 API"),
-                @Tag(name = "Payment",                description = "Toss Payments 연동 결제(보증금·잔액·환불) API"),
-                @Tag(name = "Settlement",             description = "방장 페이백 정산 요청·조회 API"),
-                @Tag(name = "ChatRoom",               description = "WebSocket 기반 실시간 채팅방 REST API"),
-                @Tag(name = "Notification",           description = "실시간 이벤트 알림 조회 API"),
-                @Tag(name = "Admin Auth",             description = "관리자 로그인·로그아웃 API"),
-                @Tag(name = "Admin Member",           description = "관리자 회원 조회·강제 탈퇴 API"),
-                @Tag(name = "Admin Funding",          description = "관리자 펀딩 조회·강제 취소 API"),
-                @Tag(name = "Admin Payment",          description = "관리자 환불 재처리 API"),
-                @Tag(name = "Admin Settlement",       description = "관리자 페이백 승인·거절 API"),
-                @Tag(name = "Admin Settlement Query", description = "관리자 정산 내역 조회 API"),
-                @Tag(name = "Admin Statistics",       description = "관리자 서비스 현황 통계 API")
+                @Tag(name = "Member Auth"),
+                @Tag(name = "Member Profile"),
+                @Tag(name = "Member History"),
+                @Tag(name = "Funding"),
+                @Tag(name = "Participation"),
+                @Tag(name = "Seat"),
+                @Tag(name = "Payment"),
+                @Tag(name = "Settlement"),
+                @Tag(name = "ChatRoom"),
+                @Tag(name = "Notification"),
+                @Tag(name = "Admin Auth"),
+                @Tag(name = "Admin Member"),
+                @Tag(name = "Admin Funding"),
+                @Tag(name = "Admin Payment"),
+                @Tag(name = "Admin Settlement"),
+                @Tag(name = "Admin Settlement Query"),
+                @Tag(name = "Admin Statistics")
         }
 )
 @SecurityScheme(
