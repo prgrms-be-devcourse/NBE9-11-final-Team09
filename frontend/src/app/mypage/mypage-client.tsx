@@ -868,8 +868,7 @@ function MyParticipationItem({
   const canRefund = now < refundDeadline;
   const canShowCancel =
       item.status === "ACTIVE" &&
-      (item.paymentStatus === "PENDING" ||
-          item.paymentStatus === "ACTIVE") &&
+      item.paymentStatus === "ACTIVE" &&
       canCancel;
 
   function formatDeadlineDate(date: Date) {

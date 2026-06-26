@@ -153,14 +153,14 @@ export default function PaymentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-sm px-4">
-          <p className="text-red-500 mb-4 text-sm">{error}</p>
-          <button onClick={() => router.back()} className="text-blue-600 underline text-sm">
-            돌아가기
-          </button>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-sm px-4">
+            <p className="text-red-500 mb-4 text-sm">{error}</p>
+            <button onClick={handleBack} className="text-blue-600 underline text-sm">
+              돌아가기
+            </button>
+          </div>
         </div>
-      </div>
     );
   }
 
