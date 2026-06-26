@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
@@ -43,6 +44,7 @@ public class PaymentService {
     private final ParticipationService participationService;
     private final NotificationService notificationService;
     private final MailService mailService;
+    private final PaymentRedisService paymentRedisService;
 
     @Value("${admin.email}")
     private String adminEmail;
@@ -53,7 +55,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse confirmBalance(PaymentConfirmRequest request,  Long memberId) {
+    public PaymentResponse confirmBalance(PaymentConfirmRequest request, Long memberId) {
         PaymentResponse response = confirmPayment(request, PaymentType.BALANCE, memberId);
         participationService.completeBalancePayment(request.participationId());
         return response;
@@ -134,7 +136,7 @@ public class PaymentService {
         if (!payment.getParticipation().getMember().getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
-        if (payment.getStatus() == PaymentStatus.REFUNDED|| payment.getStatus() == PaymentStatus.REFUND_PENDING) {
+        if (payment.getStatus() == PaymentStatus.REFUNDED || payment.getStatus() == PaymentStatus.REFUND_PENDING) {
             throw new BusinessException(ErrorCode.ALREADY_REFUNDED);
         }
         if (payment.getStatus() != PaymentStatus.PAID) {
@@ -163,11 +165,11 @@ public class PaymentService {
     @Transactional
     public void refundByParticipationId(Long participationId) {
         List<Payment> payments = paymentRepository.findByParticipation_ParticipationId(participationId);
-        if(payments.isEmpty()){
+        if (payments.isEmpty()) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
 
-        for(Payment payment : payments){
+        for (Payment payment : payments) {
             if (payment.getStatus() != PaymentStatus.PAID) {
                 continue;
             }
@@ -187,40 +189,46 @@ public class PaymentService {
 
     @Transactional
     public PaymentPrepareResponse prepare(Long participationId, Long memberId) {
-        Participation participation = participationRepository.findById(participationId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
+        paymentRedisService.lockPrepare(participationId);
+        try {
+            Participation participation = participationRepository.findById(participationId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
-        if (!participation.getMember().getMemberId().equals(memberId)) {
-            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+            if (!participation.getMember().getMemberId().equals(memberId)) {
+                throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+            }
+
+            Funding funding = participation.getFunding();
+            BigDecimal deposit = FundingPricePolicy.calculateRoundedPrice(
+                            funding.getTotalPrice(),
+                            funding.getMaxParticipants() + 1
+                    )
+                    .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
+
+            BigDecimal amount;
+            if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
+                amount = participation.getFinalAmount().subtract(deposit);
+            } else {
+                amount = deposit;
+            }
+
+            List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
+                    PaymentStatus.PENDING);
+            paymentRepository.deleteAll(existingPendings);
+
+            String orderId = UUID.randomUUID().toString();
+            Payment payment = Payment.builder()
+                    .participation(participation)
+                    .orderId(orderId)
+                    .amount(amount)
+                    .status(PaymentStatus.PENDING)
+                    .build();
+            paymentWriter.save(payment);
+
+            return new PaymentPrepareResponse(orderId, amount);
+        } finally {
+            paymentRedisService.unlockPrepare(participationId);
         }
-
-        Funding funding = participation.getFunding();
-        BigDecimal deposit = funding.getTotalPrice()
-                .divide(BigDecimal.valueOf(funding.getMaxParticipants() + 1), 0, RoundingMode.CEILING)
-                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
-
-        BigDecimal amount;
-        if (participation.getFinalAmount().compareTo(BigDecimal.ZERO) > 0) {
-            amount = participation.getFinalAmount().subtract(deposit);
-        } else {
-            amount = deposit;
-        }
-
-
-        List<Payment> existingPendings = paymentRepository.findAllByParticipation_ParticipationIdAndStatus(participationId,
-                PaymentStatus.PENDING);
-        paymentRepository.deleteAll(existingPendings);
-
-        String orderId = UUID.randomUUID().toString();
-        Payment payment = Payment.builder()
-                .participation(participation)
-                .orderId(orderId)
-                .amount(amount)
-                .status(PaymentStatus.PENDING)
-                .build();
-        paymentWriter.save(payment);
-
-        return new PaymentPrepareResponse(orderId, amount);
     }
 
     @Transactional

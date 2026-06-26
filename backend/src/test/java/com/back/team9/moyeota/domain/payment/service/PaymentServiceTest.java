@@ -1,6 +1,7 @@
 package com.back.team9.moyeota.domain.payment.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.notification.service.MailService;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
@@ -59,6 +60,7 @@ class PaymentServiceTest {
     @Mock private ParticipationService participationService;
     @Mock private NotificationService notificationService;
     @Mock private MailService mailService;
+    @Mock private PaymentRedisService paymentRedisService;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -129,9 +131,8 @@ class PaymentServiceTest {
 
         PaymentPrepareResponse response = paymentService.prepare(1L, 1L);
 
-        // 보증금 = totalPrice / (maxParticipants+1) / 2 = 500000 / 44 / 2
-        BigDecimal expectedAmount = totalPrice
-                .divide(BigDecimal.valueOf(44), 0, RoundingMode.CEILING)
+        // 보증금 = 방장 포함 최소금액(100원 올림) / 2
+        BigDecimal expectedAmount = FundingPricePolicy.calculateRoundedPrice(totalPrice, 44)
                 .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
         assertThat(response.orderId()).isNotBlank();
         assertThat(response.orderId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");

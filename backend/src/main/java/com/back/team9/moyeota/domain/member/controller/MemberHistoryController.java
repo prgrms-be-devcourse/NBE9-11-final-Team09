@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/members")
-public class MemberHistoryController {
+public class MemberHistoryController implements MemberHistoryControllerDocs {
 
     public MemberHistoryController(
             MemberHistoryService memberHistoryService

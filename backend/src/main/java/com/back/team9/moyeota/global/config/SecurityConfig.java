@@ -1,6 +1,6 @@
 package com.back.team9.moyeota.global.config;
 
-import com.back.team9.moyeota.global.jwt.JwtAuthenticationFilter;
+import com.back.team9.moyeota.global.jwt.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +58,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

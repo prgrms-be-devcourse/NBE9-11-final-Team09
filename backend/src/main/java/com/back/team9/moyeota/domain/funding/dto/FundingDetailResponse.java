@@ -54,12 +54,12 @@ public record FundingDetailResponse(
 
         BigDecimal minPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
-                funding.getMaxParticipants()
+                funding.getMaxParticipants() + 1
         );
 
         BigDecimal maxPrice = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
-                funding.getMinParticipants()
+                funding.getMinParticipants() + 1
         );
 
         return new FundingDetailResponse(

@@ -643,6 +643,9 @@ export default function FundingForm({
               {priceError || "선택한 노선의 요금을 계산할 수 없습니다."}
             </p>
           )}
+          <p className="text-xs text-gray-500">
+            1인 예상가는 방장 좌석을 포함한 기준이며, 방장에게는 별도 결제가 진행되지 않습니다.
+          </p>
         </section>
 
         <section className="grid gap-4">
@@ -804,8 +807,8 @@ function getPriceSummary(
 
   return {
     totalPrice,
-    minPrice: roundUpToHundred(totalPrice / maxParticipants),
-    maxPrice: roundUpToHundred(totalPrice / minParticipants),
+    minPrice: roundUpToHundred(totalPrice / (maxParticipants + 1)),
+    maxPrice: roundUpToHundred(totalPrice / (minParticipants + 1)),
   };
 }
 

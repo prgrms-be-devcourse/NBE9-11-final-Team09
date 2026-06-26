@@ -4,8 +4,8 @@ import com.back.team9.moyeota.domain.notification.controller.NotificationControl
 import com.back.team9.moyeota.domain.notification.dto.NotificationResponse;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
-import com.back.team9.moyeota.global.jwt.JwtAuthenticationFilter;
-import com.back.team9.moyeota.global.jwt.JwtTokenProvider;
+import com.back.team9.moyeota.global.jwt.filter.JwtAuthenticationFilter;
+import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

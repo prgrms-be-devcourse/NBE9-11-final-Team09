@@ -18,7 +18,7 @@ import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/members")
-public class MemberAuthController {
+public class MemberAuthController implements MemberAuthControllerDocs {
 
     public MemberAuthController(
             MemberService memberService,
