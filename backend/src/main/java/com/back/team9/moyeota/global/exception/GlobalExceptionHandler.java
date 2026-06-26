@@ -2,6 +2,7 @@ package com.back.team9.moyeota.global.exception;
 
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.response.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler{
 
@@ -45,6 +47,7 @@ public class GlobalExceptionHandler{
     // 4. 핸들링하지 못한 기타 모든 예외 (500 Error)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e){
+        log.error("[UNHANDLED] {}", e.getMessage(), e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
