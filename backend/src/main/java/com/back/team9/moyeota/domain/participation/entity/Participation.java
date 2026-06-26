@@ -47,7 +47,7 @@ public class Participation extends BaseEntity {
     @Column(nullable = false)
     private ParticipationStatus status;
 
-    // 가는편 좌석 (필수 - 모든 펀딩은 최소 가는편은 있어야 함)
+    // 가는편 좌석 (필수)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "outbound_seat_id", nullable = false)
     private Seat outboundSeat;
@@ -67,7 +67,7 @@ public class Participation extends BaseEntity {
         return Participation.builder()
                 .funding(funding)
                 .member(member)
-                .paymentStatus(ParticipationPaymentStatus.PENDING) // 참여 생성 후 보증금 결제 대기
+                .paymentStatus(ParticipationPaymentStatus.PENDING)
                 .finalAmount(BigDecimal.ZERO)
                 .status(ParticipationStatus.ACTIVE)
                 .outboundSeat(outboundSeat)
@@ -81,8 +81,6 @@ public class Participation extends BaseEntity {
     }
 
     //참여 취소 시 호출되는 비즈니스 메서드
-    //환불 가능 여부(출발 -10일 기준) 판단은 Service 계층에서 먼저 검증 후 호출해야 함
-    // 이 메서드는 "취소 가능"이 확정된 이후의 상태 변경만 담당
     public void cancel() {
         this.status = ParticipationStatus.CANCELED;
         this.paymentStatus = ParticipationPaymentStatus.CANCELED;
