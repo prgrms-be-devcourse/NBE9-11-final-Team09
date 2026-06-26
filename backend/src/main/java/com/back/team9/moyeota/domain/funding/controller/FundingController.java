@@ -16,7 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/fundings")
-public class FundingController {
+public class FundingController implements FundingControllerDocs {
 
     private final FundingService fundingService;
 

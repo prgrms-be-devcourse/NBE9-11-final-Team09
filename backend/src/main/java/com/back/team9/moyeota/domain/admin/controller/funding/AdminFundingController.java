@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/fundings")
-public class AdminFundingController {
+public class AdminFundingController implements AdminFundingControllerDocs {
 
     private final AdminFundingService adminFundingService;
 

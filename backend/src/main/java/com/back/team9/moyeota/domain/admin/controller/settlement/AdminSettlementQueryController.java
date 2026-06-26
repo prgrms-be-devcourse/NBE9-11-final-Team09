@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/settlements")
-public class AdminSettlementQueryController {
+public class AdminSettlementQueryController implements AdminSettlementQueryControllerDocs {
 
     private final AdminSettlementQueryService adminSettlementQueryService;
 

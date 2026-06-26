@@ -20,7 +20,7 @@ import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/members")
-public class MemberProfileController {
+public class MemberProfileController implements MemberProfileControllerDocs {
 
     public MemberProfileController(
             MemberProfileService memberProfileService,
