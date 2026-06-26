@@ -22,7 +22,7 @@ public class Seat extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long seatId;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 좌석을 예약한 참여자
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "participation_id")
     private Participation participation;
 
@@ -30,14 +30,14 @@ public class Seat extends BaseEntity {
     @JoinColumn(name = "host_member_id")
     private Member hostMember;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 여러 좌석이 하나의 노선에 속함
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pathinfo_id", nullable = false)
     private Pathinfo pathinfo;
 
-    @Column(nullable = false) // 버스 좌석 번호
+    @Column(nullable = false)
     private String seatNumber;
 
-    @Enumerated(EnumType.STRING) // Enum 이름 그대로 DB에 저장
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SeatStatus status;
 
