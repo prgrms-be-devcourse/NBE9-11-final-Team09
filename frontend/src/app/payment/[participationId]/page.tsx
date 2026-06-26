@@ -89,9 +89,11 @@ export default function PaymentPage() {
 
   async function handleBack() {
     try {
-      await cancelParticipation(participationId);
+      if (funding?.myPaymentStatus === "PENDING") {
+        await cancelParticipation(participationId);
+      }
     } catch (err) {
-      console.warn("참여 취소 실패 (이미 취소됐거나 만료):", err);
+      console.warn("참여 취소 실패 (이미 취소됐거나 완료):", err);
     } finally {
       sessionStorage.removeItem(`paymentContext_${participationId}`);
       router.back();

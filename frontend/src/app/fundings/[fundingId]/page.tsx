@@ -42,10 +42,21 @@ export default function FundingDetailPage() {
     const departureTime = outboundPathinfo ? new Date(outboundPathinfo.departureTime) : null;
 
     const refundDeadline = departureTime
-        ? new Date(new Date(departureTime).setDate(departureTime.getDate() - 10))
+        ? (() => {
+            const d = new Date(departureTime);
+            d.setDate(d.getDate() - 10);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        })()
         : null;
+
     const cancelDeadline = departureTime
-        ? new Date(new Date(departureTime).setDate(departureTime.getDate() - 7))
+        ? (() => {
+            const d = new Date(departureTime);
+            d.setDate(d.getDate() - 7);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        })()
         : null;
     const now = new Date();
     const canCancel = cancelDeadline ? now < cancelDeadline : false;

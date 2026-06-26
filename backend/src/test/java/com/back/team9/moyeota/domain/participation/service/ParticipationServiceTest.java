@@ -47,6 +47,8 @@ import static org.mockito.Mockito.any;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 
+import static org.mockito.ArgumentMatchers.eq;
+
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
 
@@ -79,8 +81,6 @@ class ParticipationServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
 
-
-
     @BeforeEach
     void setUp() {
         participationService = serviceWithClock(FIXED_CLOCK);
@@ -99,7 +99,6 @@ class ParticipationServiceTest {
         );
     }
 
-    // 원하는 순간을 지금으로 만드는 Clock 생성
     private Clock clockAt(LocalDateTime dateTime) {
         return Clock.fixed(dateTime.atZone(ZONE).toInstant(), ZONE);
     }
@@ -112,42 +111,39 @@ class ParticipationServiceTest {
         Long fundingId = 10L;
         Long outboundSeatId = 100L;
 
-        // 요청 DTO - 편도라 returnSeatId는 null
         ParticipationCreateRequest request = new ParticipationCreateRequest(
                 fundingId,
                 outboundSeatId,
                 null
         );
 
-        // Funding Mock - 편도(ONE_WAY), 모집중(RECRUITING), 정원 10명
         Funding funding = mock(Funding.class);
         given(funding.getFundingId()).willReturn(fundingId);
         given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
         given(funding.getMaxParticipants()).willReturn(10);
         given(funding.getTripType()).willReturn(TripType.ONE_WAY);
 
-        // Member Mock
         Member member = mock(Member.class);
 
-        // outboundSeat과 연결된 Pathinfo Mock - 이 펀딩의 OUTBOUND 노선
         Pathinfo outboundPathinfo = mock(Pathinfo.class);
         given(outboundPathinfo.getFunding()).willReturn(funding);
         given(outboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
 
-        // outboundSeat Mock - 예약 가능한 상태
         Seat outboundSeat = mock(Seat.class);
         given(outboundSeat.getSeatId()).willReturn(outboundSeatId);
         given(outboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
         given(outboundSeat.getPathinfo()).willReturn(outboundPathinfo);
 
-        // Repository Mock 동작 정의
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
                 fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
+        given(participationRepository.findByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(Optional.empty());
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
 
         // When
@@ -206,10 +202,13 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
+        given(participationRepository.findByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(Optional.empty());
         given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.of(outboundSeat));
         given(seatRepository.findByIdWithPathinfoAndFunding(returnSeatId)).willReturn(Optional.of(returnSeat));
 
@@ -357,7 +356,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(true);
 
         // When & Then
@@ -391,7 +391,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(10L);
@@ -429,11 +430,13 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
-        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId)).willReturn(Optional.empty());
+        given(seatRepository.findByIdWithPathinfoAndFunding(outboundSeatId))
+                .willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> participationService.createParticipation(memberId, request))
@@ -468,7 +471,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
@@ -515,7 +519,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
@@ -559,7 +564,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
@@ -604,7 +610,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);
@@ -624,7 +631,7 @@ class ParticipationServiceTest {
         Long memberId = 1L;
         Long fundingId = 10L;
         Long outboundSeatId = 100L;
-        Long returnSeatId = 200L; // 편도인데 returnSeatId를 보냄
+        Long returnSeatId = 200L;
 
         ParticipationCreateRequest request = new ParticipationCreateRequest(
                 fundingId,
@@ -650,7 +657,8 @@ class ParticipationServiceTest {
 
         given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(participationRepository.existsByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
                 .willReturn(false);
         given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
                 .willReturn(0L);

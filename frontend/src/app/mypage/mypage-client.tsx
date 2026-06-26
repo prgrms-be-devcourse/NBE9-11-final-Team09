@@ -860,8 +860,11 @@ function MyParticipationItem({
   const departureTime = new Date(item.departureTime);
   const refundDeadline = new Date(departureTime);
   refundDeadline.setDate(refundDeadline.getDate() - 10);
+  refundDeadline.setHours(0, 0, 0, 0);
+
   const cancelDeadline = new Date(departureTime);
   cancelDeadline.setDate(cancelDeadline.getDate() - 7);
+  cancelDeadline.setHours(0, 0, 0, 0);
 
   const now = new Date();
   const canCancel = now < cancelDeadline;
