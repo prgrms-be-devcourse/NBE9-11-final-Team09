@@ -15,6 +15,8 @@
   PageResponse,
 } from "@/types/member";
 
+import { createApiUrl } from "@/lib/api-url";
+
 const ACCESS_TOKEN_KEY = "accessToken";
 
 export class AuthenticationRequiredError extends Error {
@@ -109,7 +111,7 @@ async function publicRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(createApiUrl(path), {
     ...init,
     headers,
     cache: "no-store",
@@ -147,7 +149,7 @@ export async function authorizedRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(createApiUrl(path), {
     ...init,
     headers,
     cache: "no-store",
