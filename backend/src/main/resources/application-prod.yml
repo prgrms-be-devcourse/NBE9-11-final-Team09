@@ -26,5 +26,4 @@ app:
     secure: true
   cors:
     allowed-origins:
-      - https://www.moyeota.site
-      - https://moyeota.site
+      "https://www.moyeota.site,https://moyeota.site"

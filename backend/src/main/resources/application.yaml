@@ -80,7 +80,7 @@ app:
       max-delay: 2000
   cors:
     allowed-origins:
-      - http://localhost:3000
+      "http://localhost:3000"
 
 social:
   kakao:
