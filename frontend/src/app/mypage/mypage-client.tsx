@@ -906,7 +906,9 @@ function MyParticipationItem({
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusBadge status={item.status} />
-                <StatusBadge status={item.paymentStatus} />
+                {item.paymentStatus !== "CANCELED" && (
+                    <StatusBadge status={item.paymentStatus} />
+                )}
                 <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
                     item.canBoard
                         ? "bg-emerald-50 text-emerald-700 ring-emerald-600/15"
