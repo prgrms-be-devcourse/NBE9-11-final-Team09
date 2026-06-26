@@ -3,10 +3,8 @@ package com.back.team9.moyeota.domain.funding.service;
 import com.back.team9.moyeota.domain.chatroom.entity.ChatRoom;
 import com.back.team9.moyeota.domain.chatroom.repository.ChatRoomRepository;
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.funding.entity.BusType;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
-import com.back.team9.moyeota.domain.notification.entity.NotificationType;
-import com.back.team9.moyeota.domain.notification.service.NotificationService;
-import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.event.FundingCreatedEvent;
 import com.back.team9.moyeota.domain.funding.event.FundingSeatsRecreateEvent;
@@ -15,12 +13,15 @@ import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.funding.validator.FundingValidator;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.repository.MemberRepository;
+import com.back.team9.moyeota.domain.notification.entity.NotificationType;
+import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.pathinfo.dto.PathinfoResponse;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Pathinfo;
+import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.pathinfo.service.PathinfoService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -197,6 +198,23 @@ public class FundingService {
                 );
 
         return PageResponse.from(response);
+    }
+
+    // 펀딩 가격
+    public FundingPricePreviewResponse getPricePreview(
+            Region departureRegion,
+            Region arrivalRegion,
+            BusType busType,
+            TripType tripType
+    ) {
+        return new FundingPricePreviewResponse(
+                FundingPricePolicy.calculateTotalPrice(
+                        departureRegion,
+                        arrivalRegion,
+                        busType,
+                        tripType
+                )
+        );
     }
 
     // 펀딩 취소(방장검증, 연결된 노선 취소 처리)

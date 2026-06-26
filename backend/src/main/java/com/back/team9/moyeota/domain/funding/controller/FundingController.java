@@ -1,6 +1,9 @@
 package com.back.team9.moyeota.domain.funding.controller;
 
 import com.back.team9.moyeota.domain.funding.dto.*;
+import com.back.team9.moyeota.domain.funding.entity.BusType;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
+import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.back.team9.moyeota.domain.funding.service.FundingService;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import com.back.team9.moyeota.global.response.PageResponse;
@@ -19,6 +22,30 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 public class FundingController implements FundingControllerDocs {
 
     private final FundingService fundingService;
+
+    @GetMapping("/price-preview")
+    public ResponseEntity<ApiResponse<FundingPricePreviewResponse>> getPricePreview(
+            @RequestParam Region departureRegion,
+            @RequestParam Region arrivalRegion,
+            @RequestParam BusType busType,
+            @RequestParam TripType tripType
+    ) {
+        FundingPricePreviewResponse response =
+                fundingService.getPricePreview(
+                        departureRegion,
+                        arrivalRegion,
+                        busType,
+                        tripType
+                );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "SUCCESS",
+                        "펀딩 금액 미리보기 성공",
+                        response
+                )
+        );
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<FundingCreateResponse>> createFunding(

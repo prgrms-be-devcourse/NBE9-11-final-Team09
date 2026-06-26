@@ -112,6 +112,27 @@ public class FundingPricePolicy {
                 : oneWayPrice;
     }
 
+    public static BigDecimal calculateTotalPrice(
+            Region departureRegion,
+            Region arrivalRegion,
+            BusType busType,
+            TripType tripType
+    ) {
+        if (tripType == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATH_CONFIGURATION);
+        }
+
+        BigDecimal oneWayPrice = getOneWayPrice(
+                departureRegion,
+                arrivalRegion,
+                busType
+        );
+
+        return tripType == TripType.ROUND
+                ? oneWayPrice.multiply(ROUND_TRIP_MULTIPLIER)
+                : oneWayPrice;
+    }
+
     private static BigDecimal getOneWayPrice(
             Region departureRegion,
             Region arrivalRegion,

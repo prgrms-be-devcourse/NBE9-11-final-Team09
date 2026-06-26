@@ -11,8 +11,6 @@ import java.util.Optional;
 
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
-    // 특정 노선의 전체 좌석 조회 (좌석 배치도 조회용)
-    // findByPathinfo_PathinfoId → pathinfo 필드의 pathinfoId로 조회
     List<Seat> findByPathinfo_PathinfoId(Long pathinfoId);
 
     @Modifying(
@@ -27,7 +25,6 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
             @Param("pathinfoId") Long pathinfoId
     );
 
-    // 좌석, 노선, 펀딩 함께 조회
     @Query("""
             SELECT s
             FROM Seat s

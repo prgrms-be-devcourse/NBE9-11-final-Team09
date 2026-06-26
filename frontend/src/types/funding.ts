@@ -118,6 +118,10 @@ export type FundingCreateResponse = {
   createdAt: string;
 };
 
+export type FundingPricePreviewResponse = {
+  totalPrice: number;
+};
+
 export type Seat = {
   seatId: number;
   seatNumber: string;
