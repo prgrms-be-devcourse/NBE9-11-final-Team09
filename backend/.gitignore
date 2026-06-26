@@ -42,3 +42,6 @@ application-secret.yaml
 .env
 
 *.sql
+
+# k6 local test scripts
+k6/
