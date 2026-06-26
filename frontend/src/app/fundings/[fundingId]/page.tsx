@@ -273,8 +273,8 @@ export default function FundingDetailPage() {
                                 value={
                                     funding.currentParticipants >= funding.minParticipants
                                         ? formatMoney(
-                                            Math.ceil(
-                                                Number(funding.totalPrice) / funding.currentParticipants
+                                            roundUpToHundred(
+                                                Number(funding.totalPrice) / (funding.currentParticipants + 1)
                                             )
                                         )
                                         : "최소 인원 모집 후 표시"
@@ -305,6 +305,10 @@ function Summary({ label, value }: { label: string; value: string }) {
             <p className="mt-2 text-lg font-bold">{value}</p>
         </div>
     );
+}
+
+function roundUpToHundred(value: number) {
+    return Math.ceil(value / 100) * 100;
 }
 
 function RouteLine({ title, pathinfo }: { title: string; pathinfo: Pathinfo }) {

@@ -67,12 +67,7 @@ export default function SeatsPage() {
 
                 setOutboundRouteInfo(`${outbound.departureAddress} → ${outbound.arrivalAddress}`);
 
-                const perPerson =
-                    funding.currentParticipants > 0
-                        ? Math.ceil(Number(funding.totalPrice) / funding.currentParticipants)
-                        : Number(funding.minPrice);
-
-                setFinalAmount(perPerson);
+                setFinalAmount(Math.ceil(Number(funding.minPrice) / 2));
 
                 const layout = await getSeatLayout(outbound.pathinfoId);
                 setSeatLayout(layout);
