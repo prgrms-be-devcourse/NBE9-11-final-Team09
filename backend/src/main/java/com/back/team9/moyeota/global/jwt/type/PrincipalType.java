@@ -1,4 +1,4 @@
-package com.back.team9.moyeota.global.jwt;
+package com.back.team9.moyeota.global.jwt.type;
 
 public enum PrincipalType {
     MEMBER,

@@ -6,7 +6,7 @@ import com.back.team9.moyeota.domain.admin.service.auth.AdminLoginService;
 import com.back.team9.moyeota.domain.admin.service.auth.AdminLogoutService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
-import com.back.team9.moyeota.global.jwt.JwtTokenResolver;
+import com.back.team9.moyeota.global.jwt.resolver.JwtTokenResolver;
 import com.back.team9.moyeota.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
