@@ -51,6 +51,11 @@ export default function FundingDetailPage() {
     const canCancel = cancelDeadline ? now < cancelDeadline : false;
     const canRefund = refundDeadline ? now < refundDeadline : false;
 
+    const canShowCancel =
+        isJoined &&
+        canCancel &&
+        funding?.myPaymentStatus !== "NO_SHOW";
+
     function formatDate(date: Date) {
         return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
     }
@@ -243,7 +248,7 @@ export default function FundingDetailPage() {
                                     </button>
                                 )}
 
-                                {isJoined && canCancel && (
+                                {canShowCancel && (
                                     <button
                                         type="button"
                                         onClick={() => setCancelModal(true)}
@@ -323,7 +328,14 @@ export default function FundingDetailPage() {
                     <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
                         <h2 className="text-base font-bold text-gray-900 mb-3">참여를 취소하시겠습니까?</h2>
                         <p className="text-sm text-gray-600 mb-1">
-                            {canRefund ? "취소 시 보증금이 전액 환불됩니다." : "보증금은 환불되지 않습니다."}
+                            {canRefund ? (
+                                "취소 시 보증금이 전액 환불됩니다."
+                            ) : (
+                                <>
+                                    <span className="font-semibold">{formatDate(refundDeadline!)}</span>{" "}
+                                    자정 이후 취소되어 보증금은 환불되지 않습니다.
+                                </>
+                            )}
                         </p>
                         {cancelDeadline && (
                             <p className="text-sm text-gray-600 mb-1">
