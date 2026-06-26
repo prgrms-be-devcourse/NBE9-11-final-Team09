@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFundingLoggedIn } from "@/lib/fundingAuth";
-import { deleteFunding, getFunding } from "@/lib/fundingApi";
+import { deleteFunding, getFunding, cancelParticipation } from "@/lib/fundingApi";
 import { getChatRoomByFundingId } from "@/lib/chatApi";
 import {
     busTypeLabels,
@@ -74,6 +74,18 @@ export default function FundingDetailPage() {
             setError(err instanceof Error ? err.message : "펀딩 취소에 실패했습니다.");
         } finally {
             setDeleting(false);
+        }
+    }
+
+    async function handleCancelParticipation() {
+        if (!window.confirm("참여를 취소하시겠습니까?")) return;
+
+        setError("");
+        try {
+            // 참여 내역에서 participationId를 가져와야 해요
+            // funding.myParticipationId 같은 필드가 있나요?
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "참여 취소에 실패했습니다.");
         }
     }
 
