@@ -183,23 +183,34 @@ public class ParticipationService {
     @Transactional
     public void cancelParticipation(Long memberId, Long participationId) {
 
-        // 본인 참여 내역 조회
         Participation participation = participationRepository
                 .findByParticipationIdAndMember_MemberId(participationId, memberId)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
-        // 이미 취소된 참여인지 확인
         if (participation.getStatus() == ParticipationStatus.CANCELED) {
             throw new BusinessException(ErrorCode.ALREADY_CANCELED_PARTICIPATION);
         }
 
-        // 가는편 좌석의 출발 시각을 기준으로 취소 가능 시점 판단
+        // PENDING 상태 (결제 전 취소) → 날짜 제한 없이 즉시 취소 + Redis HOLD 해제만
+        if (participation.getPaymentStatus() == ParticipationPaymentStatus.PENDING) {
+            Long outboundSeatId = participation.getOutboundSeat().getSeatId();
+            releaseSeatHoldSafely(outboundSeatId, memberId);
+
+            Seat returnSeat = participation.getReturnSeat();
+            if (returnSeat != null) {
+                releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
+            }
+
+            participation.cancel();
+            return;
+        }
+
+        // ACTIVE 상태 (보증금 결제 완료 후 취소) → 7일/10일 정책 적용
         LocalDateTime departureTime = participation.getOutboundSeat()
                 .getPathinfo()
                 .getDepartureTime();
 
-        // 현재 시각을 한 번만 구해서 재사용 (취소/환불 두 판단이 같은 순간 기준이 되도록)
         LocalDateTime now = LocalDateTime.now(clock);
 
         LocalDateTime cancelDeadline = departureTime
@@ -207,7 +218,6 @@ public class ParticipationService {
                 .minusDays(7)
                 .atStartOfDay();
 
-        // 출발 7일 전 자정 이후엔 참여 취소 요청 자체를 허용하지 않음
         if (now.isAfter(cancelDeadline)) {
             throw new BusinessException(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED);
         }
@@ -217,7 +227,6 @@ public class ParticipationService {
                 .minusDays(10)
                 .atStartOfDay();
 
-        // 10일 전 이전 취소일 때만 이벤트 발행(환불 대상)
         if (now.isBefore(refundDeadline)) {
             eventPublisher.publishEvent(
                     new ParticipationCancelledEvent(participationId)
@@ -234,7 +243,6 @@ public class ParticipationService {
 
 
     // ============================== 3. 참여자 목록 조회 ==============================
-    // 로그인한 사용자의 참여 내역을 최신순으로 반환
     @Transactional(readOnly = true)
     public List<MyParticipationResponse> getMyParticipations(Long memberId) {
 
