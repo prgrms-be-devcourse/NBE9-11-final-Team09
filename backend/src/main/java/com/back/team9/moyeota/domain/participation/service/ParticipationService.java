@@ -136,16 +136,6 @@ public class ParticipationService {
 
         participationRepository.save(participation);
 
-        if (currentParticipants + 1 == funding.getMinParticipants()) {
-            try {
-                Long fundingId = funding.getFundingId();
-                notificationService.sendToFundingHost(funding.getMember().getMemberId(), fundingId, NotificationType.MIN_REACHED);
-                notificationService.sendToFundingParticipants(fundingId, NotificationType.MIN_REACHED);
-            } catch (Exception e) {
-                log.warn("MIN_REACHED 알림 발송 실패 — fundingId={}", funding.getFundingId(), e);
-            }
-        }
-
         return ParticipationResponse.from(participation);
     }
 
@@ -201,6 +191,25 @@ public class ParticipationService {
         }
         if (tripType == TripType.ONE_WAY && returnSeatId != null) {
             throw new BusinessException(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED);
+        }
+    }
+
+    private void sendMinReachedNotification(Funding funding) {
+        Long fundingId = funding.getFundingId();
+
+        try {
+            notificationService.sendMimeMessage(funding.getMember().getMemberId(), fundingId, NotificationType.MIN_REACHED);
+        } catch (Exception e) {
+            log.warn("MIN_REACHED 호스트 알림 발송 실패 — fundingId={}", fundingId, e);
+        }
+
+        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
+        for (Long memberId : memberIds) {
+            try {
+                notificationService.sendMimeMessage(memberId, fundingId, NotificationType.MIN_REACHED);
+            } catch (Exception e) {
+                log.warn("MIN_REACHED 참여자 알림 발송 실패 — fundingId={}, memberId={}", fundingId, memberId, e);
+            }
         }
     }
 
@@ -339,6 +348,14 @@ public class ParticipationService {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
         participation.confirmPayment();
+
+        Funding funding = participation.getFunding();
+        long activeCount = participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
+                funding.getFundingId(), List.of(ParticipationPaymentStatus.ACTIVE)
+        );
+        if (activeCount == funding.getMinParticipants()) {
+            sendMinReachedNotification(funding);
+        }
     }
 
     // ============================== 5. 결제 실패 시 참여 취소 ==============================
