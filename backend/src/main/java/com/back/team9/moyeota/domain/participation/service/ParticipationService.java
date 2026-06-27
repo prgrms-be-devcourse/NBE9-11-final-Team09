@@ -11,6 +11,7 @@ import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.FundingMinReachedEvent;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
@@ -21,8 +22,6 @@ import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
-import com.back.team9.moyeota.domain.notification.entity.NotificationType;
-import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -53,7 +52,6 @@ public class ParticipationService {
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
     private final ApplicationEventPublisher eventPublisher;
-    private final NotificationService notificationService;
     private final Clock clock;
 
     // ============================== 1. 참여 신청 ==============================
@@ -72,7 +70,10 @@ public class ParticipationService {
         validateFundingStatus(funding);
 
         // 결제 이탈 후 재진입 — PENDING 참여 자동 취소
-        participationRepository.findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId)
+        Optional<Participation> existingParticipation = participationRepository
+                .findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId);
+
+        existingParticipation
                 .filter(p -> p.getPaymentStatus() == ParticipationPaymentStatus.PENDING)
                 .ifPresent(p -> {
                     releaseSeatHoldSafely(p.getOutboundSeat().getSeatId(), memberId);
@@ -123,10 +124,7 @@ public class ParticipationService {
                     Direction.RETURN
             );
         }
-        // 기존 참여 이력 확인
-        Optional<Participation> existingParticipation = participationRepository
-                .findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId);
-
+        // 기존 참여 이력 확인 (CANCELED 재신청)
         if (existingParticipation.isPresent()) {
             Participation participation = existingParticipation.get();
 
@@ -201,25 +199,6 @@ public class ParticipationService {
         }
         if (tripType == TripType.ONE_WAY && returnSeatId != null) {
             throw new BusinessException(ErrorCode.ONE_WAY_RETURN_SEAT_NOT_ALLOWED);
-        }
-    }
-
-    private void sendMinReachedNotification(Funding funding) {
-        Long fundingId = funding.getFundingId();
-
-        try {
-            notificationService.sendMimeMessage(funding.getMember().getMemberId(), fundingId, NotificationType.MIN_REACHED);
-        } catch (Exception e) {
-            log.warn("MIN_REACHED 호스트 알림 발송 실패 — fundingId={}", fundingId, e);
-        }
-
-        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
-        for (Long memberId : memberIds) {
-            try {
-                notificationService.sendMimeMessage(memberId, fundingId, NotificationType.MIN_REACHED);
-            } catch (Exception e) {
-                log.warn("MIN_REACHED 참여자 알림 발송 실패 — fundingId={}, memberId={}", fundingId, memberId, e);
-            }
         }
     }
 
@@ -364,7 +343,10 @@ public class ParticipationService {
                 funding.getFundingId(), List.of(ParticipationPaymentStatus.ACTIVE)
         );
         if (activeCount == funding.getMinParticipants()) {
-            sendMinReachedNotification(funding);
+            eventPublisher.publishEvent(new FundingMinReachedEvent(
+                    funding.getFundingId(),
+                    funding.getMember().getMemberId()
+            ));
         }
     }
 

@@ -83,6 +83,17 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     );
 
     @Query("""
+        select distinct p.member.memberId
+        from Participation p
+        where p.funding.fundingId = :fundingId
+          and p.paymentStatus in :paymentStatuses
+        """)
+    List<Long> findMemberIdsByFundingIdAndPaymentStatusIn(
+            @Param("fundingId") Long fundingId,
+            @Param("paymentStatuses") List<ParticipationPaymentStatus> paymentStatuses
+    );
+
+    @Query("""
         select p.funding.fundingId as fundingId,
                count(p) as count
         from Participation p
