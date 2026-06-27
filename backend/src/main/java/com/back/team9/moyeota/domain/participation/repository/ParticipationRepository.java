@@ -92,6 +92,19 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
         """)
     List<FundingParticipationCount> countByFundingIdsAndStatus(List<Long> fundingIds, ParticipationStatus status);
 
+    @Query("""
+        select p.funding.fundingId as fundingId,
+               count(p) as count
+        from Participation p
+        where p.funding.fundingId in :fundingIds
+          and p.paymentStatus in :paymentStatuses
+        group by p.funding.fundingId
+        """)
+    List<FundingParticipationCount> countByFundingIdsAndPaymentStatusIn(
+            List<Long> fundingIds,
+            List<ParticipationPaymentStatus> paymentStatuses
+    );
+
     interface FundingParticipationCount {
         Long getFundingId();
         Long getCount();

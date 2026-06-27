@@ -71,12 +71,22 @@ public class ParticipationService {
         // 펀딩 상태 확인
         validateFundingStatus(funding);
 
+        // 결제 이탈 후 재진입 — PENDING 참여 자동 취소
+        participationRepository.findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId)
+                .filter(p -> p.getPaymentStatus() == ParticipationPaymentStatus.PENDING)
+                .ifPresent(p -> {
+                    releaseSeatHoldSafely(p.getOutboundSeat().getSeatId(), memberId);
+                    if (p.getReturnSeat() != null) {
+                        releaseSeatHoldSafely(p.getReturnSeat().getSeatId(), memberId);
+                    }
+                    p.cancel();
+                });
+
         // 중복 참여 검증
         if (participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
                 funding.getFundingId(),
                 memberId,
                 List.of(
-                        ParticipationPaymentStatus.PENDING,
                         ParticipationPaymentStatus.ACTIVE,
                         ParticipationPaymentStatus.COMPLETED
                 )

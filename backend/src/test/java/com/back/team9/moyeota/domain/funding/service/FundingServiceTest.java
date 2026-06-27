@@ -258,9 +258,9 @@ class FundingServiceTest {
                 .filter(candidate -> candidate.getSeatNumber().equals("1B"))
                 .findFirst()
                 .orElseThrow();
-        participationRepository.save(
-                Participation.create(funding, participant, seat, null)
-        );
+        Participation participation = Participation.create(funding, participant, seat, null);
+        participation.confirmPayment();
+        participationRepository.save(participation);
 
         // When
         PageResponse<FundingListResponse> result =
