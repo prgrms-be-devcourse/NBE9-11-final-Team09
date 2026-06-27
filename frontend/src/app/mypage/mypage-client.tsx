@@ -176,26 +176,29 @@ export default function MypageClient() {
 
     async function loadDashboard() {
       try {
-        const [dashboard, participations] = await Promise.all([
-          getMyDashboard(),
-          getMyParticipations(),
-        ]);
+        const dashboard = await getMyDashboard();
         if (cancelled) return;
 
         setProfile(dashboard.profile);
         setNickname(dashboard.profile.nickname);
         setPhoneNumber(dashboard.profile.phoneNumber);
         setHistories(dashboard.histories);
-        setMyParticipations(participations);
       } catch (requestError) {
         if (!cancelled) {
-          handleRequestError(
-            requestError,
-            "마이페이지 정보를 불러오지 못했습니다.",
-          );
+          handleRequestError(requestError, "마이페이지 정보를 불러오지 못했습니다.");
         }
+        return;
       } finally {
         if (!cancelled) setLoading(false);
+      }
+
+      try {
+        const participations = await getMyParticipations();
+        if (!cancelled) setMyParticipations(participations);
+      } catch (requestError) {
+        if (!cancelled) {
+          console.warn("참여 내역 조회 실패:", requestError);
+        }
       }
     }
 
@@ -959,12 +962,14 @@ function MyParticipationItem({
                 )}
                 <div className="flex gap-2 mt-5">
                   <button
+                      type="button"
                       onClick={() => setCancelModal(false)}
                       className="flex-1 rounded border border-gray-300 py-2 text-sm font-semibold text-gray-700"
                   >
                     닫기
                   </button>
                   <button
+                      type="button"
                       onClick={handleCancel}
                       disabled={canceling}
                       className="flex-1 rounded bg-red-500 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
@@ -981,6 +986,7 @@ function MyParticipationItem({
               <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl text-center">
                 <p className="text-base font-bold text-gray-900 mb-4">참여가 취소되었습니다.</p>
                 <button
+                    type="button"
                     onClick={() => setCancelSuccess(false)}
                     className="rounded bg-gray-950 px-6 py-2 text-sm font-semibold text-white"
                 >
