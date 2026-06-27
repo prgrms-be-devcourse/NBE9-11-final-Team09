@@ -1031,6 +1031,11 @@ function FundingItem({ item }: { item: MemberFunding }) {
             <h3 className="mt-3 truncate font-bold text-slate-900">
               {item.fundingTitle}
             </h3>
+            {item.hostSeatNumbers?.length > 0 && (
+              <p className="mt-2 text-xs font-medium text-slate-500">
+                방장 예약 좌석: {item.hostSeatNumbers.join(", ")}
+              </p>
+            )}
             <div className="mt-3 flex items-center gap-3">
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                 <div
