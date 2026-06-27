@@ -11,14 +11,15 @@ public interface MemberHostSeatQueryRepository
         extends JpaRepository<Seat, Long> {
 
     @Query("""
-            select
-                s.pathinfo.funding.fundingId as fundingId,
-                s.seatNumber as seatNumber
-            from Seat s
-            where s.hostMember.memberId = :memberId
-              and s.pathinfo.funding.fundingId in :fundingIds
-            order by s.pathinfo.pathinfoId asc, s.seatNumber asc
-            """)
+        select
+            p.funding.fundingId as fundingId,
+            s.seatNumber as seatNumber
+        from Seat s
+        join s.pathinfo p
+        where s.hostMember.memberId = :memberId
+          and p.funding.fundingId in :fundingIds
+        order by p.pathinfoId asc, s.seatNumber asc
+        """)
     List<MemberHostSeatSummary> findHostSeatsByFundingIds(
             Long memberId,
             Collection<Long> fundingIds
