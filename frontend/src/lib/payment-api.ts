@@ -1,4 +1,5 @@
 import { getFundingAccessToken as getAccessToken } from "@/lib/fundingAuth";
+import { createApiUrl } from "@/lib/api-url";
 
 type ApiResponse<T> = { data: T; resultCode: string; msg: string };
 
@@ -32,7 +33,7 @@ export async function createParticipation(
   returnSeatId?: number | null,
 ): Promise<ParticipationResult> {
   const token = getAccessToken();
-  const res = await fetch("/api/participations", {
+  const res = await fetch(createApiUrl("/api/participations"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -50,7 +51,7 @@ export async function preparePayment(
 ): Promise<{ orderId: string; amount: number }> {
   const token = getAccessToken();
   const res = await fetch(
-    `/api/payments/prepare?participationId=${participationId}`,
+    createApiUrl(`/api/payments/prepare?participationId=${participationId}`),
     {
       method: "POST",
       headers: authHeaders(token),
@@ -67,7 +68,7 @@ export async function confirmDeposit(params: {
   participationId: number;
 }): Promise<void> {
   const token = getAccessToken();
-  const res = await fetch("/api/payments/deposit/confirm", {
+  const res = await fetch(createApiUrl("/api/payments/deposit/confirm"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -84,7 +85,7 @@ export async function confirmBalance(params: {
   participationId: number;
 }): Promise<void> {
   const token = getAccessToken();
-  const res = await fetch("/api/payments/balance/confirm", {
+  const res = await fetch(createApiUrl("/api/payments/balance/confirm"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -110,7 +111,7 @@ export async function getSettlement(
   fundingId: number,
 ): Promise<SettlementResponse> {
   const token = getAccessToken();
-  const res = await fetch(`/api/settlements/funding/${fundingId}`, {
+  const res = await fetch(createApiUrl(`/api/settlements/funding/${fundingId}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) throw await parseError(res, "정산 정보를 불러오지 못했습니다.");
