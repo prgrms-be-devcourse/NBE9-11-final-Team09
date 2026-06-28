@@ -4,6 +4,7 @@ import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 // 회원이 참여한 펀딩 정보 응답 DTO
 public record MemberFundingResponse(
@@ -13,6 +14,7 @@ public record MemberFundingResponse(
         Long currentParticipants,
         Integer maxParticipants,
         FundingStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<String> hostSeatNumbers
 ) {
 }

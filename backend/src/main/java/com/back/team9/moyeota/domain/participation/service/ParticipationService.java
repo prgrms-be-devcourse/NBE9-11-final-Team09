@@ -11,6 +11,7 @@ import com.back.team9.moyeota.domain.participation.dto.ParticipationResponse;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
+import com.back.team9.moyeota.domain.participation.event.FundingMinReachedEvent;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
 import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
@@ -21,8 +22,6 @@ import com.back.team9.moyeota.domain.payment.entity.Payment;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
-import com.back.team9.moyeota.domain.notification.entity.NotificationType;
-import com.back.team9.moyeota.domain.notification.service.NotificationService;
 import com.back.team9.moyeota.domain.seat.service.SeatRedisService;
 import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
@@ -53,7 +52,6 @@ public class ParticipationService {
     private final SeatRepository seatRepository;
     private final SeatRedisService seatRedisService;
     private final ApplicationEventPublisher eventPublisher;
-    private final NotificationService notificationService;
     private final Clock clock;
 
     // ============================== 1. 참여 신청 ==============================
@@ -71,12 +69,25 @@ public class ParticipationService {
         // 펀딩 상태 확인
         validateFundingStatus(funding);
 
+        // 결제 이탈 후 재진입 — PENDING 참여 자동 취소
+        Optional<Participation> existingParticipation = participationRepository
+                .findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId);
+
+        existingParticipation
+                .filter(p -> p.getPaymentStatus() == ParticipationPaymentStatus.PENDING)
+                .ifPresent(p -> {
+                    releaseSeatHoldSafely(p.getOutboundSeat().getSeatId(), memberId);
+                    if (p.getReturnSeat() != null) {
+                        releaseSeatHoldSafely(p.getReturnSeat().getSeatId(), memberId);
+                    }
+                    p.cancel();
+                });
+
         // 중복 참여 검증
         if (participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
                 funding.getFundingId(),
                 memberId,
                 List.of(
-                        ParticipationPaymentStatus.PENDING,
                         ParticipationPaymentStatus.ACTIVE,
                         ParticipationPaymentStatus.COMPLETED
                 )
@@ -113,10 +124,7 @@ public class ParticipationService {
                     Direction.RETURN
             );
         }
-        // 기존 참여 이력 확인
-        Optional<Participation> existingParticipation = participationRepository
-                .findByFunding_FundingIdAndMember_MemberId(funding.getFundingId(), memberId);
-
+        // 기존 참여 이력 확인 (CANCELED 재신청)
         if (existingParticipation.isPresent()) {
             Participation participation = existingParticipation.get();
 
@@ -135,16 +143,6 @@ public class ParticipationService {
         );
 
         participationRepository.save(participation);
-
-        if (currentParticipants + 1 == funding.getMinParticipants()) {
-            try {
-                Long fundingId = funding.getFundingId();
-                notificationService.sendToFundingHost(funding.getMember().getMemberId(), fundingId, NotificationType.MIN_REACHED);
-                notificationService.sendToFundingParticipants(fundingId, NotificationType.MIN_REACHED);
-            } catch (Exception e) {
-                log.warn("MIN_REACHED 알림 발송 실패 — fundingId={}", funding.getFundingId(), e);
-            }
-        }
 
         return ParticipationResponse.from(participation);
     }
@@ -339,6 +337,17 @@ public class ParticipationService {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
         participation.confirmPayment();
+
+        Funding funding = participation.getFunding();
+        long activeCount = participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
+                funding.getFundingId(), List.of(ParticipationPaymentStatus.ACTIVE)
+        );
+        if (activeCount == funding.getMinParticipants()) {
+            eventPublisher.publishEvent(new FundingMinReachedEvent(
+                    funding.getFundingId(),
+                    funding.getMember().getMemberId()
+            ));
+        }
     }
 
     // ============================== 5. 결제 실패 시 참여 취소 ==============================

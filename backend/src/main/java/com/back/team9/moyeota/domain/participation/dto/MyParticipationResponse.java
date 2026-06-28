@@ -1,13 +1,18 @@
 package com.back.team9.moyeota.domain.participation.dto;
 
+import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 public record MyParticipationResponse(
         Long participationId,
+        Long fundingId,
         String fundingTitle,
         String routeInfo,
         String outboundSeatNumber,
@@ -15,11 +20,11 @@ public record MyParticipationResponse(
         ParticipationStatus status,
         ParticipationPaymentStatus paymentStatus,
         boolean canBoard,
-        LocalDateTime departureTime
+        LocalDateTime departureTime,
+        long balanceAmount
 ) {
 
     public static MyParticipationResponse from(Participation participation) {
-        // 왕복이어도 마이페이지에는 가는편 노선만 표시
         String routeInfo = participation.getOutboundSeat().getPathinfo().getDepartureAddress()
                 + " → "
                 + participation.getOutboundSeat().getPathinfo().getArrivalAddress();
@@ -28,21 +33,34 @@ public record MyParticipationResponse(
                 ? participation.getReturnSeat().getSeatNumber()
                 : null;
 
-        // 탑승 가능 여부
         boolean canBoard =
                 participation.getStatus() == ParticipationStatus.ACTIVE
                         && participation.getPaymentStatus() == ParticipationPaymentStatus.COMPLETED;
 
+        Funding funding = participation.getFunding();
+        BigDecimal deposit = FundingPricePolicy.calculateRoundedPrice(
+                        funding.getTotalPrice(),
+                        funding.getMaxParticipants() + 1
+                )
+                .divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING);
+
+        BigDecimal finalAmt = participation.getFinalAmount();
+        long balanceAmount = (finalAmt != null && finalAmt.compareTo(BigDecimal.ZERO) > 0)
+                ? finalAmt.subtract(deposit).longValue()
+                : 0L;
+
         return new MyParticipationResponse(
                 participation.getParticipationId(),
-                participation.getFunding().getTitle(),
+                funding.getFundingId(),
+                funding.getTitle(),
                 routeInfo,
                 participation.getOutboundSeat().getSeatNumber(),
                 returnSeatNumber,
                 participation.getStatus(),
                 participation.getPaymentStatus(),
                 canBoard,
-                participation.getOutboundSeat().getPathinfo().getDepartureTime()
+                participation.getOutboundSeat().getPathinfo().getDepartureTime(),
+                balanceAmount
         );
     }
 }

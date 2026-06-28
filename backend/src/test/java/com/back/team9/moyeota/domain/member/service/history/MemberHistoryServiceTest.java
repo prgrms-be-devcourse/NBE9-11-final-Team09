@@ -8,9 +8,11 @@ import com.back.team9.moyeota.domain.member.dto.history.MemberPaymentResponse;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.MemberStatus;
 import com.back.team9.moyeota.domain.member.repository.MemberFundingQueryRepository;
+import com.back.team9.moyeota.domain.member.repository.MemberHostSeatQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberParticipationQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.MemberPaymentQueryRepository;
 import com.back.team9.moyeota.domain.member.repository.projection.MemberFundingSummary;
+import com.back.team9.moyeota.domain.member.repository.projection.MemberHostSeatSummary;
 import com.back.team9.moyeota.domain.participation.entity.Participation;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationPaymentStatus;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
@@ -52,6 +54,9 @@ class MemberHistoryServiceTest {
 
     @Mock
     private MemberPaymentQueryRepository paymentQueryRepository;
+
+    @Mock
+    private MemberHostSeatQueryRepository hostSeatQueryRepository;
 
     @InjectMocks
     private MemberHistoryService memberHistoryService;
@@ -217,6 +222,16 @@ class MemberHistoryServiceTest {
                 1
         ));
 
+        MemberHostSeatSummary hostSeatSummary =
+                mock(MemberHostSeatSummary.class);
+
+        when(hostSeatSummary.getFundingId()).thenReturn(10L);
+        when(hostSeatSummary.getSeatNumber()).thenReturn("A1");
+        when(hostSeatQueryRepository.findHostSeatsByFundingIds(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.anyCollection()
+        )).thenReturn(List.of(hostSeatSummary));
+
         // When
         PageResponse<MemberFundingResponse> response =
                 memberHistoryService.getMyFundings(
@@ -236,6 +251,7 @@ class MemberHistoryServiceTest {
         assertThat(content.maxParticipants()).isEqualTo(45);
         assertThat(content.status()).isEqualTo(FundingStatus.RECRUITING);
 
+        assertThat(content.hostSeatNumbers()).containsExactly("A1");
         assertThat(response.page()).isZero();
         assertThat(response.totalPages()).isEqualTo(1);
         assertThat(response.totalElements()).isEqualTo(1);

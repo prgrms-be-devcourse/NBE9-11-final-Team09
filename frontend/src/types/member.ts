@@ -80,6 +80,7 @@ export interface MemberFunding {
   maxParticipants: number;
   status: string;
   createdAt: string;
+  hostSeatNumbers: string[];
 }
 
 export interface MemberPayment {
@@ -110,6 +111,7 @@ export type ParticipationPaymentStatus =
 
 export interface MyParticipation {
   participationId: number;
+  fundingId: number;
   fundingTitle: string;
   routeInfo: string;
   outboundSeatNumber: string;
@@ -118,4 +120,5 @@ export interface MyParticipation {
   paymentStatus: ParticipationPaymentStatus;
   canBoard: boolean;
   departureTime: string;
+  balanceAmount: number;
 }

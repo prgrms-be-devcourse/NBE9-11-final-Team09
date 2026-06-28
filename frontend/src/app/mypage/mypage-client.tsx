@@ -855,6 +855,7 @@ function MyParticipationItem({
   item: MyParticipation;
   onCanceled: () => Promise<void>;
 }) {
+  const router = useRouter();
   const [cancelModal, setCancelModal] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
@@ -877,8 +878,24 @@ function MyParticipationItem({
       item.paymentStatus === "ACTIVE" &&
       canCancel;
 
+  const canShowBalancePayment =
+      item.status === "ACTIVE" &&
+      item.paymentStatus === "ACTIVE" &&
+      item.balanceAmount > 0;
+
   function formatDeadlineDate(date: Date) {
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function handleBalancePayment() {
+    const seatInfo = item.returnSeatNumber
+        ? `${item.outboundSeatNumber} / ${item.returnSeatNumber}`
+        : item.outboundSeatNumber;
+    sessionStorage.setItem(
+        `balanceContext_${item.participationId}`,
+        JSON.stringify({ fundingId: item.fundingId, seatInfo, amount: item.balanceAmount })
+    );
+    router.push(`/payment/balance/${item.participationId}`);
   }
 
   async function handleCancel() {
@@ -924,15 +941,26 @@ function MyParticipationItem({
               </div>
               {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
             </div>
-            {canShowCancel && (
-                <button
-                    type="button"
-                    onClick={() => setCancelModal(true)}
-                    className="shrink-0 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
-                >
-                  참여 취소
-                </button>
-            )}
+            <div className="flex shrink-0 flex-col gap-2">
+              {canShowBalancePayment && (
+                  <button
+                      type="button"
+                      onClick={handleBalancePayment}
+                      className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-100"
+                  >
+                    잔액결제
+                  </button>
+              )}
+              {canShowCancel && (
+                  <button
+                      type="button"
+                      onClick={() => setCancelModal(true)}
+                      className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                  >
+                    참여 취소
+                  </button>
+              )}
+            </div>
           </div>
         </article>
 
@@ -1037,6 +1065,11 @@ function FundingItem({ item }: { item: MemberFunding }) {
             <h3 className="mt-3 truncate font-bold text-slate-900">
               {item.fundingTitle}
             </h3>
+            {item.hostSeatNumbers?.length > 0 && (
+              <p className="mt-2 text-xs font-medium text-slate-500">
+                방장 예약 좌석: {item.hostSeatNumbers.join(", ")}
+              </p>
+            )}
             <div className="mt-3 flex items-center gap-3">
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                 <div

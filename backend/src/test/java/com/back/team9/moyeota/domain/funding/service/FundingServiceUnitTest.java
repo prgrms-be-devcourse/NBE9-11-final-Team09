@@ -189,9 +189,9 @@ class FundingServiceUnitTest {
         PathinfoResponse pathinfoResponse = pathinfoResponse();
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        given(participationRepository.countByFunding_FundingIdAndStatus(
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
                 10L,
-                ParticipationStatus.ACTIVE
+                List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
         )).willReturn(3L);
         given(pathinfoService.getPathinfoResponsesForDetail(funding))
                 .willReturn(List.of(pathinfoResponse));
@@ -237,9 +237,9 @@ class FundingServiceUnitTest {
         Funding funding = funding(10L, member(1L), FundingStatus.RECRUITING);
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        given(participationRepository.countByFunding_FundingIdAndStatus(
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
                 10L,
-                ParticipationStatus.ACTIVE
+                List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
         )).willReturn(3L);
         given(pathinfoService.getPathinfoResponsesForDetail(funding))
                 .willReturn(List.of(pathinfoResponse()));
@@ -261,10 +261,6 @@ class FundingServiceUnitTest {
         FundingUpdateRequest request = updateRequest();
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        given(participationRepository.countByFunding_FundingIdAndStatus(
-                10L,
-                ParticipationStatus.ACTIVE
-        )).willReturn(0L);
 
         // When
         fundingService.updateFunding(1L, 10L, request);
@@ -309,10 +305,6 @@ class FundingServiceUnitTest {
         );
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        given(participationRepository.countByFunding_FundingIdAndStatus(
-                10L,
-                ParticipationStatus.ACTIVE
-        )).willReturn(0L);
 
         // When
         fundingService.updateFunding(1L, 10L, request);
@@ -350,9 +342,9 @@ class FundingServiceUnitTest {
         );
 
         given(fundingRepository.findById(10L)).willReturn(Optional.of(funding));
-        given(participationRepository.countByFunding_FundingIdAndStatus(
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
                 10L,
-                ParticipationStatus.ACTIVE
+                List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
         )).willReturn(1L);
         given(pathinfoService.isRouteChanged(
                 10L,
@@ -528,9 +520,9 @@ class FundingServiceUnitTest {
                 List.of(10L),
                 Direction.OUTBOUND
         )).willReturn(List.of(pathinfo));
-        given(participationRepository.countByFundingIdsAndStatus(
+        given(participationRepository.countByFundingIdsAndPaymentStatusIn(
                 List.of(10L),
-                ParticipationStatus.ACTIVE
+                List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
         )).willReturn(List.of(participantCount(10L, 7L)));
 
         // When
@@ -544,7 +536,9 @@ class FundingServiceUnitTest {
         verify(pathinfoService)
                 .findByFundingIdsAndDirection(List.of(10L), Direction.OUTBOUND);
         verify(participationRepository)
-                .countByFundingIdsAndStatus(List.of(10L), ParticipationStatus.ACTIVE);
+                .countByFundingIdsAndPaymentStatusIn(
+                        List.of(10L),
+                        List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED));
     }
 
     private FundingCreateRequest createRequest() {
