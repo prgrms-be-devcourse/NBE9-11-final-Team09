@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.notification.dto.NotificationResponse;
 import com.back.team9.moyeota.domain.notification.entity.Notification;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.entity.SendStatus;
+import com.back.team9.moyeota.domain.notification.event.NotificationCreatedEvent;
 import com.back.team9.moyeota.domain.notification.repository.NotificationRepository;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
@@ -15,11 +16,15 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -36,9 +41,9 @@ public class NotificationService {
     private final FundingRepository fundingRepository;
     private final NotificationRepository notificationRepository;
     private final ParticipationRepository participationRepository;
-    private final Clock clock;
+    private final NotificationAsyncService notificationAsyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    private final MailService mailService;
     private final NotificationTemplateService templateService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -56,6 +61,7 @@ public class NotificationService {
     }
 
     // 방장용 알림
+    @Transactional
     public void sendToFundingHost(
             Long memberId,
             Long fundingId,
@@ -85,6 +91,7 @@ public class NotificationService {
     }
 
     // 참가자용 알림
+    @Transactional
     public void sendToFundingParticipants(
             Long fundingId,
             NotificationType type
@@ -151,18 +158,13 @@ public class NotificationService {
                 .sendStatus(SendStatus.PENDING)
                 .build();
 
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
 
-        try {
-            sendMailWithRetry(member.getEmail(), title, content);
-            notification.markSuccess(LocalDateTime.now(clock));
-
-        } catch (Exception e) {
-            notification.markFailed();
-            throw new BusinessException(ErrorCode.NOTIFICATION_SEND_FAILED);
-        } finally {
-            notificationRepository.save(notification);
-        }
+        eventPublisher.publishEvent(
+                new NotificationCreatedEvent(
+                        savedNotification.getNotificationId()
+                )
+        );
     }
 
     private boolean isAlreadySent(
@@ -175,30 +177,6 @@ public class NotificationService {
                 fundingId,
                 type
         );
-    }
-
-    private void sendMailWithRetry(
-            String email,
-            String title,
-            String content
-    ) {
-        int retryCount = 0;
-
-        while (retryCount < 3) {
-            try {
-                mailService.send(email, title, content);
-                return;
-
-            } catch (Exception e) {
-                retryCount++;
-
-                log.warn("메일 발송 실패 ({} / 3)", retryCount);
-
-                if (retryCount >= 3) {
-                    throw e;
-                }
-            }
-        }
     }
 
     @Transactional(readOnly = true)
