@@ -223,7 +223,7 @@ export default function FundingListPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="inline-flex h-9 w-fit items-center gap-2 rounded-lg border border-[#dbe7dc] bg-white px-4 text-sm font-medium text-slate-700 hover:border-[#adc7b6]"
+                className="inline-flex h-9 w-fit cursor-pointer items-center gap-2 rounded-lg border border-[#dbe7dc] bg-white px-4 text-sm font-medium text-slate-700 hover:border-[#adc7b6]"
               >
                 <RotateCcw size={17} strokeWidth={2.3} />
                 초기화
@@ -267,7 +267,7 @@ export default function FundingListPage() {
                       page: Math.max(0, (current.page ?? 0) - 1),
                     }))
                   }
-                  className="h-10 rounded-lg border border-[#dfe6e2] bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-40"
+                  className="h-10 cursor-pointer rounded-lg border border-[#dfe6e2] bg-white px-4 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   이전
                 </button>
@@ -283,7 +283,7 @@ export default function FundingListPage() {
                       page: (current.page ?? 0) + 1,
                     }))
                   }
-                  className="h-10 rounded-lg border border-[#dfe6e2] bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-40"
+                  className="h-10 cursor-pointer rounded-lg border border-[#dfe6e2] bg-white px-4 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   다음
                 </button>
@@ -364,7 +364,7 @@ function StatusFilter({
         <button
           type="button"
           onClick={onAll}
-          className={`h-10 rounded-lg border px-3 text-sm font-bold transition ${
+          className={`h-10 cursor-pointer rounded-lg border px-3 text-sm font-bold transition ${
             allSelected
               ? "border-[#4f7a61] bg-[#4f7a61] text-white shadow-sm"
               : "border-[#dbe7dc] bg-white text-slate-700 hover:border-[#adc7b6]"
@@ -380,7 +380,7 @@ function StatusFilter({
               key={status}
               type="button"
               onClick={() => onToggle(status)}
-              className={`h-10 rounded-lg border px-3 text-sm font-bold transition ${
+              className={`h-10 cursor-pointer rounded-lg border px-3 text-sm font-bold transition ${
                 selected
                   ? "border-[#4f7a61] bg-[#4f7a61] text-white shadow-sm"
                   : "border-[#dbe7dc] bg-white text-slate-700 hover:border-[#adc7b6]"
@@ -404,21 +404,21 @@ function TripTypeFilters({
 }) {
   return (
     <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-700">
-      <label className="inline-flex items-center gap-2">
+      <label className="inline-flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           checked={selectedTripTypes.includes("ROUND")}
           onChange={() => onToggle("ROUND")}
-          className="h-4 w-4 accent-[#4f7a61]"
+          className="h-4 w-4 cursor-pointer accent-[#4f7a61]"
         />
         왕복
       </label>
-      <label className="inline-flex items-center gap-2">
+      <label className="inline-flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           checked={selectedTripTypes.includes("ONE_WAY")}
           onChange={() => onToggle("ONE_WAY")}
-          className="h-4 w-4 accent-[#4f7a61]"
+          className="h-4 w-4 cursor-pointer accent-[#4f7a61]"
         />
         편도
       </label>
@@ -441,11 +441,10 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
 
   return (
     <article
-      className="grid rounded-lg border border-[#dbe7dc] bg-white shadow-[0_6px_18px_rgba(31,41,55,0.03)] transition hover:border-[#c5d8c9] hover:shadow-[0_10px_24px_rgba(31,41,55,0.055)] lg:h-[150px] lg:grid-cols-[minmax(0,1fr)_286px_210px]"
+      className="grid rounded-lg border border-[#dbe7dc] bg-white shadow-[0_6px_18px_rgba(31,41,55,0.03)] transition hover:border-[#c5d8c9] hover:shadow-[0_10px_24px_rgba(31,41,55,0.055)] lg:h-[180px] lg:grid-cols-[minmax(0,1fr)_370px_180px]"
     >
-      <Link
-        href={`/fundings/${funding.fundingId}`}
-        className="grid min-w-0 content-center gap-2.5 border-b border-[#eef4ef] px-4 py-3 lg:border-b-0 lg:border-r"
+      <div
+        className="grid min-w-0 content-center gap-2.5 border-b border-[#eef4ef] px-4 py-4 lg:border-b-0 lg:border-r"
       >
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           <span
@@ -461,8 +460,8 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           </Badge>
         </div>
 
-        <div className="grid min-w-0 gap-1">
-          <h2 className="truncate text-xl font-semibold leading-7 text-slate-900 md:text-[22px]">
+        <div className="grid min-w-0 gap-0.5">
+          <h2 className="truncate text-xl font-semibold leading-7 text-slate-900">
             {addressRoute}
           </h2>
           <p className="truncate text-sm font-semibold text-slate-600">
@@ -470,40 +469,40 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           </p>
         </div>
 
-        <div className="flex min-w-0 items-center gap-4 overflow-hidden whitespace-nowrap text-sm font-medium text-slate-600">
-          <p className="inline-flex min-w-0 max-w-[58%] shrink items-center gap-1.5 overflow-hidden">
-            <CalendarDays size={16} className="text-slate-500" strokeWidth={2.2} />
+        <div className="grid min-w-0 gap-1 overflow-hidden whitespace-nowrap text-sm font-medium leading-5 text-slate-600">
+          <p className="inline-flex min-w-0 items-center gap-1.5 overflow-hidden">
+            <CalendarDays
+              size={16}
+              className="shrink-0 text-slate-500"
+              strokeWidth={2.2}
+            />
             <span className="truncate">{departureLabel} 출발</span>
           </p>
-          <p className="inline-flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+          <p className="inline-flex min-w-0 items-center gap-1.5 overflow-hidden">
             <UserRound
               size={16}
               className="shrink-0 text-slate-400"
               strokeWidth={2.2}
             />
-            <span className="shrink-0 whitespace-nowrap">방장</span>
             <span className="min-w-0 truncate">
               {funding.hostNickname}
             </span>
           </p>
         </div>
-      </Link>
+      </div>
 
-      <div className="grid content-center gap-3 border-b border-[#eef4ef] px-4 py-3 text-center lg:border-b-0 lg:border-r">
+      <div className="grid min-w-0 content-center gap-3.5 border-b border-[#eef4ef] px-4 py-4 text-center lg:border-b-0 lg:border-r">
         {timeline && (
-          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline justify-center gap-2 text-sm">
-            <p className="whitespace-nowrap font-semibold text-slate-600">
+          <div
+            className={`mx-auto inline-grid max-w-full grid-cols-[auto_auto_auto] items-center overflow-hidden rounded-full text-sm font-semibold ${timeline.badgeClass}`}
+          >
+            <span className="whitespace-nowrap px-2.5 py-1">
               {timeline.labelTitle}
-            </p>
-            <p
-              className={`truncate whitespace-nowrap text-left font-semibold ${
-                timeline.tone === "confirm"
-                  ? "text-[#4f6280]"
-                  : "text-[#9a4a4a]"
-              }`}
-            >
+            </span>
+            <span className={`h-4 w-px ${timeline.dividerClass}`} />
+            <span className="whitespace-nowrap px-2.5 py-1">
               {timeline.label}
-            </p>
+            </span>
           </div>
         )}
 
@@ -517,8 +516,8 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
         </div>
       </div>
 
-      <aside className="grid content-center gap-3 px-4 py-3">
-        <div className="grid gap-2">
+      <aside className="grid min-w-0 content-center px-4 py-4">
+        <div className="grid gap-3">
           <div>
             <p className="whitespace-nowrap text-xs font-semibold leading-5 text-slate-600">
               {displayPriceLabel}
@@ -529,7 +528,7 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           </div>
           <Link
             href={`/fundings/${funding.fundingId}`}
-            className="inline-flex h-9 items-center justify-center gap-1 rounded-md border border-[#dbe7dc] bg-white text-sm font-semibold text-slate-800 hover:border-[#adc7b6] hover:bg-[#f8faf9]"
+            className="inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-md border border-[#dbe7dc] bg-white text-sm font-semibold text-slate-800 hover:border-[#adc7b6] hover:bg-[#f8faf9]"
           >
             상세보기
             <ChevronRight size={16} strokeWidth={2.4} />
@@ -570,7 +569,7 @@ function FundingGuide({ loggedIn }: { loggedIn: boolean }) {
 
       <Link
         href={loggedIn ? "/fundings/new" : "/login"}
-        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#4f7a61] text-sm font-semibold text-white shadow-sm hover:bg-[#426f55]"
+        className="mt-5 inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-[#4f7a61] text-sm font-semibold text-white shadow-sm hover:bg-[#426f55]"
       >
         + 펀딩 만들기
       </Link>
@@ -737,6 +736,8 @@ function getFundingTimelineInfo(
       labelTitle: "펀딩 확정일",
       label: "-",
       tone: "confirm" as const,
+      badgeClass: "bg-[#e8f1e7] text-[#245c43]",
+      dividerClass: "bg-[#b8d3c0]",
     };
   }
 
@@ -747,6 +748,8 @@ function getFundingTimelineInfo(
       labelTitle: "펀딩 확정일",
       label: "-",
       tone: "confirm" as const,
+      badgeClass: "bg-[#e8f1e7] text-[#245c43]",
+      dividerClass: "bg-[#b8d3c0]",
     };
   }
 
@@ -774,6 +777,10 @@ function getFundingTimelineInfo(
     labelTitle: showRecruitmentClose ? "모집 마감일" : "펀딩 확정일",
     label: formatTimelineDateTime(labelDate),
     tone: showRecruitmentClose ? ("close" as const) : ("confirm" as const),
+    badgeClass: showRecruitmentClose
+      ? "bg-[#f8eeee] text-[#9a4a4a]"
+      : "bg-[#e8f1e7] text-[#245c43]",
+    dividerClass: showRecruitmentClose ? "bg-[#e5bcbc]" : "bg-[#b8d3c0]",
   };
 }
 
