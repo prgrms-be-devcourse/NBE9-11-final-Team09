@@ -682,7 +682,8 @@ class MemberControllerTest {
                         15L,
                         45,
                         FundingStatus.RECRUITING,
-                        LocalDateTime.of(2026, 6, 1, 9, 0)
+                        LocalDateTime.of(2026, 6, 1, 9, 0),
+                        List.of("A1")
                 );
 
         PageResponse<MemberFundingResponse> response =
@@ -719,6 +720,8 @@ class MemberControllerTest {
                         .value(45))
                 .andExpect(jsonPath("$.data.content[0].status")
                         .value("RECRUITING"))
+                .andExpect(jsonPath("$.data.content[0].hostSeatNumbers[0]")
+                        .value("A1"))
                 .andExpect(jsonPath("$.data.page")
                         .value(0))
                 .andExpect(jsonPath("$.data.size")

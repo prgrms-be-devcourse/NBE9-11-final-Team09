@@ -80,6 +80,7 @@ export interface MemberFunding {
   maxParticipants: number;
   status: string;
   createdAt: string;
+  hostSeatNumbers: string[];
 }
 
 export interface MemberPayment {
