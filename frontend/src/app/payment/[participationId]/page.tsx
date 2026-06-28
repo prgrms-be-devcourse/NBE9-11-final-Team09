@@ -102,11 +102,18 @@ export default function PaymentPage() {
 
   async function handlePay() {
     if (!privacyAgreed || !refundAgreed) {
-      alert("필수 약관에 동의해 주세요.");
+      alert("필수 약관에 동의해주세요.");
       return;
     }
-    if (!context) return;
-
+  
+    if (!context || !member) return;
+  
+    if (!member.phoneNumber?.trim()) {
+      alert("결제 진행을 위해 마이페이지에서 전화번호를 먼저 등록해주세요.");
+      router.push("/mypage");
+      return;
+    }
+  
     setPaying(true);
     setError("");
     try {
