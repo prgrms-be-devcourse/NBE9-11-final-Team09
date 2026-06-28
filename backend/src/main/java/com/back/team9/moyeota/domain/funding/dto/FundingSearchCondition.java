@@ -15,7 +15,7 @@ public record FundingSearchCondition(
     public List<FundingStatus> effectiveStatuses() {
         if (statuses == null || statuses.isEmpty()) {
             return List.of(
-                    FundingStatus.RECRUITING, //디폴트는 모집중인 펀딩만 보여줌
+                    FundingStatus.RECRUITING, //디폴트는 참가 가능한 펀딩만 보여줌
                     FundingStatus.CONFIRMED
             );
         }
