@@ -15,9 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeatService {
@@ -27,6 +30,9 @@ public class SeatService {
 
     @Transactional(readOnly = true)
     public SeatLayoutResponse getSeatLayout(Long pathId, Long currentMemberId) {
+
+        log.info("좌석 배치도 조회 요청 (pathId={}, memberId={})",
+                pathId, currentMemberId);
 
         Pathinfo pathinfo = pathinfoRepository.findById(pathId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATH_NOT_FOUND));
@@ -69,6 +75,9 @@ public class SeatService {
                 })
                 .toList();
 
+        log.info("좌석 배치도 조회 완료 (pathId={}, seatCount={})",
+                pathId, seatResponses.size());
+
         return SeatLayoutResponse.from(
                 pathId,
                 pathinfo.getBusType().name(),
@@ -81,8 +90,11 @@ public class SeatService {
 
         // 인증되지 않은 사용자는 좌석 선점 불가
         if (currentMemberId == null) {
+            log.warn("미인증 사용자 좌석 선점 시도 (seatId={})", seatId);
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+        log.info("좌석 선택 요청 (seatId={}, memberId={})",
+                seatId, currentMemberId);
 
         Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
@@ -93,12 +105,16 @@ public class SeatService {
             throw new BusinessException(ErrorCode.PATH_INVALID_STATUS);
         }
         if (seat.getStatus() == SeatStatus.BOOKED) {
+            log.warn("이미 예약된 좌석 선점 시도 (seatId={}, memberId={})",
+                    seatId, currentMemberId);
             throw new BusinessException(ErrorCode.SEAT_ALREADY_OCCUPIED);
         }
         seatRedisService.holdSeat(
                 seatId,
                 currentMemberId
         );
+        log.info("좌석 HOLD 설정 (seatId={}, memberId={})",
+                seatId, currentMemberId);
         return SeatResponse.from(
                 seat,
                 SeatDisplayStatus.HOLD,

@@ -44,6 +44,7 @@ public class FundingTimelineProcessor {
     public void confirmOrFailFundings(LocalDate today) {
         LocalDate targetDepartureDate =
                 today.plusDays(CONFIRMATION_DAYS_BEFORE_DEPARTURE);
+        log.info("펀딩 상태 변경 시작 (targetDate={})", targetDepartureDate);
 
         List<Funding> fundings =
                 fundingRepository.findByStatusAndDepartureDateLessThanEqual(
@@ -76,11 +77,15 @@ public class FundingTimelineProcessor {
 
             if (activeParticipants >= funding.getMinParticipants()) {
                 funding.confirm();
+                log.info("펀딩 확정 (fundingId={})",
+                        funding.getFundingId());
                 sendFundingNotification(funding, NotificationType.FUNDING_CONFIRMED);
                 continue;
             }
 
             funding.fail();
+            log.info("펀딩 실패 (fundingId={})",
+                    funding.getFundingId());
             sendFundingNotification(funding, NotificationType.FUNDING_FAILED);
         }
     }
@@ -100,6 +105,8 @@ public class FundingTimelineProcessor {
                         reminderEnd,
                         FundingStatus.CONFIRMED
                 );
+        log.info("출발 알림 대상 조회 완료 (count={})",
+                pathinfos.size());
 
         for (Pathinfo pathinfo : pathinfos) {
             sendFundingNotification(
@@ -114,6 +121,7 @@ public class FundingTimelineProcessor {
     // 출발시간 지난 노선과 연결된 펀딩 완료(메일 전송)
     @Transactional
     public void completePathinfosAndFundings(LocalDateTime now) {
+        log.info("노선/펀딩 완료 처리 시작");
         List<Pathinfo> pathinfos =
                 pathinfoRepository.findPathinfosWithFunding(
                         PathinfoStatus.PENDING,
@@ -129,6 +137,7 @@ public class FundingTimelineProcessor {
                 .toList();
 
         if (fundingIds.isEmpty()) {
+            log.info("완료 처리 대상 펀딩 없음");
             return;
         }
 
@@ -151,12 +160,12 @@ public class FundingTimelineProcessor {
 
             if (allCompleted) {
                 funding.complete();
+                log.info("펀딩 완료 (fundingId={})",
+                        funding.getFundingId());
             }
         }
+        log.info("노선/펀딩 완료 처리 완료 (처리수={})", fundingIds.size());
     }
-
-
-
 
     private void sendFundingNotification(
             Funding funding,
@@ -172,12 +181,8 @@ public class FundingTimelineProcessor {
                     type
             );
         } catch (Exception e) {
-            log.error(
-                    "펀딩 방장 알림 처리 실패 fundingId={}, notificationType={}",
-                    fundingId,
-                    type,
-                    e
-            );
+            log.error("펀딩 방장 알림 발송 실패 (fundingId={}, notificationType={})",
+                    fundingId, type, e);
         }
 
         try {
@@ -186,12 +191,8 @@ public class FundingTimelineProcessor {
                     type
             );
         } catch (Exception e) {
-            log.error(
-                    "펀딩 알림 발송 실패 fundingId={}, notificationType={}",
-                    fundingId,
-                    type,
-                    e
-            );
+            log.error("펀딩 참여자 알림 발송 실패 (fundingId={}, notificationType={})",
+                    fundingId, type, e);
         }
     }
 }

@@ -25,23 +25,42 @@ public class FundingMinReachedListener {
     @Async("refundExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMinReached(FundingMinReachedEvent event) {
+
         Long fundingId = event.fundingId();
 
-        try {
-            notificationService.sendMimeMessage(event.hostMemberId(), fundingId, NotificationType.MIN_REACHED);
-        } catch (Exception e) {
-            log.warn("MIN_REACHED 호스트 알림 발송 실패 — fundingId={}", fundingId, e);
-        }
-
+        log.info("최소 인원 달성 처리 시작 (fundingId={})", fundingId);
         List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndPaymentStatusIn(
-                fundingId, List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
+                fundingId,
+                List.of(
+                        ParticipationPaymentStatus.ACTIVE,
+                        ParticipationPaymentStatus.COMPLETED
+                )
         );
+        try {
+            notificationService.sendMimeMessage(
+                    event.hostMemberId(),
+                    fundingId,
+                    NotificationType.MIN_REACHED
+            );
+        } catch (Exception e) {
+            log.warn("최소 인원 달성 호스트 알림 발송 실패 (fundingId={})",
+                    fundingId, e);
+        }
         for (Long memberId : memberIds) {
             try {
-                notificationService.sendMimeMessage(memberId, fundingId, NotificationType.MIN_REACHED);
+                notificationService.sendMimeMessage(
+                        memberId,
+                        fundingId,
+                        NotificationType.MIN_REACHED
+                );
             } catch (Exception e) {
-                log.warn("MIN_REACHED 참여자 알림 발송 실패 — fundingId={}, memberId={}", fundingId, memberId, e);
+                log.warn("최소 인원 달성 참여자 알림 발송 실패 (fundingId={}, memberId={})",
+                        fundingId, memberId, e);
             }
         }
+
+        log.info("최소 인원 달성 처리 완료 (fundingId={}, 대상자수={})",
+                fundingId,
+                memberIds.size() + 1); // 방장 포함
     }
 }
