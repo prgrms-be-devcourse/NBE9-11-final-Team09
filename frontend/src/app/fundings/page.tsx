@@ -16,7 +16,7 @@ import type {
   FundingStatus,
   PageResponse,
 } from "@/types/funding";
-import { FUNDING_STATUSES, REGIONS } from "@/types/funding";
+import { FUNDING_FILTER_STATUSES, REGIONS } from "@/types/funding";
 
 const CONFIRMATION_DAYS_BEFORE_DEPARTURE = 10;
 
@@ -30,7 +30,7 @@ const sortOptions = [
 
 export default function FundingListPage() {
   const [params, setParams] = useState<FundingListParams>({
-    statuses: ["RECRUITING", "CONFIRMED"],
+    statuses: ["RECRUITING", "CONFIRMED", "CLOSED"],
     sort: "departureDate,asc",
     page: 0,
     size: 20,
@@ -75,17 +75,18 @@ export default function FundingListPage() {
   function toggleStatus(status: FundingStatus) {
     setParams((current) => {
       const statuses = current.statuses ?? [];
-      const selected = statuses.includes(status);
+      const statusGroup = getStatusGroup(status);
+      const selected = statusGroup.every((item) => statuses.includes(item));
 
-      if (selected && statuses.length === 1) {
+      if (selected && statuses.length === statusGroup.length) {
         return current;
       }
 
       return {
         ...current,
         statuses: selected
-          ? statuses.filter((item) => item !== status)
-          : [...statuses, status],
+          ? statuses.filter((item) => !statusGroup.includes(item))
+          : Array.from(new Set([...statuses, ...statusGroup])),
         page: 0,
       };
     });
@@ -166,8 +167,10 @@ export default function FundingListPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {FUNDING_STATUSES.map((status) => {
-              const selected = params.statuses?.includes(status);
+            {FUNDING_FILTER_STATUSES.map((status) => {
+              const selected = getStatusGroup(status).every((item) =>
+                params.statuses?.includes(item)
+              );
 
               return (
                 <button
@@ -296,7 +299,10 @@ function FilterRegion({
 }
 
 function FundingCard({ funding }: { funding: FundingListItem }) {
-  const confirmation = getFundingConfirmationInfo(funding.departureTime);
+  const confirmation = getFundingTimelineInfo(
+    funding.departureTime,
+    funding.status
+  );
   const addressRoute = formatAddressRoute(funding);
   const departureLabel = formatDepartureLabel(funding.departureTime);
 
@@ -309,8 +315,13 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
         <div className="grid gap-7">
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded bg-gray-100 px-2 py-1">
-              {statusLabels[funding.status]}
+              {funding.status === "CLOSED" ? statusLabels.CONFIRMED : statusLabels[funding.status]}
             </span>
+            {funding.status === "CLOSED" && (
+              <span className="rounded bg-rose-50 px-2 py-1 text-rose-700">
+                {statusLabels.CLOSED}
+              </span>
+            )}
             <span
               className={`rounded px-2 py-1 ${
                 funding.tripType === "ROUND"
@@ -336,9 +347,11 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
         </div>
 
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-          <p className="text-gray-700">펀딩 확정일 {confirmation.label}</p>
-          <p className="font-semibold text-red-600">
-            {confirmation.remainingLabel}
+          <p className="text-gray-700">
+            {confirmation.labelTitle}{" "}
+            <span className="font-semibold text-red-600">
+              {confirmation.label}
+            </span>
           </p>
         </div>
       </div>
@@ -430,11 +443,14 @@ function formatDepartureLabel(departureTime: string | null) {
   }).format(departure);
 }
 
-function getFundingConfirmationInfo(departureTime: string | null) {
+function getFundingTimelineInfo(
+  departureTime: string | null,
+  status: FundingStatus
+) {
   if (!departureTime) {
     return {
+      labelTitle: "펀딩 확정일",
       label: "-",
-      remainingLabel: "확정일 미정",
     };
   }
 
@@ -442,8 +458,8 @@ function getFundingConfirmationInfo(departureTime: string | null) {
 
   if (Number.isNaN(departure.getTime())) {
     return {
+      labelTitle: "펀딩 확정일",
       label: "-",
-      remainingLabel: "확정일 미정",
     };
   }
 
@@ -451,20 +467,23 @@ function getFundingConfirmationInfo(departureTime: string | null) {
   confirmationDate.setDate(
     confirmationDate.getDate() - CONFIRMATION_DAYS_BEFORE_DEPARTURE
   );
+  confirmationDate.setHours(0, 0, 0, 0);
 
-  const today = startOfDay(new Date());
+  const recruitmentCloseDate = new Date(departure);
+  recruitmentCloseDate.setDate(recruitmentCloseDate.getDate() - 1);
+
   const confirmationDay = startOfDay(confirmationDate);
   const diffDays = Math.ceil(
-    (confirmationDay.getTime() - today.getTime()) / 86_400_000
+    (confirmationDay.getTime() - startOfDay(new Date()).getTime()) / 86_400_000
   );
 
+  const showRecruitmentClose =
+    status === "CONFIRMED" || status === "CLOSED" || diffDays < 0;
+  const labelDate = showRecruitmentClose ? recruitmentCloseDate : confirmationDate;
+
   return {
-    label: new Intl.DateTimeFormat("ko-KR", {
-      month: "short",
-      day: "numeric",
-      weekday: "short",
-    }).format(confirmationDate),
-    remainingLabel: formatConfirmationRemaining(diffDays),
+    labelTitle: showRecruitmentClose ? "모집 마감" : "펀딩 확정",
+    label: formatTimelineDateTime(labelDate),
   };
 }
 
@@ -472,14 +491,20 @@ function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function formatConfirmationRemaining(diffDays: number) {
-  if (diffDays > 0) {
-    return `확정까지 ${diffDays}일`;
-  }
+function formatTimelineDateTime(date: Date) {
+  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+  }).format(date);
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const meridiem = hours < 12 ? "오전" : "오후";
+  const hour12 = hours === 0 ? 0 : hours > 12 ? hours - 12 : hours;
 
-  if (diffDays === 0) {
-    return "오늘 확정";
-  }
+  return `${dateLabel} ${meridiem} ${hour12}:${minutes}`;
+}
 
-  return `확정일 ${Math.abs(diffDays)}일 지남`;
+function getStatusGroup(status: FundingStatus) {
+  return status === "CONFIRMED" ? (["CONFIRMED", "CLOSED"] as FundingStatus[]) : [status];
 }

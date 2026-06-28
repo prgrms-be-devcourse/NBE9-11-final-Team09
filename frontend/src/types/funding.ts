@@ -11,6 +11,15 @@ export const REGIONS = [
 export const FUNDING_STATUSES = [
   "RECRUITING",
   "CONFIRMED",
+  "CLOSED",
+  "COMPLETED",
+  "FAILED",
+  "CANCELLED",
+] as const;
+
+export const FUNDING_FILTER_STATUSES = [
+  "RECRUITING",
+  "CONFIRMED",
   "COMPLETED",
   "FAILED",
   "CANCELLED",

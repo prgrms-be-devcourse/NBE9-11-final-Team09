@@ -20,6 +20,7 @@ export const regionLabels: Record<Region, string> = {
 export const statusLabels: Record<FundingStatus, string> = {
   RECRUITING: "모집중",
   CONFIRMED: "확정",
+  CLOSED: "모집마감",
   COMPLETED: "완료",
   FAILED: "실패",
   CANCELLED: "취소",
