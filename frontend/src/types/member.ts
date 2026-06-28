@@ -110,6 +110,7 @@ export type ParticipationPaymentStatus =
 
 export interface MyParticipation {
   participationId: number;
+  fundingId: number;
   fundingTitle: string;
   routeInfo: string;
   outboundSeatNumber: string;
@@ -118,4 +119,5 @@ export interface MyParticipation {
   paymentStatus: ParticipationPaymentStatus;
   canBoard: boolean;
   departureTime: string;
+  balanceAmount: number;
 }
