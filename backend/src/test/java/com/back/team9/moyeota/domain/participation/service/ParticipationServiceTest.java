@@ -80,8 +80,6 @@ class ParticipationServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Mock
-    private com.back.team9.moyeota.domain.notification.service.NotificationService notificationService;
 
 
     @BeforeEach
@@ -98,7 +96,6 @@ class ParticipationServiceTest {
                 seatRepository,
                 seatRedisService,
                 eventPublisher,
-                notificationService,
                 clock
         );
     }
@@ -371,6 +368,64 @@ class ParticipationServiceTest {
                         .isEqualTo(ErrorCode.DUPLICATE_PARTICIPATION));
 
         verify(seatRepository, never()).findByIdWithPathinfoAndFunding(any());
+    }
+
+    @Test
+    @DisplayName("참여 신청 - 결제 이탈 후 재참여 성공 (PENDING 참여 자동 취소 후 새 좌석으로 재신청)")
+    void createParticipation_결제이탈후재참여_성공() {
+        // Given
+        Long memberId = 1L;
+        Long fundingId = 10L;
+        Long oldOutboundSeatId = 99L;
+        Long newOutboundSeatId = 100L;
+
+        ParticipationCreateRequest request = new ParticipationCreateRequest(
+                fundingId, newOutboundSeatId, null);
+
+        Funding funding = mock(Funding.class);
+        given(funding.getFundingId()).willReturn(fundingId);
+        given(funding.getStatus()).willReturn(FundingStatus.RECRUITING);
+        given(funding.getMaxParticipants()).willReturn(10);
+        given(funding.getTripType()).willReturn(TripType.ONE_WAY);
+
+        Member member = mock(Member.class);
+
+        Seat oldOutboundSeat = mock(Seat.class);
+        given(oldOutboundSeat.getSeatId()).willReturn(oldOutboundSeatId);
+
+        // 실제 객체로 cancel() / reapply() 상태 전이 검증
+        Participation existingPending = Participation.create(funding, member, oldOutboundSeat, null);
+
+        Pathinfo newOutboundPathinfo = mock(Pathinfo.class);
+        given(newOutboundPathinfo.getFunding()).willReturn(funding);
+        given(newOutboundPathinfo.getDirection()).willReturn(Direction.OUTBOUND);
+
+        Seat newOutboundSeat = mock(Seat.class);
+        given(newOutboundSeat.getSeatId()).willReturn(newOutboundSeatId);
+        given(newOutboundSeat.getStatus()).willReturn(SeatStatus.AVAILABLE);
+        given(newOutboundSeat.getPathinfo()).willReturn(newOutboundPathinfo);
+
+        given(fundingRepository.findById(fundingId)).willReturn(Optional.of(funding));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(participationRepository.findByFunding_FundingIdAndMember_MemberId(fundingId, memberId))
+                .willReturn(Optional.of(existingPending));
+        given(participationRepository.existsByFunding_FundingIdAndMember_MemberIdAndPaymentStatusIn(
+                eq(fundingId), eq(memberId), any()))
+                .willReturn(false);
+        given(participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
+                fundingId, List.of(ParticipationPaymentStatus.PENDING, ParticipationPaymentStatus.ACTIVE)))
+                .willReturn(0L);
+        given(seatRepository.findByIdWithPathinfoAndFunding(newOutboundSeatId))
+                .willReturn(Optional.of(newOutboundSeat));
+
+        // When
+        ParticipationResponse response = participationService.createParticipation(memberId, request);
+
+        // Then — 새 좌석으로 재참여, Redis HOLD 해제 확인
+        assertThat(response.status()).isEqualTo(ParticipationStatus.ACTIVE);
+        assertThat(response.paymentStatus()).isEqualTo(ParticipationPaymentStatus.PENDING);
+        assertThat(response.outboundSeatId()).isEqualTo(newOutboundSeatId);
+        verify(seatRedisService).releaseSeat(oldOutboundSeatId, memberId);
     }
 
     @Test

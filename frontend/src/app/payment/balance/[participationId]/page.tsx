@@ -19,6 +19,14 @@ type BalanceContext = {
   amount: number;
 };
 
+type TossMethod = "CARD" | "TRANSFER" | "VIRTUAL_ACCOUNT";
+
+const PAYMENT_METHODS: { value: TossMethod; label: string; desc: string }[] = [
+  { value: "CARD", label: "신용·체크카드", desc: "카드사 선택 후 결제" },
+  { value: "TRANSFER", label: "계좌이체", desc: "실시간 계좌이체" },
+  { value: "VIRTUAL_ACCOUNT", label: "가상계좌", desc: "무통장 입금 (24시간 내)" },
+];
+
 export default function BalancePaymentPage() {
   const params = useParams<{ participationId: string }>();
   const router = useRouter();
@@ -27,6 +35,7 @@ export default function BalancePaymentPage() {
   const [funding, setFunding] = useState<FundingDetail | null>(null);
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [context, setContext] = useState<BalanceContext | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<TossMethod>("CARD");
   const [allAgreed, setAllAgreed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [refundAgreed, setRefundAgreed] = useState(false);
@@ -86,23 +95,37 @@ export default function BalancePaymentPage() {
       const memberId = getFundingMemberId();
       const tossPayments = await loadTossPayments(CLIENT_KEY);
       const payment = tossPayments.payment({
-        customerKey: memberId ? String(memberId) : ANONYMOUS,
+        customerKey: memberId ? `MEMBER_${memberId}` : ANONYMOUS,
       });
 
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: amount },
+      const common = {
+        amount: { currency: "KRW" as const, value: amount },
         orderId,
         orderName: "모여타 버스 잔금 결제",
         successUrl: `${window.location.origin}/payment/balance/result?participationId=${participationId}`,
         failUrl: `${window.location.origin}/payment/balance/fail?participationId=${participationId}`,
-        card: {
-          useEscrow: false,
-          flowMode: "DEFAULT",
-          useCardPoint: false,
-          useAppCardOnly: false,
-        },
-      });
+      };
+
+      if (selectedMethod === "CARD") {
+        await payment.requestPayment({
+          ...common,
+          method: "CARD",
+          card: { useEscrow: false, flowMode: "DEFAULT", useCardPoint: false, useAppCardOnly: false },
+        });
+      } else if (selectedMethod === "TRANSFER") {
+        await payment.requestPayment({
+          ...common,
+          method: "TRANSFER",
+          transfer: { cashReceipt: { type: "소득공제" } },
+        });
+      } else if (selectedMethod === "VIRTUAL_ACCOUNT") {
+        const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+        await payment.requestPayment({
+          ...common,
+          method: "VIRTUAL_ACCOUNT",
+          virtualAccount: { cashReceipt: { type: "소득공제" }, dueDate: due },
+        });
+      }
     } catch (err) {
       setPaying(false);
       setError(
@@ -253,25 +276,38 @@ export default function BalancePaymentPage() {
 
           {/* Right column */}
           <div className="md:w-80 w-full">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-4">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">
-                결제 수단 선택
-              </h2>
-
-              <div className="border-2 border-blue-500 rounded-lg p-4 flex items-center gap-3 mb-5">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                  T
+            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-4 space-y-5">
+              <div>
+                <h2 className="text-base font-semibold text-gray-800 mb-3">결제 수단 선택</h2>
+                <div className="space-y-2">
+                  {PAYMENT_METHODS.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => setSelectedMethod(m.value)}
+                      className={`w-full flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-colors ${
+                        selectedMethod === m.value
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-gray-900">{m.label}</div>
+                        <div className="text-xs text-gray-400">{m.desc}</div>
+                      </div>
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                          selectedMethod === m.value
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-300"
+                        }`}
+                      />
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-gray-900">
-                    토스페이
-                  </div>
-                  <div className="text-xs text-gray-400">간편결제</div>
-                </div>
-                <div className="w-4 h-4 rounded-full bg-blue-500" />
               </div>
 
-              <div className="border-t border-gray-100 pt-4 mb-5">
+              <div className="border-t border-gray-100 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">잔금 결제 금액</span>
                   <span className="text-xl font-bold text-gray-900">
@@ -285,7 +321,7 @@ export default function BalancePaymentPage() {
                 disabled={paying}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
               >
-                {paying ? "결제 진행 중..." : "토스페이로 잔금 결제하기"}
+                {paying ? "결제 진행 중..." : "잔금 결제하기"}
               </button>
             </div>
           </div>

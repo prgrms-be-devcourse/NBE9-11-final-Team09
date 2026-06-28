@@ -372,11 +372,11 @@ public class FundingService {
         return fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
     }
-    // 참가자 수 조회(int로 반환)
+    // 결제 완료(ACTIVE/COMPLETED) 참가자 수 조회
     private int countActiveParticipants(Long fundingId) {
-        return (int) participationRepository.countByFunding_FundingIdAndStatus(
+        return (int) participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
                 fundingId,
-                ACTIVE
+                List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
         );
     }
 
@@ -385,9 +385,9 @@ public class FundingService {
             return Map.of();
         }
 
-        return participationRepository.countByFundingIdsAndStatus(
+        return participationRepository.countByFundingIdsAndPaymentStatusIn(
                         fundingIds,
-                        ACTIVE
+                        List.of(ParticipationPaymentStatus.ACTIVE, ParticipationPaymentStatus.COMPLETED)
                 )
                 .stream()
                 .collect(Collectors.toMap(
