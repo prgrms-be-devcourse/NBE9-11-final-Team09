@@ -30,7 +30,7 @@ const sortOptions = [
 
 export default function FundingListPage() {
   const [params, setParams] = useState<FundingListParams>({
-    statuses: ["RECRUITING", "CONFIRMED", "CLOSED"],
+    statuses: ["RECRUITING", "CONFIRMED"],
     sort: "departureDate,asc",
     page: 0,
     size: 20,
@@ -75,18 +75,17 @@ export default function FundingListPage() {
   function toggleStatus(status: FundingStatus) {
     setParams((current) => {
       const statuses = current.statuses ?? [];
-      const statusGroup = getStatusGroup(status);
-      const selected = statusGroup.every((item) => statuses.includes(item));
+      const selected = statuses.includes(status);
 
-      if (selected && statuses.length === statusGroup.length) {
+      if (selected && statuses.length === 1) {
         return current;
       }
 
       return {
         ...current,
         statuses: selected
-          ? statuses.filter((item) => !statusGroup.includes(item))
-          : Array.from(new Set([...statuses, ...statusGroup])),
+          ? statuses.filter((item) => item !== status)
+          : [...statuses, status],
         page: 0,
       };
     });
@@ -168,9 +167,7 @@ export default function FundingListPage() {
 
           <div className="flex flex-wrap gap-2">
             {FUNDING_FILTER_STATUSES.map((status) => {
-              const selected = getStatusGroup(status).every((item) =>
-                params.statuses?.includes(item)
-              );
+              const selected = params.statuses?.includes(status);
 
               return (
                 <button
@@ -315,13 +312,8 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
         <div className="grid gap-7">
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded bg-gray-100 px-2 py-1">
-              {funding.status === "CLOSED" ? statusLabels.CONFIRMED : statusLabels[funding.status]}
+              {statusLabels[funding.status]}
             </span>
-            {funding.status === "CLOSED" && (
-              <span className="rounded bg-rose-50 px-2 py-1 text-rose-700">
-                {statusLabels.CLOSED}
-              </span>
-            )}
             <span
               className={`rounded px-2 py-1 ${
                 funding.tripType === "ROUND"
@@ -346,14 +338,22 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-          <p className="text-gray-700">
-            {confirmation.labelTitle}{" "}
-            <span className="font-semibold text-red-600">
-              {confirmation.label}
-            </span>
-          </p>
-        </div>
+        {confirmation && (
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+            <p className="text-gray-700">
+              {confirmation.labelTitle}{" "}
+              <span
+                className={`font-semibold ${
+                  confirmation.tone === "confirm"
+                    ? "text-emerald-700"
+                    : "text-red-600"
+                }`}
+              >
+                {confirmation.label}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       <aside className="grid gap-4 rounded border border-gray-200 bg-gray-50 p-4">
@@ -447,10 +447,15 @@ function getFundingTimelineInfo(
   departureTime: string | null,
   status: FundingStatus
 ) {
+  if (["COMPLETED", "FAILED", "CANCELLED"].includes(status)) {
+    return null;
+  }
+
   if (!departureTime) {
     return {
       labelTitle: "펀딩 확정일",
       label: "-",
+      tone: "confirm" as const,
     };
   }
 
@@ -460,6 +465,7 @@ function getFundingTimelineInfo(
     return {
       labelTitle: "펀딩 확정일",
       label: "-",
+      tone: "confirm" as const,
     };
   }
 
@@ -484,6 +490,7 @@ function getFundingTimelineInfo(
   return {
     labelTitle: showRecruitmentClose ? "모집 마감" : "펀딩 확정",
     label: formatTimelineDateTime(labelDate),
+    tone: showRecruitmentClose ? "close" as const : "confirm" as const,
   };
 }
 
@@ -503,8 +510,4 @@ function formatTimelineDateTime(date: Date) {
   const hour12 = hours === 0 ? 0 : hours > 12 ? hours - 12 : hours;
 
   return `${dateLabel} ${meridiem} ${hour12}:${minutes}`;
-}
-
-function getStatusGroup(status: FundingStatus) {
-  return status === "CONFIRMED" ? (["CONFIRMED", "CLOSED"] as FundingStatus[]) : [status];
 }

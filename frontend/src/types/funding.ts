@@ -20,6 +20,7 @@ export const FUNDING_STATUSES = [
 export const FUNDING_FILTER_STATUSES = [
   "RECRUITING",
   "CONFIRMED",
+  "CLOSED",
   "COMPLETED",
   "FAILED",
   "CANCELLED",
