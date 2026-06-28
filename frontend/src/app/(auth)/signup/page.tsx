@@ -409,7 +409,7 @@ export default function SignupPage() {
                   }}
                   disabled={!emailSent || submitLoading}
                   maxLength={6}
-                  className="w-full rounded border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-100 disabled:text-gray-400"
+                  className="w-full rounded border border-gray-300 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-gray-600 disabled:bg-gray-100 disabled:text-gray-400"
                 />
               </label>
             </section>
