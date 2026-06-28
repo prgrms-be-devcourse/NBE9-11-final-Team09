@@ -20,6 +20,7 @@ public class FundingTimelineService {
         LocalDate today = LocalDate.now(clock);
         LocalDateTime now = LocalDateTime.now(clock);
         processor.confirmOrFailFundings(today);
+        processor.closeRecruitment(now);
         noShowProcessor.processNoShow(now);
         processor.sendDepartureReminders(now);
         processor.completePathinfosAndFundings(now);

@@ -61,6 +61,22 @@ public interface PathinfoRepository extends JpaRepository<Pathinfo, Long> {
         select p
         from Pathinfo p
         join fetch p.funding f
+        where p.status = :status
+          and p.direction = :direction
+          and p.departureTime <= :deadline
+          and f.status = :fundingStatus
+        """)
+    List<Pathinfo> findRecruitmentCloseTargets(
+            @Param("status") PathinfoStatus status,
+            @Param("direction") Direction direction,
+            @Param("deadline") LocalDateTime deadline,
+            @Param("fundingStatus") FundingStatus fundingStatus
+    );
+
+    @Query("""
+        select p
+        from Pathinfo p
+        join fetch p.funding f
         join fetch f.member
         where p.status = :status
           and p.direction = :direction

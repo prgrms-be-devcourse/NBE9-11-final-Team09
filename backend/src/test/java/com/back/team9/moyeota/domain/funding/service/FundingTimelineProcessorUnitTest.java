@@ -155,10 +155,48 @@ class FundingTimelineProcessorUnitTest {
     }
 
     @Test
+    @DisplayName("가는 노선 출발 24시간 전 확정 펀딩 - 신규 참여를 마감한다")
+    void closeRecruitment_whenConfirmedFundingOutboundDepartureIsWithin24Hours_closesFunding() {
+        // Given
+        Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);
+        Pathinfo outbound = pathinfo(100L, funding, Direction.OUTBOUND, PathinfoStatus.PENDING);
+        given(pathinfoRepository.findRecruitmentCloseTargets(
+                PathinfoStatus.PENDING,
+                Direction.OUTBOUND,
+                NOW.plusHours(24),
+                FundingStatus.CONFIRMED
+        )).willReturn(List.of(outbound));
+
+        // When
+        fundingTimelineProcessor.closeRecruitment(NOW);
+
+        // Then
+        assertThat(funding.getStatus()).isEqualTo(FundingStatus.CLOSED);
+    }
+
+    @Test
+    @DisplayName("가는 노선 출발 24시간 전 대상이 없으면 신규 참여 마감을 하지 않는다")
+    void closeRecruitment_whenTargetDoesNotExist_doesNotCloseFunding() {
+        // Given
+        given(pathinfoRepository.findRecruitmentCloseTargets(
+                PathinfoStatus.PENDING,
+                Direction.OUTBOUND,
+                NOW.plusHours(24),
+                FundingStatus.CONFIRMED
+        )).willReturn(List.of());
+
+        // When
+        fundingTimelineProcessor.closeRecruitment(NOW);
+
+        // Then
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
     @DisplayName("출발 시간이 지난 노선 - 모든 유효 노선이 완료되면 펀딩도 완료")
     void sendDepartureReminders_sendsNotificationForOutboundPathinfo() {
         // Given
-        Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);
+        Funding funding = funding(10L, FundingStatus.CLOSED, 20);
         Pathinfo outbound = pathinfo(100L, funding, Direction.OUTBOUND, PathinfoStatus.PENDING);
 
         given(pathinfoRepository.findDepartureReminderTargets(
@@ -166,7 +204,7 @@ class FundingTimelineProcessorUnitTest {
                 Direction.OUTBOUND,
                 NOW.plusHours(2),
                 NOW.plusHours(3),
-                FundingStatus.CONFIRMED
+                FundingStatus.CLOSED
         )).willReturn(List.of(outbound));
 
         // When
@@ -193,7 +231,7 @@ class FundingTimelineProcessorUnitTest {
                 Direction.OUTBOUND,
                 NOW.plusHours(2),
                 NOW.plusHours(3),
-                FundingStatus.CONFIRMED
+                FundingStatus.CLOSED
         )).willReturn(List.of());
 
         // When
@@ -207,14 +245,14 @@ class FundingTimelineProcessorUnitTest {
     @DisplayName("출발 시간이 지난 노선 - 모든 유효 노선이 완료되면 펀딩도 완료된다")
     void completePathinfosAndFundings_whenAllPathinfosAreCompleted_completesFunding() {
         // Given
-        Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);
+        Funding funding = funding(10L, FundingStatus.CLOSED, 20);
         Pathinfo outbound = pathinfo(100L, funding, Direction.OUTBOUND, PathinfoStatus.PENDING);
         Pathinfo returned = pathinfo(101L, funding, Direction.RETURN, PathinfoStatus.COMPLETED);
 
         given(pathinfoRepository.findPathinfosWithFunding(
                 PathinfoStatus.PENDING,
                 NOW,
-                FundingStatus.CONFIRMED
+                FundingStatus.CLOSED
         )).willReturn(List.of(outbound));
         given(pathinfoRepository.findByFunding_FundingIdInAndStatusNot(
                 List.of(10L),
@@ -233,14 +271,14 @@ class FundingTimelineProcessorUnitTest {
     @DisplayName("출발 시간이 지난 노선 - 미완료 노선이 남아 있으면 펀딩은 완료하지 않는다")
     void completePathinfosAndFundings_whenPendingPathinfoRemains_doesNotCompleteFunding() {
         // Given
-        Funding funding = funding(10L, FundingStatus.CONFIRMED, 20);
+        Funding funding = funding(10L, FundingStatus.CLOSED, 20);
         Pathinfo outbound = pathinfo(100L, funding, Direction.OUTBOUND, PathinfoStatus.PENDING);
         Pathinfo returned = pathinfo(101L, funding, Direction.RETURN, PathinfoStatus.PENDING);
 
         given(pathinfoRepository.findPathinfosWithFunding(
                 PathinfoStatus.PENDING,
                 NOW,
-                FundingStatus.CONFIRMED
+                FundingStatus.CLOSED
         )).willReturn(List.of(outbound));
         given(pathinfoRepository.findByFunding_FundingIdInAndStatusNot(
                 List.of(10L),
@@ -253,7 +291,7 @@ class FundingTimelineProcessorUnitTest {
         // Then
         assertThat(outbound.getStatus()).isEqualTo(PathinfoStatus.COMPLETED);
         assertThat(returned.getStatus()).isEqualTo(PathinfoStatus.PENDING);
-        assertThat(funding.getStatus()).isEqualTo(FundingStatus.CONFIRMED);
+        assertThat(funding.getStatus()).isEqualTo(FundingStatus.CLOSED);
     }
 
     @Test
@@ -263,7 +301,7 @@ class FundingTimelineProcessorUnitTest {
         given(pathinfoRepository.findPathinfosWithFunding(
                 PathinfoStatus.PENDING,
                 NOW,
-                FundingStatus.CONFIRMED
+                FundingStatus.CLOSED
         )).willReturn(List.of());
 
         // When
