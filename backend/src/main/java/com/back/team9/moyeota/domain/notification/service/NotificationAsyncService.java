@@ -27,6 +27,7 @@ public class NotificationAsyncService {
     private final Clock clock;
 
     @Async("notificationExecutor")
+    @Transactional
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendMail(NotificationCreatedEvent event) {
 
