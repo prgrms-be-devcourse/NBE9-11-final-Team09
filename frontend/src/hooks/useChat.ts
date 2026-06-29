@@ -3,6 +3,7 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { ChatMessageResponse, ChatMessageRequest } from "@/types/chat";
 import { getChatMessages } from "@/lib/chatApi";
+import { getAccessToken } from "@/lib/member-api";
 
 interface UseChatProps {
     chatRoomId: number;
@@ -31,9 +32,20 @@ export function useChat({ chatRoomId, memberId }: UseChatProps): UseChatReturn {
                 console.error("채팅 메시지 조회 실패:", error);
             });
 
+        const accessToken = getAccessToken();
+
+        if (!accessToken) {
+            return () => {
+                ignore = true;
+            };
+        }
+
         const client = new Client({
             webSocketFactory: () =>
                 new SockJS(`${process.env.NEXT_PUBLIC_API_URL}/ws`),
+            connectHeaders: {
+                Authorization: `Bearer ${accessToken}`,
+            },
 
             onConnect: () => {
                 setIsConnected(true);

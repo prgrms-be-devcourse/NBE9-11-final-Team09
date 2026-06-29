@@ -38,15 +38,15 @@ export default function FundingCreatePage() {
 
   if (!loggedIn) {
     return (
-      <main className="min-h-screen bg-gray-50 px-5 py-10">
-        <div className="mx-auto grid max-w-xl gap-4 rounded border border-gray-200 bg-white p-6">
-          <h1 className="text-2xl font-bold">로그인이 필요합니다</h1>
-          <p className="text-sm text-gray-600">
+      <main className="min-h-screen bg-[#f3f7f1] px-5 py-10">
+        <div className="mx-auto grid max-w-xl gap-4 rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+          <h1 className="text-2xl font-bold text-slate-950">로그인이 필요합니다</h1>
+          <p className="text-sm font-medium text-slate-600">
             펀딩 생성은 로그인한 사용자만 사용할 수 있습니다.
           </p>
           <Link
             href="/login"
-            className="w-fit rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
+            className="w-fit rounded-lg bg-[#4f7a61] px-4 py-2 text-sm font-semibold text-white hover:bg-[#426f55]"
           >
             로그인하기
           </Link>
@@ -56,29 +56,27 @@ export default function FundingCreatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-950">
-      <div className="mx-auto grid w-full max-w-4xl gap-6 px-5 py-8">
+    <main className="min-h-screen bg-[#f3f7f1] text-slate-950">
+      <div className="mx-auto grid w-full max-w-5xl gap-5 px-5 py-6">
         <Link
           href="/fundings"
           onClick={handleLeave}
-          className="w-fit text-sm font-medium text-gray-600"
+          className="w-fit text-sm font-semibold text-slate-600 hover:text-[#426f55]"
         >
           목록으로
         </Link>
-        <section className="rounded border border-gray-200 bg-white p-6">
+        <section className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
           <h1 className="text-3xl font-bold">펀딩 만들기</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm font-medium text-slate-600">
             노선과 방장 좌석을 함께 설정해주세요.
           </p>
-          <div className="mt-8">
-            <FundingForm
-              mode="create"
-              submitting={submitting}
-              onDirtyChange={setFormDirty}
-              onSubmit={handleSubmit}
-            />
-          </div>
         </section>
+        <FundingForm
+          mode="create"
+          submitting={submitting}
+          onDirtyChange={setFormDirty}
+          onSubmit={handleSubmit}
+        />
       </div>
     </main>
   );

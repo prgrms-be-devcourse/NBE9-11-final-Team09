@@ -43,18 +43,18 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-6 py-12 sm:px-12">
-      <section className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-10">
+    <main className="flex min-h-screen items-center justify-center bg-[#f3f7f1] px-6 py-12 sm:px-12">
+      <section className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/60 ring-1 ring-[#dbe7dc] sm:p-10">
         <div className="w-full">
           <div className="mb-10">
             <Link href="/" className="flex items-center gap-3 text-xl font-black">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#173452] text-white">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#4f7a61] text-white">
                 M
               </span>
               모여타 Admin
             </Link>
           </div>
-          <p className="text-sm font-bold text-[#2b6b88]">ADMIN SIGN IN</p>
+          <p className="text-sm font-bold text-[#426f55]">ADMIN SIGN IN</p>
           <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
             관리자 로그인
           </h2>
@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
                 autoComplete="username"
                 required
                 placeholder="관리자 아이디 입력"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#2b6b88] focus:ring-4 focus:ring-[#2b6b88]/10"
+                className="w-full rounded-xl border border-[#dbe7dc] bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-4 focus:ring-[#4f7a61]/10"
               />
             </label>
             <label className="block">
@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
                 required
                 placeholder="비밀번호 입력"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#2b6b88] focus:ring-4 focus:ring-[#2b6b88]/10"
+                className="w-full rounded-xl border border-[#dbe7dc] bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-4 focus:ring-[#4f7a61]/10"
               />
             </label>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
                 type="checkbox"
                 checked={keepLogin}
                 onChange={(event) => setKeepLogin(event.target.checked)}
-                className="h-4 w-4 accent-[#173452]"
+                className="h-4 w-4 accent-[#4f7a61]"
               />
               관리자 로그인 유지
             </label>
@@ -109,7 +109,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#173452] px-5 py-4 text-sm font-bold text-white transition hover:bg-[#10283f] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-[#4f7a61] px-5 py-4 text-sm font-bold text-white transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "로그인 중" : "관리자 로그인"}
             </button>

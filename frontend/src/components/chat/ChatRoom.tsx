@@ -32,30 +32,35 @@ function ChatRoomInner({ chatRoomId, fundingTitle, memberId }: ChatRoomInnerProp
     }, [messages]);
 
     return (
-        <div className="flex flex-col h-screen max-w-2xl mx-auto">
+        <main className="min-h-[calc(100dvh-64px)] bg-[#f3f7f1] px-4 py-4">
+        <div className="mx-auto flex h-[calc(100dvh-96px)] max-w-3xl min-h-[520px] flex-col overflow-hidden rounded-3xl border border-[#dbe7dc] bg-white shadow-[0_14px_36px_rgba(31,41,55,0.08)]">
 
-            {/* 상단 헤더 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">💬 문의</span>
-                    <span className="text-sm text-gray-500">| {fundingTitle}</span>
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#dbe7dc] bg-white px-5 py-4">
+                <div className="min-w-0">
+                    <p className="text-xs font-bold tracking-widest text-[#357465]">CHAT</p>
+                    <div className="mt-1 flex min-w-0 items-center gap-2">
+                        <span className="text-base font-black text-slate-950">문의</span>
+                        <span className="truncate text-sm font-semibold text-slate-500">
+                            {fundingTitle}
+                        </span>
+                    </div>
                 </div>
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="text-sm text-gray-500"
+                    className="shrink-0 rounded-xl border border-[#dbe7dc] bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-[#eef5ea] hover:text-[#426f55]"
                 >
                     이전으로
                 </button>
             </div>
 
             {!isConnected && (
-                <div className="text-center text-xs text-gray-400 py-1 bg-gray-50">
+                <div className="shrink-0 border-b border-[#dbe7dc] bg-[#eef5ea] py-2 text-center text-xs font-semibold text-[#426f55]">
                     연결 중...
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8faf9] px-5 py-5">
                 {messages.map((message) => (
                     <MessageBubble key={message.messageId} message={message} />
                 ))}
@@ -65,6 +70,7 @@ function ChatRoomInner({ chatRoomId, fundingTitle, memberId }: ChatRoomInnerProp
             <MessageInput onSend={sendMessage} disabled={!isConnected} />
 
         </div>
+        </main>
     );
 }
 
@@ -79,7 +85,7 @@ export default function ChatRoom({ chatRoomId, fundingTitle }: ChatRoomProps) {
 
     if (memberId === null) {
         return (
-            <div className="flex items-center justify-center h-screen text-sm text-gray-500">
+            <div className="flex min-h-[calc(100dvh-64px)] items-center justify-center bg-[#f3f7f1] text-sm font-medium text-slate-500">
                 사용자 정보를 불러오는 중입니다...
             </div>
         );

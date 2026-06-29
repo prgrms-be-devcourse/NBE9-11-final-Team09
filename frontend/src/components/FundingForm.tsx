@@ -30,6 +30,13 @@ const MAX_PARTICIPANTS_BY_BUS_TYPE = {
 
 const MIN_DEPARTURE_OFFSET_DAYS = 14;
 
+const sectionClass =
+  "grid gap-5 rounded-xl border border-[#dbe7dc] bg-white p-5 shadow-[0_8px_24px_rgba(31,41,55,0.04)] sm:p-6";
+const sectionTitleClass = "text-lg font-bold text-slate-950";
+const labelClass = "grid gap-2 text-sm font-semibold text-slate-700";
+const inputClass =
+  "rounded-lg border border-[#dbe7dc] bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50";
+
 const defaultPayload: FundingPayload = {
   title: "",
   content: "",
@@ -339,17 +346,26 @@ export default function FundingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-8">
+    <form onSubmit={handleSubmit} className="grid gap-5">
       {textOnly && (
-        <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
           참여자가 있는 펀딩은 제목과 내용만 수정할 수 있습니다.
         </div>
       )}
 
-      <section className="grid gap-4">
-        <h2 className="text-lg font-semibold">기본 정보</h2>
-        <label className="grid gap-2 text-sm font-medium text-gray-700">
-          제목
+      <section className={sectionClass}>
+        <SectionHeader
+          number="1"
+          title="기본 정보"
+          description="목록에서 가장 먼저 보이는 제목과 안내 문구입니다."
+        />
+        <label className={labelClass}>
+          <span className="flex items-center justify-between">
+            제목
+            <span className="text-xs font-medium text-slate-400">
+              {payload.title.length} / 50
+            </span>
+          </span>
           <input
             value={payload.title}
             onChange={(event) =>
@@ -358,12 +374,17 @@ export default function FundingForm({
                 title: event.target.value,
               }))
             }
-            className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-            placeholder="예: 서울에서 부산 야구장 같이 가요"
+            className={inputClass}
+            placeholder="예: 서울에서 부산 콘서트 같이 가요"
           />
         </label>
-        <label className="grid gap-2 text-sm font-medium text-gray-700">
-          내용
+        <label className={labelClass}>
+          <span className="flex items-center justify-between">
+            내용
+            <span className="text-xs font-medium text-slate-400">
+              {payload.content.length} / 300
+            </span>
+          </span>
           <textarea
             value={payload.content}
             onChange={(event) =>
@@ -372,17 +393,21 @@ export default function FundingForm({
                 content: event.target.value,
               }))
             }
-            className="min-h-32 rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-            placeholder="탑승 안내, 집결 장소, 참고 사항을 적어주세요."
+            className={`${inputClass} min-h-32 resize-y`}
+            placeholder="도착 예정 시간, 집결 위치, 탑승 안내를 적어주세요."
           />
         </label>
       </section>
 
-      <fieldset disabled={routeLocked} className="grid gap-8 disabled:opacity-60">
-        <section className="grid gap-4">
-          <h2 className="text-lg font-semibold">운행 조건</h2>
+      <fieldset disabled={routeLocked} className="grid gap-5 disabled:opacity-60">
+        <section className={sectionClass}>
+          <SectionHeader
+            number="2"
+            title="운행 조건"
+            description="버스 종류와 확정에 필요한 최소 인원을 설정합니다."
+          />
           <div className="grid gap-4 md:grid-cols-3 md:items-start">
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
+            <label className="grid gap-3 rounded-lg border border-[#dbe7dc] bg-[#fbfcfb] p-4 text-sm font-semibold text-slate-700">
               버스
               <select
                 value={payload.busType}
@@ -410,7 +435,7 @@ export default function FundingForm({
                           : null,
                   }));
                 }}
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+                className={inputClass}
               >
                 {Object.entries(busTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -422,7 +447,7 @@ export default function FundingForm({
                 -
               </span>
             </label>
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
+            <label className="grid gap-3 rounded-lg border border-[#dbe7dc] bg-[#fbfcfb] p-4 text-sm font-semibold text-slate-700">
               최소 인원
               <input
                 type="number"
@@ -439,13 +464,13 @@ export default function FundingForm({
                     ),
                   }))
                 }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+                className={inputClass}
               />
-              <span className="min-h-4 text-xs text-gray-500">
+              <span className="min-h-4 text-xs font-medium text-slate-500">
                 최대 참가자 {maxParticipants}명
               </span>
             </label>
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
+            <label className="grid gap-3 rounded-lg border border-[#dbe7dc] bg-[#fbfcfb] p-4 text-sm font-semibold text-slate-700">
               이동 방식
               <select
                 value={payload.tripType}
@@ -475,7 +500,7 @@ export default function FundingForm({
                     },
                   }));
                 }}
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+                className={inputClass}
               >
                 {Object.entries(tripTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -490,10 +515,14 @@ export default function FundingForm({
           </div>
         </section>
 
-        <section className="grid gap-4">
-          <h2 className="text-lg font-semibold">노선</h2>
+        <section className={sectionClass}>
+          <SectionHeader
+            number="3"
+            title="노선"
+            description="출발일과 왕복 시간을 입력하고 지역을 선택합니다."
+          />
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
+            <label className={labelClass}>
               출발 시간
               <input
                 type="datetime-local"
@@ -508,18 +537,18 @@ export default function FundingForm({
                     },
                   }))
                 }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+                className={inputClass}
               />
               <span
                 className={`min-h-4 text-xs ${
-                  departureTimeError ? "text-red-600" : "text-gray-500"
+                  departureTimeError ? "text-red-600" : "text-slate-500"
                 }`}
               >
                 {departureTimeError || "출발일은 현재 시점으로부터 14일 이후만 가능합니다."}
               </span>
             </label>
             {payload.tripType === "ROUND" && (
-              <label className="grid gap-2 text-sm font-medium text-gray-700">
+              <label className={labelClass}>
                 복귀 출발 시간
                 <input
                   type="time"
@@ -533,11 +562,11 @@ export default function FundingForm({
                       },
                     }))
                   }
-                  className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+                  className={inputClass}
                 />
                 <span
                   className={`min-h-4 text-xs ${
-                    returnTimeError ? "text-red-600" : "text-gray-500"
+                    returnTimeError ? "text-red-600" : "text-slate-500"
                   }`}
                 >
                   {returnTimeError || "가는 편과 같은 날짜의 시간만 선택합니다."}
@@ -545,111 +574,141 @@ export default function FundingForm({
               </label>
             )}
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <RegionSelect
-              label="출발 지역"
-              value={payload.route.departureRegion}
-              onChange={(departureRegion) =>
-                setPayload((current) => ({
-                  ...current,
-                  route: {
-                    ...current.route,
-                    departureRegion,
-                  },
-                }))
-              }
-            />
-            <RegionSelect
-              label="도착 지역"
-              value={payload.route.arrivalRegion}
-              onChange={(arrivalRegion) =>
-                setPayload((current) => ({
-                  ...current,
-                  route: {
-                    ...current.route,
-                    arrivalRegion,
-                  },
-                }))
-              }
-            />
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
-              출발 주소
-              <input
-                value={payload.route.departureAddress}
-                onChange={(event) =>
+          <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+            <div className="grid gap-4 rounded-lg border border-[#dbe7dc] bg-[#fbfcfb] p-4">
+              <RegionSelect
+                label="출발 지역"
+                value={payload.route.departureRegion}
+                onChange={(departureRegion) =>
                   setPayload((current) => ({
                     ...current,
                     route: {
                       ...current.route,
-                      departureAddress: event.target.value,
+                      departureRegion,
                     },
                   }))
                 }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-                placeholder="예: 잠실종합운동장"
               />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-gray-700">
-              도착 주소
-              <input
-                value={payload.route.arrivalAddress}
-                onChange={(event) =>
+              <label className={labelClass}>
+                출발 주소
+                <input
+                  value={payload.route.departureAddress}
+                  onChange={(event) =>
+                    setPayload((current) => ({
+                      ...current,
+                      route: {
+                        ...current.route,
+                        departureAddress: event.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClass}
+                  placeholder="예: 서울역"
+                />
+              </label>
+            </div>
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() =>
                   setPayload((current) => ({
                     ...current,
                     route: {
                       ...current.route,
-                      arrivalAddress: event.target.value,
+                      departureRegion: current.route.arrivalRegion,
+                      arrivalRegion: current.route.departureRegion,
+                      departureAddress: current.route.arrivalAddress,
+                      arrivalAddress: current.route.departureAddress,
                     },
                   }))
                 }
-                className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
-                placeholder="예: 사직야구장"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[#dbe7dc] bg-white text-xl font-semibold text-slate-500 shadow-sm transition hover:border-[#adc7b6] hover:bg-[#eef5ea] hover:text-[#426f55]"
+                aria-label="출발지와 도착지 바꾸기"
+              >
+                ↔
+              </button>
+            </div>
+            <div className="grid gap-4 rounded-lg border border-[#dbe7dc] bg-[#fbfcfb] p-4">
+              <RegionSelect
+                label="도착 지역"
+                value={payload.route.arrivalRegion}
+                onChange={(arrivalRegion) =>
+                  setPayload((current) => ({
+                    ...current,
+                    route: {
+                      ...current.route,
+                      arrivalRegion,
+                    },
+                  }))
+                }
               />
-            </label>
+              <label className={labelClass}>
+                도착 주소
+                <input
+                  value={payload.route.arrivalAddress}
+                  onChange={(event) =>
+                    setPayload((current) => ({
+                      ...current,
+                      route: {
+                        ...current.route,
+                        arrivalAddress: event.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClass}
+                  placeholder="예: 부산아시아드주경기장"
+                />
+              </label>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-3 rounded border border-gray-200 bg-gray-50 p-4">
-          <h2 className="text-lg font-semibold">예상 요금</h2>
+        <section className={sectionClass}>
+          <SectionHeader
+            number="4"
+            title="예상 요금"
+            description="1인 예상가는 방장 좌석을 포함한 기준이며, 방장에게는 별도 결제가 진행되지 않습니다."
+          />
           {priceLoading ? (
-            <p className="text-sm text-gray-500">요금을 계산하는 중입니다.</p>
+            <p className="text-sm font-medium text-slate-500">요금을 계산하는 중입니다.</p>
           ) : priceSummary ? (
             <div className="grid gap-3 text-sm md:grid-cols-3">
-              <div>
-                <p className="text-gray-500">총 가격</p>
-                <p className="text-lg font-bold text-gray-950">
+              <div className="rounded-lg border border-[#dbe7dc] bg-white p-4">
+                <p className="text-xs font-semibold text-slate-500">총 가격</p>
+                <p className="mt-1 text-lg font-bold text-slate-950">
                   {formatWon(priceSummary.totalPrice)}
                 </p>
               </div>
-              <div>
-                <p className="text-gray-500">
+              <div className="rounded-lg border border-[#dbe7dc] bg-white p-4">
+                <p className="text-xs font-semibold text-slate-500">
                   최소 예상가 ({maxParticipants}명 기준)
                 </p>
-                <p className="text-lg font-bold text-gray-950">
+                <p className="mt-1 text-lg font-bold text-[#426f55]">
                   {formatWon(priceSummary.minPrice)}
                 </p>
               </div>
-              <div>
-                <p className="text-gray-500">
+              <div className="rounded-lg border border-[#dbe7dc] bg-white p-4">
+                <p className="text-xs font-semibold text-slate-500">
                   최대 예상가 ({payload.minParticipants}명 기준)
                 </p>
-                <p className="text-lg font-bold text-gray-950">
+                <p className="mt-1 text-lg font-bold text-slate-950">
                   {formatWon(priceSummary.maxPrice)}
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm font-medium text-slate-500">
               {priceError || "선택한 노선의 요금을 계산할 수 없습니다."}
             </p>
           )}
-          <p className="text-xs text-gray-500">
-            1인 예상가는 방장 좌석을 포함한 기준이며, 방장에게는 별도 결제가 진행되지 않습니다.
-          </p>
         </section>
 
-        <section className="grid gap-4">
-          <h2 className="text-lg font-semibold">방장 좌석</h2>
+        <section className={sectionClass}>
+          <SectionHeader
+            number="5"
+            title="방장 좌석"
+            description="방장이 탑승할 좌석을 먼저 확보합니다."
+          />
           <div className={seatSelectorGridClass}>
             <HostSeatSelector
               title="가는 편 좌석"
@@ -683,14 +742,47 @@ export default function FundingForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting || !canSubmit}
-        className="rounded bg-gray-950 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitting ? "처리 중" : mode === "create" ? "펀딩 만들기" : "수정 저장"}
-      </button>
+      <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+        <button
+          type="button"
+          onClick={() => window.history.back()}
+          className="h-12 rounded-lg border border-[#dbe7dc] bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-[#eef5ea]"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          disabled={submitting || !canSubmit}
+          className="h-12 rounded-lg bg-[#4f7a61] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting ? "처리 중" : mode === "create" ? "펀딩 만들기" : "수정 저장"}
+        </button>
+      </div>
     </form>
+  );
+}
+
+function SectionHeader({
+  number,
+  title,
+  description,
+}: {
+  number: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#4f7a61] text-sm font-bold text-white">
+        {number}
+      </span>
+      <div>
+        <h2 className={sectionTitleClass}>{title}</h2>
+        <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+          {description}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -704,14 +796,14 @@ function RegionSelect({
   onChange: (value: FundingPayload["route"]["departureRegion"]) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-gray-700">
+    <label className={labelClass}>
       {label}
       <select
         value={value}
         onChange={(event) =>
           onChange(event.target.value as FundingPayload["route"]["departureRegion"])
         }
-        className="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-900"
+        className={inputClass}
       >
         {REGIONS.map((region) => (
           <option key={region} value={region}>
@@ -742,10 +834,10 @@ function HostSeatSelector({
   );
 
   return (
-    <div className="grid min-w-0 gap-3">
+    <div className="grid min-w-0 gap-3 rounded-xl border border-[#dbe7dc] bg-[#f8faf9] p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-gray-800">{title}</p>
-        <p className="rounded bg-gray-100 px-2 py-1 text-sm font-bold text-gray-900">
+        <p className="text-sm font-bold text-slate-800">{title}</p>
+        <p className="rounded-full bg-white px-2.5 py-1 text-sm font-bold text-slate-900 ring-1 ring-[#dbe7dc]">
           {selectedSeatNumber || "미선택"}
         </p>
       </div>

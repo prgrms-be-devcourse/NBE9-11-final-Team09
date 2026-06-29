@@ -14,7 +14,7 @@ const STATUS_LABEL: Record<SettlementResponse["status"], string> = {
 
 const STATUS_COLOR: Record<SettlementResponse["status"], string> = {
   CALCULATED: "bg-yellow-100 text-yellow-700",
-  APPROVED: "bg-blue-100 text-blue-700",
+  APPROVED: "bg-[#eef5ea] text-[#426f55]",
   REJECTED: "bg-red-100 text-red-700",
   COMPLETED: "bg-green-100 text-green-700",
 };
@@ -43,20 +43,20 @@ export default function SettlementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#4f7a61] border-t-transparent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={() => router.back()}
-            className="text-blue-600 underline text-sm"
+            className="text-sm font-semibold text-[#426f55] underline"
           >
             돌아가기
           </button>
@@ -88,17 +88,17 @@ export default function SettlementPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <main className="min-h-screen bg-[#f3f7f1]">
+      <div className="mx-auto max-w-2xl px-4 py-8">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm mb-6"
+          className="mb-6 flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-[#426f55]"
         >
           ← 돌아가기
         </button>
 
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">정산 현황</h1>
+          <h1 className="text-2xl font-bold text-slate-950">정산 현황</h1>
           <span
             className={`text-sm font-semibold px-3 py-1 rounded-full ${STATUS_COLOR[settlement.status]}`}
           >
@@ -106,12 +106,12 @@ export default function SettlementPage() {
           </span>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <dl className="divide-y divide-gray-100">
+        <div className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+          <dl className="divide-y divide-[#dbe7dc]">
             {rows.map(({ label, value }) => (
               <div key={label} className="flex justify-between py-3 text-sm">
-                <dt className="text-gray-500">{label}</dt>
-                <dd className="font-medium text-gray-900">{value}</dd>
+                <dt className="text-slate-500">{label}</dt>
+                <dd className="font-semibold text-slate-900">{value}</dd>
               </div>
             ))}
           </dl>
@@ -134,7 +134,7 @@ export default function SettlementPage() {
             지급이 일시 보류 중입니다. 확인 후 처리됩니다.
           </div>
         )}
-      </div>
-    </div>
+        </div>
+    </main>
   );
 }

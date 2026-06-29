@@ -133,7 +133,7 @@ export function AdminModal({
 export function AdminLoading() {
   return (
     <div className="grid min-h-64 place-items-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#2b6b88]" />
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#4f7a61]" />
     </div>
   );
 }
