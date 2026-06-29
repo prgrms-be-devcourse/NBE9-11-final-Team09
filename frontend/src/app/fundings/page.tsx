@@ -111,6 +111,7 @@ export default function FundingListPage() {
   function resetFilters() {
     setParams({
       statuses: ["RECRUITING", "CONFIRMED"],
+      tripType: undefined,
       sort: "departureDate,asc",
       page: 0,
       size: 20,
@@ -207,16 +208,23 @@ export default function FundingListPage() {
                 selectedTripTypes={selectedTripTypes}
                 onToggle={(tripType) =>
                   setSelectedTripTypes((current) => {
-                    const tripTypes = current;
-                    const selected = tripTypes.includes(tripType);
+                    const selected = current.includes(tripType);
 
-                    if (selected && tripTypes.length === 1) {
-                      return tripTypes;
+                    if (selected && current.length === 1) {
+                      return current;
                     }
 
-                    return selected
-                      ? tripTypes.filter((item) => item !== tripType)
-                      : [...tripTypes, tripType];
+                    const next = selected
+                      ? current.filter((item) => item !== tripType)
+                      : [...current, tripType];
+
+                    setParams((currentParams) => ({
+                      ...currentParams,
+                      tripType: next.length === 1 ? next[0] : undefined,
+                      page: 0,
+                    }));
+
+                    return next;
                   })
                 }
               />
@@ -430,11 +438,17 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
   const timeline = getFundingTimelineInfo(funding.departureTime, funding.status);
   const addressRoute = formatAddressRoute(funding);
   const departureLabel = formatDepartureLabel(funding.departureTime);
+  const fixedPrice = isFixedPriceStatus(funding.status) ? funding.finalPrice : null;
+  const fixedPriceAvailable = fixedPrice != null;
   const currentPriceAvailable = funding.currentPrice != null;
-  const displayPrice = currentPriceAvailable
+  const displayPrice = fixedPriceAvailable
+    ? fixedPrice
+    : currentPriceAvailable
     ? funding.currentPrice
     : funding.maxPrice;
-  const displayPriceLabel = currentPriceAvailable
+  const displayPriceLabel = fixedPriceAvailable
+    ? "확정 1인 가격"
+    : currentPriceAvailable
     ? "현재 예상 1인 가격"
     : "최소 인원 달성 시 1인 가격";
   const accent = getFundingAccent();
@@ -522,7 +536,11 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
             <p className="whitespace-nowrap text-xs font-semibold leading-5 text-slate-600">
               {displayPriceLabel}
             </p>
-            <p className="mt-1 text-[22px] font-semibold text-[#426f55]">
+            <p
+              className={`mt-1 text-[22px] font-semibold ${
+                fixedPriceAvailable ? "text-[#315f7d]" : "text-[#426f55]"
+              }`}
+            >
               {formatMoney(displayPrice)}
             </p>
           </div>
@@ -705,6 +723,10 @@ function getTripTypeBadgeClass(tripType: FundingListItem["tripType"]) {
 
 function FundingTypeIcon() {
   return <BusFront size={19} strokeWidth={2.2} />;
+}
+
+function isFixedPriceStatus(status: FundingStatus) {
+  return status === "CONFIRMED" || status === "CLOSED" || status === "COMPLETED";
 }
 
 function formatAddressRoute(funding: FundingListItem) {

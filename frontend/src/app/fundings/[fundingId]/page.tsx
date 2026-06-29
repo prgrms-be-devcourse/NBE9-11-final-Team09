@@ -181,6 +181,12 @@ export default function FundingDetailPage() {
     const outbound = funding.pathinfos.find((path) => path.direction === "OUTBOUND");
     const returned = funding.pathinfos.find((path) => path.direction === "RETURN");
     const ratio = getParticipantRatio(funding.currentParticipants, funding.maxParticipants);
+    const fixedPriceAvailable =
+        isFixedPriceStatus(funding.status) && funding.finalPrice != null;
+    const currentExpectedPrice =
+        funding.currentParticipants >= funding.minParticipants
+            ? roundUpToHundred(Number(funding.totalPrice) / (funding.currentParticipants + 1))
+            : null;
 
     return (
         <main className="min-h-screen bg-[#f3f7f1] text-slate-950">
@@ -230,19 +236,13 @@ export default function FundingDetailPage() {
                                 {isCanceled && <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-600">취소한 펀딩</span>}
                             </div>
 
-                            <div className="mt-5 grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+                            <div className="mt-5">
                                 <div>
                                     <h1 className="text-3xl font-bold tracking-tight text-slate-950">
                                         {funding.title}
                                     </h1>
                                     <p className="mt-2 text-sm font-semibold text-slate-500">
                                         방장 {funding.hostNickname}
-                                    </p>
-                                </div>
-                                <div className="rounded-xl bg-[#eef5ea] px-5 py-4 text-right">
-                                    <p className="text-xs font-bold text-[#426f55]">총 대절 금액</p>
-                                    <p className="mt-1 text-2xl font-bold text-slate-950">
-                                        {formatMoney(funding.totalPrice)}
                                     </p>
                                 </div>
                             </div>
@@ -281,21 +281,6 @@ export default function FundingDetailPage() {
                                 </div>
                             </div>
 
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-950">가격</h2>
-                                <div className="mt-3 grid gap-3 md:grid-cols-3">
-                                <Summary label="최소 예상가" value={formatMoney(funding.minPrice)} />
-                                <Summary label="최대 예상가" value={formatMoney(funding.maxPrice)} />
-                                <Summary
-                                    label="현재 기준 예상가"
-                                    value={
-                                        funding.currentParticipants >= funding.minParticipants
-                                            ? formatMoney(roundUpToHundred(Number(funding.totalPrice) / (funding.currentParticipants + 1)))
-                                            : "최소 인원 모집 후 표시"
-                                    }
-                                />
-                                </div>
-                            </div>
                         </div>
                     </section>
 
@@ -304,6 +289,14 @@ export default function FundingDetailPage() {
                         <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
                             좌석을 선택하고 예약을 진행합니다.
                         </p>
+
+                        <FundingPricePanel
+                            fixedPriceAvailable={fixedPriceAvailable}
+                            finalPrice={funding.finalPrice}
+                            minPrice={funding.minPrice}
+                            maxPrice={funding.maxPrice}
+                            currentExpectedPrice={currentExpectedPrice}
+                        />
 
                         <div className="mt-5 grid gap-2">
                             {!isHost && canJoinFunding && (
@@ -419,8 +412,71 @@ function Summary({ label, value }: { label: string; value: string }) {
     );
 }
 
+function FundingPricePanel({
+    fixedPriceAvailable,
+    finalPrice,
+    minPrice,
+    maxPrice,
+    currentExpectedPrice,
+}: {
+    fixedPriceAvailable: boolean;
+    finalPrice: number | null;
+    minPrice: number;
+    maxPrice: number;
+    currentExpectedPrice: number | null;
+}) {
+    if (fixedPriceAvailable) {
+        return (
+            <div className="mt-5 rounded-xl bg-[#4f7a61] p-4 ring-1 ring-[#426f55]">
+                <p className="px-3 text-sm font-bold text-white">확정 1인 가격</p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                    {finalPrice != null ? formatMoney(finalPrice) : "-"}
+                </p>
+                <p className="mt-2 text-xs font-medium leading-5 text-white/75">
+                    펀딩 확정 이후에는 이 금액을 기준으로 결제가 진행됩니다.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-5 rounded-xl bg-[#4f7a61] p-4 ring-1 ring-[#426f55]">
+            <p className="px-3 text-sm font-bold text-white">가격 정보</p>
+            <div className="mt-3 grid gap-2">
+            <PriceRow label="최소 예상가" value={formatMoney(minPrice)} />
+            <PriceRow label="최대 예상가" value={formatMoney(maxPrice)} />
+            <PriceRow
+                label="현재 기준 예상가"
+                value={
+                    currentExpectedPrice != null
+                        ? formatMoney(currentExpectedPrice)
+                        : "최소 인원 모집 후 표시"
+                }
+            />
+            </div>
+        </div>
+    );
+}
+
+function PriceRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-[#e3ebe3]">
+            <p className="whitespace-nowrap text-xs font-semibold text-slate-500">
+                {label}
+            </p>
+            <p className="mt-1 break-keep text-base font-bold leading-6 text-slate-950">
+                {value}
+            </p>
+        </div>
+    );
+}
+
 function roundUpToHundred(value: number) {
     return Math.ceil(value / 100) * 100;
+}
+
+function isFixedPriceStatus(status: FundingDetail["status"]) {
+    return status === "CONFIRMED" || status === "CLOSED" || status === "COMPLETED";
 }
 
 function RouteLine({ title, pathinfo }: { title: string; pathinfo: Pathinfo }) {

@@ -83,6 +83,7 @@ export type FundingListItem = {
   minParticipants: number;
   maxParticipants: number;
   totalPrice: number;
+  finalPrice: number | null;
   currentPrice: number | null;
   minPrice: number;
   maxPrice: number;
@@ -113,6 +114,7 @@ export type FundingDetail = {
   maxParticipants: number;
   tripType: TripType;
   totalPrice: number;
+  finalPrice: number | null;
   minPrice: number;
   maxPrice: number;
   pathinfos: Pathinfo[];

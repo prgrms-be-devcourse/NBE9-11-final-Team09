@@ -22,6 +22,7 @@ export type FundingListParams = {
   departureDate?: string;
   departureRegion?: Region | "";
   arrivalRegion?: Region | "";
+  tripType?: TripType;
   sort?: string;
   page?: number;
   size?: number;
@@ -75,6 +76,9 @@ export function getFundingList(params: FundingListParams) {
   }
   if (params.arrivalRegion) {
     search.set("arrivalRegion", params.arrivalRegion);
+  }
+  if (params.tripType) {
+    search.set("tripType", params.tripType);
   }
 
   search.set("page", String(params.page ?? 0));
