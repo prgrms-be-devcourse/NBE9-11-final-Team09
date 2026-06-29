@@ -178,7 +178,7 @@ export default function MypageClient() {
 
         setProfile(dashboard.profile);
         setNickname(dashboard.profile.nickname);
-        setPhoneNumber(dashboard.profile.phoneNumber);
+        setPhoneNumber(dashboard.profile.phoneNumber ?? "");
         setHistories(dashboard.histories);
       } catch (requestError) {
         if (!cancelled) {
@@ -253,7 +253,7 @@ export default function MypageClient() {
           : current,
       );
       setNickname(updated.nickname);
-      setPhoneNumber(updated.phoneNumber);
+      setPhoneNumber(updated.phoneNumber ?? "");
       setSuccessMessage("회원정보가 수정되었습니다.");
     } catch (requestError) {
       if (requestError instanceof AuthenticationRequiredError) {
