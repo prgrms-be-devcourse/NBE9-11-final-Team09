@@ -45,6 +45,7 @@ public class NotificationService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final NotificationTemplateService templateService;
+    private final NotificationTransactionService notificationTransactionService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendMimeMessage(Long memberId,
@@ -61,78 +62,93 @@ public class NotificationService {
     }
 
     // 방장용 알림
-    @Transactional
-    public void sendToFundingHost(
-            Long memberId,
-            Long fundingId,
-            NotificationType type
-    ) {
-        if (isAlreadySent(memberId, fundingId, type)) {
-            return;
-        }
+    public void sendToFundingHost(Long memberId, Long fundingId, NotificationType type) {
+        if (isAlreadySent(memberId, fundingId, type)) return;
 
-        try {
-            Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-            Funding funding = fundingRepository.findById(fundingId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
-
-            sendMessage(member, funding, type);
-        } catch (Exception e) {
-            log.error(
-                    "펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
-                    memberId,
-                    fundingId,
-                    type,
-                    e
-            );
-        }
-    }
-
-    // 참가자용 알림
-    @Transactional
-    public void sendToFundingParticipants(
-            Long fundingId,
-            NotificationType type
-    ) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Funding funding = fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
-        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(
-                fundingId,
-                ParticipationStatus.ACTIVE
-        );
-
-        if (memberIds.isEmpty()) {
-            return;
+        try {
+            notificationTransactionService.saveAndPublish(member, funding, type); // REQUIRES_NEW
+        } catch (Exception e) {
+            log.error("펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, type={}", memberId, fundingId, type, e);
         }
+    }
+
+//    // 참가자용 알림
+//    @Transactional
+//    public void sendToFundingParticipants(
+//            Long fundingId,
+//            NotificationType type
+//    ) {
+//        Funding funding = fundingRepository.findById(fundingId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+//
+//        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(
+//                fundingId,
+//                ParticipationStatus.ACTIVE
+//        );
+//
+//        if (memberIds.isEmpty()) {
+//            return;
+//        }
+//
+//        Set<Long> sentMemberIds = new HashSet<>(
+//                notificationRepository.findSentMemberIds(
+//                        fundingId,
+//                        type,
+//                        memberIds
+//                )
+//        );
+//
+//        List<Member> members = memberRepository.findAllById(memberIds);
+//
+//        for (Member member : members) {
+//            if (sentMemberIds.contains(member.getMemberId())) {
+//                continue;
+//            }
+//
+//            try {
+//                sendMessage(member, funding, type);
+//            } catch (Exception e) {
+//                log.error(
+//                        "펀딩 참가자 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
+//                        member.getMemberId(),
+//                        fundingId,
+//                        type,
+//                        e
+//                );
+//            }
+//        }
+//    }
+
+    @Transactional(readOnly = true)
+    public void sendToFundingParticipants(Long fundingId, NotificationType type) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        List<Long> memberIds = participationRepository
+                .findMemberIdsByFundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
+
+        if (memberIds.isEmpty()) return;
 
         Set<Long> sentMemberIds = new HashSet<>(
-                notificationRepository.findSentMemberIds(
-                        fundingId,
-                        type,
-                        memberIds
-                )
-        );
+                notificationRepository.findSentMemberIds(fundingId, type, memberIds));
 
         List<Member> members = memberRepository.findAllById(memberIds);
 
         for (Member member : members) {
-            if (sentMemberIds.contains(member.getMemberId())) {
-                continue;
-            }
+            if (sentMemberIds.contains(member.getMemberId())) continue;
 
             try {
-                sendMessage(member, funding, type);
+                // 알림 1건 = 독립 트랜잭션
+                notificationTransactionService.saveAndPublish(member, funding, type);
             } catch (Exception e) {
                 log.error(
                         "펀딩 참가자 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
-                        member.getMemberId(),
-                        fundingId,
-                        type,
-                        e
-                );
+                        member.getMemberId(), fundingId, type, e);
             }
         }
     }
