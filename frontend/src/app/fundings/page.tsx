@@ -46,7 +46,7 @@ export default function FundingListPage() {
     statuses: ["RECRUITING", "CONFIRMED"],
     sort: "departureDate,asc",
     page: 0,
-    size: 20,
+    size: 10,
   });
   const [selectedTripTypes, setSelectedTripTypes] = useState<TripType[]>([
     "ROUND",
@@ -114,7 +114,7 @@ export default function FundingListPage() {
       tripType: undefined,
       sort: "departureDate,asc",
       page: 0,
-      size: 20,
+      size: 10,
     });
     setSelectedTripTypes(["ROUND", "ONE_WAY"]);
   }
@@ -247,7 +247,7 @@ export default function FundingListPage() {
         )}
 
         <div className="grid gap-4 pb-4 lg:grid-cols-[1fr_286px]">
-          <div className="grid gap-2.5">
+          <div className="grid content-start gap-2.5">
             {loading ? (
               <p className="rounded-lg border border-slate-200 bg-white py-16 text-center text-sm font-semibold text-slate-500">
                 펀딩을 불러오는 중입니다.
@@ -564,7 +564,7 @@ function FundingGuide({ loggedIn }: { loggedIn: boolean }) {
         href={loggedIn ? "/fundings/new" : "/login"}
         className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-[#4f7a61] text-sm font-semibold text-white shadow-sm hover:bg-[#426f55]"
       >
-        + 펀딩 만들기
+        펀딩 만들기
       </Link>
 
       <div className="mt-5 border-t border-[#dbe7dc] pt-5">

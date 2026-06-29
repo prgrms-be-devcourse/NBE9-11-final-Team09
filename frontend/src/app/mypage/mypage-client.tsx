@@ -21,6 +21,7 @@ import type {
   MyParticipation,
   PageResponse,
 } from "@/types/member";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -897,7 +898,13 @@ function MyParticipationItem({
               </div>
               {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
             </div>
-            <div className="flex shrink-0 flex-col gap-2">
+            <div className="flex w-[104px] shrink-0 flex-col gap-2">
+              <Link
+                  href={`/fundings/${item.fundingId}`}
+                  className="rounded-xl border border-[#dbe7dc] bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-[#eef5ea]"
+              >
+                상세보기
+              </Link>
               {canShowBalancePayment && (
                   <button
                       type="button"
@@ -1010,7 +1017,7 @@ function FundingItem({ item }: { item: MemberFunding }) {
   return (
       <article
           className="rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50/70 sm:p-5">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={item.status}/>
@@ -1038,9 +1045,17 @@ function FundingItem({ item }: { item: MemberFunding }) {
             </span>
             </div>
           </div>
-          <p className="shrink-0 text-xs text-slate-400">
-            {formatDate(item.createdAt)} 개설
-          </p>
+          <div className="flex w-[104px] shrink-0 flex-col gap-2">
+            <Link
+                href={`/fundings/${item.fundingId}`}
+                className="rounded-xl border border-[#dbe7dc] bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-[#eef5ea]"
+            >
+              상세보기
+            </Link>
+            <p className="whitespace-nowrap text-right text-xs text-slate-400">
+              {formatDate(item.createdAt)} 개설
+            </p>
+          </div>
         </div>
       </article>
   );

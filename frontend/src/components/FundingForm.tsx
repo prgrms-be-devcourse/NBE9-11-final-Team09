@@ -375,7 +375,7 @@ export default function FundingForm({
               }))
             }
             className={inputClass}
-            placeholder="예: 서울에서 부산 야구장 같이 가요"
+            placeholder="예: 서울에서 부산 콘서트 같이 가요"
           />
         </label>
         <label className={labelClass}>
@@ -394,7 +394,7 @@ export default function FundingForm({
               }))
             }
             className={`${inputClass} min-h-32 resize-y`}
-            placeholder="탑승 안내, 집결 장소, 참고 사항을 적어주세요."
+            placeholder="도착 예정 시간, 집결 위치, 탑승 안내를 적어주세요."
           />
         </label>
       </section>
@@ -603,7 +603,7 @@ export default function FundingForm({
                     }))
                   }
                   className={inputClass}
-                  placeholder="예: 잠실종합운동장"
+                  placeholder="예: 서울역"
                 />
               </label>
             </div>
@@ -656,7 +656,7 @@ export default function FundingForm({
                     }))
                   }
                   className={inputClass}
-                  placeholder="예: 사직야구장"
+                  placeholder="예: 부산아시아드주경기장"
                 />
               </label>
             </div>
