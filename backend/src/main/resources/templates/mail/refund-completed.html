@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }
+        .header { border-bottom: 2px solid #059669; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { color: #059669; font-size: 24px; margin: 0; }
+        .content { margin-bottom: 30px; }
+        .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f3f4f6; border-radius: 6px; }
+        .info-table td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+        .info-table td.label { font-weight: bold; width: 30%; color: #4b5563; }
+        .footer { font-size: 12px; color: #9ca3af; margin-top: 30px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Moyeota 환불 완료 안내 💰</h1>
+    </div>
+    <div class="content">
+        <h2>안녕하세요, <span th:text="${nickname}">사용자</span>님.</h2>
+        <p>취소/실패 처리된 펀딩 <strong><span th:text="${fundingTitle}">펀딩 제목</span></strong>에 대한 보증금 및 이용 금액 환불 처리가 성공적으로 완료되었습니다.</p>
+
+        <table class="info-table">
+            <tr>
+                <td class="label">대상 펀딩</td>
+                <td th:text="${fundingTitle}">펀딩 제목</td>
+            </tr>
+            <tr>
+                <td class="label">환불 완료 금액</td>
+                <td style="color:#059669; font-weight:bold;"><span th:text="${amount}"></span> 원</td>
+            </tr>
+        </table>
+
+        <p>카드사 혹은 은행 영업일 기준에 따라 최종 계좌 입금 또는 결제 취소 반영까지 2~3일이 소요될 수 있습니다.</p>
+    </div>
+    <div class="footer">
+        본 메일은 발신전용입니다. 관련 문의는 Moyeota 고객센터를 이용해주세요.
+    </div>
+</div>
+</body>
+</html>

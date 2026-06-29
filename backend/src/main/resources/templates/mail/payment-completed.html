@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .header { border-bottom: 2px solid #059669; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { color: #059669; font-size: 24px; margin: 0; }
+    .content { margin-bottom: 30px; }
+    .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f3f4f6; border-radius: 6px; }
+    .info-table td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+    .info-table td.label { font-weight: bold; width: 30%; color: #4b5563; }
+    .btn { display: inline-block; padding: 12px 24px; color: #ffffff !important; background-color: #059669; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+    .footer { font-size: 12px; color: #9ca3af; margin-top: 30px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Moyeota 결제 완료 영수증 ✅</h1>
+  </div>
+  <div class="content">
+    <h2>안녕하세요, <span th:text="${nickname}">사용자</span>님!</h2>
+    <p>요청하신 펀딩 <strong><span th:text="${fundingTitle}">펀딩 제목</span></strong>의 최종 금액 결제가 정상 완료되었습니다. 안전한 여정이 되도록 최선을 다하겠습니다.</p>
+
+    <table class="info-table">
+      <tr>
+        <td class="label">이용 상품</td>
+        <td th:text="${fundingTitle}">펀딩 제목</td>
+      </tr>
+      <tr>
+        <td class="label">결제 금액</td>
+        <td style="color:#059669; font-weight:bold;"><span th:text="${amount}">15,000</span> 원</td>
+      </tr>
+      <tr>
+        <td class="label">결제 일시</td>
+        <td th:text="${paymentTime}">2026-06-29 13:00:00</td>
+      </tr>
+    </table>
+
+  </div>
+  <div class="footer">
+    본 메일은 발신전용입니다. 관련 문의는 Moyeota 고객센터를 이용해주세요.
+  </div>
+</div>
+</body>
+</html>

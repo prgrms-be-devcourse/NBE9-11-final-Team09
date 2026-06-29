@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .header { border-bottom: 2px solid #3B82F6; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { color: #3B82F6; font-size: 24px; margin: 0; }
+    .content { margin-bottom: 30px; }
+    .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f3f4f6; border-radius: 6px; }
+    .info-table td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+    .info-table td.label { font-weight: bold; width: 30%; color: #4b5563; }
+    .tip-box { background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 15px; margin: 20px 0; border-radius: 4px; font-size: 14px; }
+    .btn { display: inline-block; padding: 12px 24px; color: #ffffff !important; background-color: #3B82F6; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+    .footer { font-size: 12px; color: #9ca3af; margin-top: 30px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Moyeota 출발 안내 🚍</h1>
+  </div>
+  <div class="content">
+    <h2>안녕하세요, <span th:text="${nickname}">사용자</span>님!</h2>
+    <p>기다리시던 <strong><span th:text="${fundingTitle}">펀딩 제목</span></strong> 버스의 출발 일정이 코앞으로 다가왔습니다! 신나는 여정을 위해 탑승 정보를 다시 한번 확인해 주세요.</p>
+
+    <table class="info-table">
+      <tr>
+        <td class="label">운행 정보</td>
+
+        <td>
+          <table style="width:100%; border-collapse:collapse;">
+            <tr th:each="route : ${routes}">
+              <td style="padding:6px 0;">
+                <div>
+                  <strong>출발</strong> :
+                  <span th:text="${#temporals.format(route.departureTime, 'yyyy-MM-dd HH:mm')}"></span>
+                </div>
+
+                <div>
+                  <span th:text="${route.departure}"></span>
+                  →
+                  <span th:text="${route.arrival}"></span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div class="tip-box">
+      💡 <strong>탑승 유의사항</strong><br>
+      - 다른 참가자분들을 위해 출발 시간 10분 전까지 반드시 정해진 탑승 장소에 도착해 주세요.<br>
+      - 원활한 소통을 위해 모바일을 통한 실시간 위치 확인 서비스를 이용하시는 것이 좋습니다.
+    </div>
+
+
+  </div>
+  <div class="footer">
+    본 메일은 발신전용입니다. 관련 문의는 Moyeota 고객센터를 이용해주세요.
+  </div>
+</div>
+</body>
+</html>

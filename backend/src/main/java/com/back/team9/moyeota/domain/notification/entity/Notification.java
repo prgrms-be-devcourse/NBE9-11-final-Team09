@@ -13,6 +13,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@Table(
+        name = "notification",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_member_funding_notification_type",
+                        columnNames = {"member_id","funding_id","notification_type"}
+                )
+        }
+)
 public class Notification extends BaseEntity {
 
     @Id

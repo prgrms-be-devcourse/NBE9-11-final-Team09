@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,11 +28,12 @@ public class ChatMessageService {
     private final ChatRoomService chatRoomService;
 
 
-    public Message sendMessage(ChatMessageRequest request){
+    public Message sendMessage(ChatMessageRequest request, Long memberId) {
+
         ChatRoom room = chatRoomService.getRoomById(request.getChatRoomId());
 
-        Member member = memberRepository.findById(request.getSenderId())
-                .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Message message = Message.builder()
                 .chatRoom(room)

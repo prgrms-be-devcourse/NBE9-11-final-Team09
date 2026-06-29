@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -53,4 +54,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("memberId") Long memberId,
             Pageable pageable
     );
+
+    @Query("""
+        select n
+        from Notification n
+        join fetch n.member
+        where n.notificationId = :notificationId
+    """)
+    Optional<Notification> findByIdWithMember(Long notificationId);
 }
