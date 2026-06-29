@@ -60,6 +60,8 @@ public class FundingService {
     @Transactional
     public FundingCreateResponse createFunding(Long memberId, FundingCreateRequest request) {
 
+        log.info("펀딩 생성 요청 (memberId={})", memberId);
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         validateHostSeatRequest(
@@ -98,6 +100,8 @@ public class FundingService {
         );
 
         Funding savedFunding = fundingRepository.save(funding);
+        log.info("펀딩 생성 완료 (fundingId={}, memberId={})",
+                savedFunding.getFundingId(), memberId);
 
         pathinfoService.createPathinfos(
                 savedFunding,
@@ -121,6 +125,8 @@ public class FundingService {
     // 펀딩 상세 조회
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId, Long memberId) {
+        log.info("펀딩 상세 조회 요청 (fundingId={}, memberId={})",
+                fundingId, memberId);
 
         Funding funding = findFundingById(fundingId);
         int currentParticipants = countActiveParticipants(fundingId);
@@ -148,6 +154,9 @@ public class FundingService {
                 isCanceled = p.getStatus() == ParticipationStatus.CANCELED;
             }
         }
+
+        log.info("펀딩 상세 조회 완료 (fundingId={})",
+                fundingId);
 
         return FundingDetailResponse.from(
                 funding,
@@ -236,11 +245,15 @@ public class FundingService {
     // 펀딩 취소(방장검증, 연결된 노선 취소 처리)
     @Transactional
     public void cancelFunding(Long memberId, Long fundingId) {
+        log.info("펀딩 취소 요청 (fundingId={}, memberId={})",
+                fundingId, memberId);
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
         FundingValidator.validateModifiableStatus(funding);
 
         funding.cancel();
+        log.info("펀딩 취소 완료 (fundingId={})",
+                fundingId);
         pathinfoService.cancelPathinfos(fundingId);
 
         List<Participation> activeParticipations =
@@ -262,6 +275,8 @@ public class FundingService {
     // 참가자 여부에 따라 수정 가능 범위 상이
     @Transactional
     public void updateFunding(Long memberId, Long fundingId, FundingUpdateRequest request) {
+        log.info("펀딩 수정 요청 (fundingId={}, memberId={})",
+                fundingId, memberId);
 
         Funding funding = findFundingById(fundingId);
         FundingValidator.validateHost(funding, memberId);
@@ -271,6 +286,8 @@ public class FundingService {
 
         if (currentParticipants > 0) {
             updateFundingWithParticipants(funding, request);
+            log.info("펀딩 수정 완료 (fundingId={})",
+                    fundingId);
             return;
         }
 
@@ -292,6 +309,7 @@ public class FundingService {
 
         updateFundingWithoutParticipants(funding, request, totalPrice);
 
+        log.info("펀딩 수정 완료 (fundingId={})", fundingId);
     }
 
     // 참가자 있을경우 제목/내용만 수정 허용
@@ -308,6 +326,8 @@ public class FundingService {
                 );
 
         if (changed) {
+            log.warn("참여자가 있어 수정 제한 (fundingId={})",
+                    funding.getFundingId());
             throw new BusinessException(
                     ErrorCode.FUNDING_UPDATE_RESTRICTED_BY_PARTICIPANTS
             );
@@ -416,10 +436,12 @@ public class FundingService {
             String hostReturnSeatNumber
     ) {
         if (isBlank(hostOutboundSeatNumber)) {
+            log.warn("방장 가는편 좌석 미선택 (tripType={})", tripType);
             throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
         }
 
         if (tripType == TripType.ROUND && isBlank(hostReturnSeatNumber)) {
+            log.warn("방장 오는편 좌석 미선택 (tripType={})", tripType);
             throw new BusinessException(ErrorCode.ROUND_TRIP_SEAT_REQUIRED);
         }
     }

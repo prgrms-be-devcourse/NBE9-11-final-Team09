@@ -32,10 +32,14 @@ public class PaymentCancellationRefundListener {
     @Async("refundExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleParticipationCancelled(ParticipationCancelledEvent event) {
+        log.info("참여 취소 환불 처리 시작 (participationId={})",
+                event.participationId());
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
             try {
                 paymentService.refundByParticipationId(event.participationId());
                 sendRefundCompletedNotification(event.participationId());
+                log.info("참여 취소 환불 완료 (participationId={})",
+                        event.participationId());
                 return;
             } catch (Exception e) {
                 if (e instanceof BusinessException be && be.getErrorCode() != ErrorCode.REFUND_FAILED) {
@@ -43,7 +47,7 @@ public class PaymentCancellationRefundListener {
                             be.getErrorCode(), event.participationId());
                     return;
                 }
-                log.warn("환불 처리 실패 (시도 {}/{}), participationId: {}",
+                log.warn("환불 처리 재시도 (시도={}/{}, participationId={})",
                         attempt, MAX_RETRY, event.participationId(), e);
                 if (attempt < MAX_RETRY) {
                     try {
@@ -55,7 +59,8 @@ public class PaymentCancellationRefundListener {
                 }
             }
         }
-        log.error("환불 처리 최종 실패 — 수동 처리 필요. participationId: {}", event.participationId());
+        log.error("환불 처리 최종 실패 (participationId={})",
+                event.participationId());
 
         try {
             mailService.send(
@@ -64,7 +69,8 @@ public class PaymentCancellationRefundListener {
                     "participationId: " + event.participationId() + " 환불이 3회 재시도 후 최종 실패했습니다. 수동 처리가 필요합니다."
             );
         } catch (Exception mailEx) {
-            log.error("어드민 알림 발송 실패: {}", mailEx.getMessage(), mailEx);
+            log.error("어드민 알림 발송 실패 (participationId={})",
+                    event.participationId(), mailEx);
         }
     }
 
@@ -78,7 +84,8 @@ public class PaymentCancellationRefundListener {
                     NotificationType.REFUND_COMPLETED
             );
         } catch (Exception e) {
-            log.warn("환불 완료 알림 발송 실패 — participationId={}", participationId, e);
+            log.warn("환불 완료 알림 발송 실패 (participationId={})",
+                    participationId, e);
         }
     }
 }

@@ -50,6 +50,7 @@ public class PaymentService {
     private String adminEmail;
 
     @Transactional
+
     public PaymentResponse confirmDeposit(PaymentConfirmRequest request, Long memberId) {
         return confirmPayment(request, PaymentType.DEPOSIT, memberId);
     }
@@ -63,19 +64,30 @@ public class PaymentService {
 
     private PaymentResponse confirmPayment(PaymentConfirmRequest request, PaymentType paymentType, Long memberId) {
 
+        log.info("결제 승인 요청 (participationId={}, paymentType={}, amount={})",
+                request.participationId(), paymentType, request.amount());
+
         Payment pendingPayment = paymentRepository
                 .findByParticipation_ParticipationIdAndStatus(request.participationId(), PaymentStatus.PENDING)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
         if (!pendingPayment.getParticipation().getMember().getMemberId().equals(memberId)) {
+            log.warn("결제 접근 권한 없음 (paymentId={}, memberId={})",
+                    pendingPayment.getPaymentId(), memberId);
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
         if (paymentRepository.findByTossPaymentKey(request.paymentKey()).isPresent()) {
+            log.warn("중복 결제 시도 (paymentKey={})",
+                    request.paymentKey());
             throw new BusinessException(ErrorCode.DUPLICATE_PAYMENT);
         }
 
         Participation participation = pendingPayment.getParticipation();
         if (request.amount().compareTo(pendingPayment.getAmount()) != 0) {
+            log.warn("결제 금액 불일치 (paymentId={}, requestAmount={}, expectedAmount={})",
+                    pendingPayment.getPaymentId(),
+                    request.amount(),
+                    pendingPayment.getAmount());
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
@@ -100,8 +112,8 @@ public class PaymentService {
                     paymentWriter.saveRefundStatus(pendingPayment);
                     participationService.cancelByPaymentFailure(pendingPayment.getPaymentId());
                 } catch (Exception cancelEx) {
-                    log.error("[SEAT_HOLD_EXPIRED] Toss cancel 실패 — 수동 처리 필요. paymentId={}: {}",
-                            pendingPayment.getPaymentId(), cancelEx.getMessage(), cancelEx);
+                    log.error("좌석 만료 환불 실패 (paymentId={})",
+                            pendingPayment.getPaymentId(), cancelEx);
                     try {
                         mailService.send(
                                 adminEmail,
@@ -124,22 +136,41 @@ public class PaymentService {
         } catch (Exception e) {
             log.warn("결제 완료 알림 발송 실패 (paymentId={}): {}", pendingPayment.getPaymentId(), e.getMessage(), e);
         }
+
+        log.info("결제 승인 완료 (paymentId={}, paymentType={}, amount={})",
+                pendingPayment.getPaymentId(), paymentType, pendingPayment.getAmount());
+
         return PaymentResponse.from(pendingPayment);
     }
 
     @Transactional
     public PaymentResponse refund(Long paymentId, PaymentRefundRequest request, Long memberId) {
 
+        log.info("환불 요청 (paymentId={}, memberId={})",
+                paymentId,
+                memberId);
+
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
         if (!payment.getParticipation().getMember().getMemberId().equals(memberId)) {
+            log.warn("환불 접근 권한 없음 (paymentId={}, memberId={})",
+                    paymentId, memberId);
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
-        if (payment.getStatus() == PaymentStatus.REFUNDED || payment.getStatus() == PaymentStatus.REFUND_PENDING) {
+        if (payment.getStatus() == PaymentStatus.REFUNDED
+                || payment.getStatus() == PaymentStatus.REFUND_PENDING) {
+
+            log.warn("이미 환불된 결제 (paymentId={}, status={})",
+                    paymentId, payment.getStatus());
+
             throw new BusinessException(ErrorCode.ALREADY_REFUNDED);
         }
         if (payment.getStatus() != PaymentStatus.PAID) {
+
+            log.warn("환불 불가 상태 (paymentId={}, status={})",
+                    paymentId, payment.getStatus());
+
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
@@ -151,19 +182,27 @@ public class PaymentService {
                     request.cancelReason()
             );
         } catch (Exception e) {
-            log.error("[REFUND_FAILED] paymentId={}, reason={}: {}",
-                    paymentId, request.cancelReason(), e.getMessage(), e);
+            log.error("환불 실패 (paymentId={}, reason={})",
+                    paymentId, request.cancelReason(), e);
             throw e;
         }
 
         payment.completeRefund();
         Payment updatedPayment = paymentWriter.save(payment);
 
+        log.info("환불 완료 (paymentId={}, amount={})",
+                updatedPayment.getPaymentId(),
+                updatedPayment.getAmount());
+
         return PaymentResponse.from(updatedPayment);
     }
 
     @Transactional
     public void refundByParticipationId(Long participationId) {
+
+        log.info("참여 취소 환불 시작 (participationId={})",
+                participationId);
+
         List<Payment> payments = paymentRepository.findByParticipation_ParticipationId(participationId);
         if (payments.isEmpty()) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
@@ -179,22 +218,41 @@ public class PaymentService {
             payment.startRefund();
             paymentWriter.save(payment);
 
-            tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
+            try {
+                tossPaymentClient.cancel(payment.getTossPaymentKey(), "참여 취소로 인한 환불");
+            } catch (Exception e) {
+                log.error("참여 취소 환불 실패 (paymentId={}, amount={}, reason={})",
+                        payment.getPaymentId(),
+                        payment.getAmount(),
+                        e.getMessage(),
+                        e);
+                throw e;
+            }
 
             payment.completeRefund();
             paymentWriter.save(payment);
+
+            log.info("참여 취소 환불 완료 (paymentId={}, amount={})",
+                    payment.getPaymentId(), payment.getAmount());
         }
 
     }
 
     @Transactional
     public PaymentPrepareResponse prepare(Long participationId, Long memberId) {
+
+        log.info("결제 준비 요청 (participationId={}, memberId={})",
+                participationId,
+                memberId);
+
         paymentRedisService.lockPrepare(participationId);
         try {
             Participation participation = participationRepository.findById(participationId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
             if (!participation.getMember().getMemberId().equals(memberId)) {
+                log.warn("결제 준비 접근 권한 없음 (participationId={}, memberId={})",
+                        participationId, memberId);
                 throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
             }
 
@@ -225,6 +283,11 @@ public class PaymentService {
                     .build();
             paymentWriter.save(payment);
 
+            log.info("결제 준비 완료 (participationId={}, orderId={}, amount={})",
+                    participationId,
+                    orderId,
+                    amount);
+
             return new PaymentPrepareResponse(orderId, amount);
         } finally {
             paymentRedisService.unlockPrepare(participationId);
@@ -233,6 +296,10 @@ public class PaymentService {
 
     @Transactional
     public void expirePayment(Payment payment) {
+
+        log.info("결제 만료 처리 (paymentId={}, amount={})",
+                payment.getPaymentId(), payment.getAmount());
+
         payment.expire();
         paymentWriter.save(payment);
         participationService.cancelByPaymentFailure(payment.getPaymentId());

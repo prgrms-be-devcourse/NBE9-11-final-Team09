@@ -35,6 +35,9 @@ class MemberRegistrationServiceTest {
     void registerWithValidPendingSignupSavesActiveMember() {
         PendingSignupData signupData = createPendingSignupData();
 
+        when(memberRepository.save(any(Member.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         memberRegistrationService.register(signupData);
 
         ArgumentCaptor<Member> memberCaptor =

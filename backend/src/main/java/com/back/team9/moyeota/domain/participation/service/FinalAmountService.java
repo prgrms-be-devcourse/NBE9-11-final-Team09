@@ -32,11 +32,17 @@ public class FinalAmountService {
         List<Participation> participations = participationRepository
                 .findByFunding_FundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
 
-        if (participations.isEmpty()) return;
+        if (participations.isEmpty()) {
+            log.warn("정산 대상 참여자 없음 (fundingId={})", fundingId);
+            return;
+        }
 
         boolean alreadySet = participations.stream()
                 .allMatch(p -> p.getFinalAmount().compareTo(BigDecimal.ZERO) > 0);
-        if (alreadySet) return;
+        if (alreadySet) {
+            log.info("finalAmount 이미 설정됨 (fundingId={})", fundingId);
+            return;
+        }
 
         BigDecimal finalAmount = FundingPricePolicy.calculateRoundedPrice(
                 funding.getTotalPrice(),
@@ -44,7 +50,7 @@ public class FinalAmountService {
         );
 
         participations.forEach(p -> p.updateFinalAmount(finalAmount));
-        log.info("finalAmount 설정 완료 — fundingId={}, 참여자={}, 방장포함인원={}, finalAmount={}",
+        log.info("finalAmount 설정 완료 (fundingId={}, 참여자수={}, 방장포함인원={}, finalAmount={})",
                 fundingId, participations.size(), participations.size() + 1, finalAmount);
     }
 }
