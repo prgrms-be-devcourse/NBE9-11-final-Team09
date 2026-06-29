@@ -16,7 +16,7 @@ services:
       - mysql_data:/var/lib/mysql
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.4.1
     container_name: moyeota-prometheus
     ports:
       - "9090:9090"
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.0.2
     container_name: moyeota-grafana
     ports:
       - "3001:3000"
