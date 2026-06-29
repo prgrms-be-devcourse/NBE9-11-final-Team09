@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 
 import java.util.List;
 
@@ -60,7 +61,12 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").access(
+                                new WebExpressionAuthorizationManager(
+                                        "hasIpAddress('172.16.0.0/12')"
+                                )
+                        )
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

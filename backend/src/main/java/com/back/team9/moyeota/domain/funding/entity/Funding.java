@@ -62,6 +62,9 @@ public class Funding extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(precision = 19, scale = 0)
+    private BigDecimal finalPrice;
+
     public static Funding create(
             Member member,
             String title,
@@ -91,8 +94,9 @@ public class Funding extends BaseEntity {
         this.status = FundingStatus.CANCELLED;
     }
 
-    public void confirm() {
+    public void confirm(BigDecimal finalPrice) {
         this.status = FundingStatus.CONFIRMED;
+        this.finalPrice = finalPrice;
     }
 
     public void closeRecruitment() {
