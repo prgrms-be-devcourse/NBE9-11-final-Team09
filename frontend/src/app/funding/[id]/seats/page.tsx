@@ -181,28 +181,28 @@ export default function SeatsPage() {
     }
 
     if (!isValidId) {
-        return <div className="flex justify-center p-10 text-red-500">잘못된 접근입니다.</div>;
+        return <div className="flex min-h-screen justify-center bg-[#f3f7f1] p-10 text-red-500">잘못된 접근입니다.</div>;
     }
 
     if (loading) {
-        return <div className="flex justify-center p-10">로딩 중...</div>;
+        return <div className="flex min-h-screen justify-center bg-[#f3f7f1] p-10 text-slate-500">로딩 중...</div>;
     }
 
     if (error) {
-        return <div className="flex justify-center p-10 text-red-500">{error}</div>;
+        return <div className="flex min-h-screen justify-center bg-[#f3f7f1] p-10 text-red-500">{error}</div>;
     }
 
     if (!seatLayout) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <main className="min-h-screen bg-[#f3f7f1] p-6">
             {isRoundTrip && (
-                <div className="mb-4 text-center text-sm font-medium text-gray-600">
+                <div className="mb-4 text-center text-sm font-semibold text-slate-600">
                     {step === "outbound" ? "1단계: 가는편 좌석 선택" : "2단계: 오는편 좌석 선택"}
                 </div>
             )}
 
-            <div className="flex justify-center gap-6">
+            <div className="mx-auto flex max-w-6xl justify-center gap-6">
                 <SeatMap
                     busType={seatLayout.busType}
                     seats={seatLayout.seats}
@@ -234,6 +234,6 @@ export default function SeatsPage() {
                     onClose={() => setModal(null)}
                 />
             )}
-        </div>
+        </main>
     );
 }

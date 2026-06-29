@@ -155,10 +155,10 @@ export default function PaymentPage() {
 
   if (error) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
           <div className="text-center max-w-sm px-4">
             <p className="text-red-500 mb-4 text-sm">{error}</p>
-            <button onClick={handleBack} className="text-blue-600 underline text-sm">
+            <button onClick={handleBack} className="text-sm font-semibold text-[#426f55] underline">
               돌아가기
             </button>
           </div>
@@ -168,75 +168,75 @@ export default function PaymentPage() {
 
   if (!funding || !member || !context) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#4f7a61] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <main className="min-h-screen bg-[#f3f7f1]">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <button
             onClick={handleBack}
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm mb-6"
+          className="mb-6 flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-[#426f55]"
         >
           ← 돌아가기
         </button>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">예약 및 결제 정보 확인</h1>
+        <h1 className="mb-6 text-2xl font-bold text-slate-950">예약 및 결제 정보 확인</h1>
 
-        <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div className="flex flex-col items-start gap-6 md:flex-row">
           {/* Left column */}
           <div className="flex-1 space-y-4">
             {/* Booking info */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">예약 정보</h2>
+            <div className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+              <h2 className="mb-4 text-base font-bold text-slate-900">예약 정보</h2>
               <div className="space-y-3 text-sm divide-y divide-gray-100">
                 <div className="flex justify-between pb-3">
-                  <span className="text-gray-500">신청 펀딩 상품</span>
-                  <span className="font-medium text-gray-900 text-right max-w-[60%]">{funding.title}</span>
+                  <span className="text-slate-500">신청 펀딩 상품</span>
+                  <span className="max-w-[60%] text-right font-semibold text-slate-900">{funding.title}</span>
                 </div>
 
                 {departurePathinfo && (
                   <div className="flex justify-between py-3">
-                    <span className="text-gray-500">출발 일시</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-slate-500">출발 일시</span>
+                    <span className="font-semibold text-slate-900">
                       {formatDateTime(departurePathinfo.departureTime)}
                     </span>
                   </div>
                 )}
 
                 <div className="flex justify-between py-3">
-                  <span className="text-gray-500">선택한 탑승 좌석</span>
-                  <span className="font-medium text-gray-900">{context.seatInfo}번 좌석</span>
+                  <span className="text-slate-500">선택한 탑승 좌석</span>
+                  <span className="font-semibold text-slate-900">{context.seatInfo}번 좌석</span>
                 </div>
 
                 <div className="pt-3 space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">예약자명</span>
-                    <span className="font-medium text-gray-900">{member.name}</span>
+                    <span className="text-slate-500">예약자명</span>
+                    <span className="font-semibold text-slate-900">{member.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">연락처</span>
-                    <span className="font-medium text-gray-900">{member.phoneNumber || "-"}</span>
+                    <span className="text-slate-500">연락처</span>
+                    <span className="font-semibold text-slate-900">{member.phoneNumber || "-"}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Terms */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-base font-semibold text-gray-800 mb-4">이용약관 동의</h2>
+            <div className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+              <h2 className="mb-4 text-base font-bold text-slate-900">이용약관 동의</h2>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={allAgreed}
                     onChange={(e) => toggleAll(e.target.checked)}
-                    className="w-4 h-4 accent-blue-600"
+                    className="h-4 w-4 accent-[#4f7a61]"
                   />
-                  <span className="font-semibold text-gray-800 text-sm">전체 동의</span>
+                  <span className="text-sm font-semibold text-slate-800">전체 동의</span>
                 </label>
 
                 <hr className="border-gray-100" />
@@ -246,9 +246,9 @@ export default function PaymentPage() {
                     type="checkbox"
                     checked={privacyAgreed}
                     onChange={(e) => handlePrivacy(e.target.checked)}
-                    className="w-4 h-4 accent-blue-600"
+                    className="h-4 w-4 accent-[#4f7a61]"
                   />
-                  <span className="text-gray-700 text-sm">
+                  <span className="text-sm text-slate-700">
                     개인정보 제3자 제공 동의 <span className="text-red-500">(필수)</span>
                   </span>
                 </label>
@@ -258,9 +258,9 @@ export default function PaymentPage() {
                     type="checkbox"
                     checked={refundAgreed}
                     onChange={(e) => handleRefund(e.target.checked)}
-                    className="w-4 h-4 accent-blue-600"
+                    className="h-4 w-4 accent-[#4f7a61]"
                   />
-                  <span className="text-gray-700 text-sm">
+                  <span className="text-sm text-slate-700">
                     취소 및 환불 규정 동의 <span className="text-red-500">(필수)</span>
                   </span>
                 </label>
@@ -270,9 +270,9 @@ export default function PaymentPage() {
 
           {/* Right column */}
           <div className="md:w-80 w-full">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-4 space-y-5">
+            <div className="sticky top-4 space-y-5 rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
               <div>
-                <h2 className="text-base font-semibold text-gray-800 mb-3">결제 수단 선택</h2>
+                <h2 className="mb-3 text-base font-bold text-slate-900">결제 수단 선택</h2>
                 <div className="space-y-2">
                   {PAYMENT_METHODS.map((m) => (
                     <button
@@ -281,19 +281,19 @@ export default function PaymentPage() {
                       onClick={() => setSelectedMethod(m.value)}
                       className={`w-full flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-colors ${
                         selectedMethod === m.value
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-[#4f7a61] bg-[#eef5ea]"
+                          : "border-[#dbe7dc] hover:border-[#adc7b6]"
                       }`}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-gray-900">{m.label}</div>
-                        <div className="text-xs text-gray-400">{m.desc}</div>
+                        <div className="text-sm font-semibold text-slate-900">{m.label}</div>
+                        <div className="text-xs text-slate-400">{m.desc}</div>
                       </div>
                       <div
                         className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
                           selectedMethod === m.value
-                            ? "border-blue-500 bg-blue-500"
-                            : "border-gray-300"
+                            ? "border-[#4f7a61] bg-[#4f7a61]"
+                            : "border-slate-300"
                         }`}
                       />
                     </button>
@@ -303,8 +303,8 @@ export default function PaymentPage() {
 
               <div className="border-t border-gray-100 pt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">최종 결제 금액</span>
-                  <span className="text-xl font-bold text-gray-900">
+                <span className="text-sm text-slate-500">최종 결제 금액</span>
+                  <span className="text-xl font-bold text-slate-950">
                     {formatMoney(context.amount)}
                   </span>
                 </div>
@@ -313,7 +313,7 @@ export default function PaymentPage() {
               <button
                 onClick={handlePay}
                 disabled={paying}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
+                className="w-full rounded-xl bg-[#4f7a61] py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#426f55] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {paying
                   ? "결제 진행 중..."
@@ -323,6 +323,6 @@ export default function PaymentPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -32,30 +32,30 @@ function ChatRoomInner({ chatRoomId, fundingTitle, memberId }: ChatRoomInnerProp
     }, [messages]);
 
     return (
-        <div className="flex flex-col h-screen max-w-2xl mx-auto">
+        <div className="mx-auto flex h-screen max-w-2xl flex-col bg-white">
 
             {/* 상단 헤더 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b border-[#dbe7dc] bg-white px-4 py-3">
                 <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">💬 문의</span>
-                    <span className="text-sm text-gray-500">| {fundingTitle}</span>
+                    <span className="text-sm font-bold text-slate-900">문의</span>
+                    <span className="text-sm font-medium text-slate-500">| {fundingTitle}</span>
                 </div>
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="text-sm text-gray-500"
+                    className="text-sm font-semibold text-slate-500 hover:text-[#426f55]"
                 >
                     이전으로
                 </button>
             </div>
 
             {!isConnected && (
-                <div className="text-center text-xs text-gray-400 py-1 bg-gray-50">
+                <div className="bg-[#eef5ea] py-1 text-center text-xs text-slate-500">
                     연결 중...
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto bg-[#f3f7f1] px-4 py-4">
                 {messages.map((message) => (
                     <MessageBubble key={message.messageId} message={message} />
                 ))}
@@ -79,7 +79,7 @@ export default function ChatRoom({ chatRoomId, fundingTitle }: ChatRoomProps) {
 
     if (memberId === null) {
         return (
-            <div className="flex items-center justify-center h-screen text-sm text-gray-500">
+            <div className="flex h-screen items-center justify-center bg-[#f3f7f1] text-sm text-slate-500">
                 사용자 정보를 불러오는 중입니다...
             </div>
         );

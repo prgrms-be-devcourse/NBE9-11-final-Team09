@@ -59,7 +59,7 @@ export default function PasswordField({
 }: PasswordFieldProps) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold">{label}</label>
+      <label className="mb-2 block text-sm font-bold text-slate-800">{label}</label>
       <div className="relative">
         <input
           type={visible ? "text" : "password"}
@@ -68,13 +68,13 @@ export default function PasswordField({
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
           required={required}
-          className="w-full rounded border border-gray-300 px-4 py-3 pr-12 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full rounded-lg border border-[#dbe7dc] bg-white px-4 py-3 pr-12 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
         />
         <button
           type="button"
           onClick={onToggleVisible}
           disabled={disabled}
-          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-500 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-500 hover:text-[#426f55] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={visible ? `${label} \uC228\uAE30\uAE30` : `${label} \uBCF4\uAE30`}
         >
           <PasswordVisibilityIcon visible={visible} />

@@ -542,6 +542,14 @@ function FundingCard({ funding }: { funding: FundingListItem }) {
 function FundingGuide({ loggedIn }: { loggedIn: boolean }) {
   return (
     <aside className="h-fit break-keep rounded-lg border border-[#dbe7dc] bg-white p-5 shadow-[0_6px_18px_rgba(31,41,55,0.03)] lg:sticky lg:top-4 lg:mb-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto">
+      <Link
+        href={loggedIn ? "/fundings/new" : "/login"}
+        className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-[#4f7a61] text-sm font-semibold text-white shadow-sm hover:bg-[#426f55]"
+      >
+        + 펀딩 만들기
+      </Link>
+
+      <div className="mt-5 border-t border-[#dbe7dc] pt-5">
       <h2 className="text-lg font-bold text-slate-950">이용 방법</h2>
       <div className="mt-5 grid gap-4">
         <GuideStep number="1" title="원하는 펀딩 참여" icon={<UsersRound size={22} />}>
@@ -566,13 +574,7 @@ function FundingGuide({ loggedIn }: { loggedIn: boolean }) {
           최소 인원 달성 후에도 함께할수록 1인 금액이 낮아집니다.
         </p>
       </div>
-
-      <Link
-        href={loggedIn ? "/fundings/new" : "/login"}
-        className="mt-5 inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-[#4f7a61] text-sm font-semibold text-white shadow-sm hover:bg-[#426f55]"
-      >
-        + 펀딩 만들기
-      </Link>
+      </div>
     </aside>
   );
 }

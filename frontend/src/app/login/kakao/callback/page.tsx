@@ -108,27 +108,27 @@ function KakaoCallbackContent() {
   }, [router, searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-6 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1] px-6 py-16">
+      <div className="w-full max-w-md rounded-xl border border-[#dbe7dc] bg-white p-8 text-center shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
         {error ? (
           <>
-            <h1 className="text-2xl font-bold text-gray-950">
+            <h1 className="text-2xl font-bold text-slate-950">
               카카오 로그인 실패
             </h1>
             <p className="mt-4 text-sm text-red-500">{error}</p>
             <Link
               href="/login"
-              className="mt-8 inline-flex rounded bg-gray-950 px-5 py-3 text-sm font-bold text-white"
+              className="mt-8 inline-flex rounded-lg bg-[#4f7a61] px-5 py-3 text-sm font-bold text-white hover:bg-[#426f55]"
             >
               로그인으로 돌아가기
             </Link>
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-gray-950">
+            <h1 className="text-2xl font-bold text-slate-950">
               카카오 로그인 처리 중
             </h1>
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-sm text-slate-500">
               잠시만 기다려주세요.
             </p>
           </>
@@ -142,7 +142,7 @@ export default function KakaoCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-white text-sm text-gray-500">
+        <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1] text-sm text-slate-500">
           카카오 로그인 처리 중...
         </div>
       }

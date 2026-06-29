@@ -203,23 +203,23 @@ export default function SignupPage() {
   const fieldsDisabled = signupRequested || signupLoading;
 
   return (
-    <div className="flex min-h-screen justify-center bg-white px-6 py-16">
-      <div className="w-full max-w-lg">
-        <h1 className="mb-2 text-3xl font-bold">회원가입</h1>
-        <p className="mb-10 text-sm text-gray-500">
+    <main className="min-h-screen bg-[#f3f7f1] px-5 py-10">
+      <section className="mx-auto w-full max-w-2xl rounded-xl border border-[#dbe7dc] bg-white p-7 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+        <h1 className="text-3xl font-bold text-slate-950">회원가입</h1>
+        <p className="mt-2 mb-8 text-sm font-medium text-slate-500">
           회원정보 저장 후 이메일 인증을 진행해주세요.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-bold">이메일</label>
+              <label className="block text-sm font-bold text-slate-800">이메일</label>
               {signupRequested && (
                 <button
                   type="button"
                   onClick={editSignupInformation}
                   disabled={requestLoading || submitLoading}
-                  className="text-xs font-bold text-gray-500 underline disabled:opacity-40"
+                  className="text-xs font-bold text-slate-500 underline disabled:opacity-40"
                 >
                   정보 수정
                 </button>
@@ -234,7 +234,7 @@ export default function SignupPage() {
                 clearMessage();
               }}
               disabled={fieldsDisabled}
-              className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
             />
             {email && !emailValid && (
               <p className="mt-1 text-xs text-red-500">
@@ -244,7 +244,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-bold">이름</label>
+            <label className="mb-2 block text-sm font-bold text-slate-800">이름</label>
             <input
               type="text"
               placeholder="이름 입력"
@@ -254,7 +254,7 @@ export default function SignupPage() {
                 clearMessage();
               }}
               disabled={fieldsDisabled}
-              className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
             />
           </div>
 
@@ -303,7 +303,7 @@ export default function SignupPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-bold">닉네임</label>
+              <label className="mb-2 block text-sm font-bold text-slate-800">닉네임</label>
               <input
                 type="text"
                 placeholder="닉네임 입력"
@@ -313,11 +313,11 @@ export default function SignupPage() {
                   clearMessage();
                 }}
                 disabled={fieldsDisabled}
-                className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-bold">연락처</label>
+              <label className="mb-2 block text-sm font-bold text-slate-800">연락처</label>
               <input
                 type="tel"
                 placeholder="01012345678"
@@ -331,7 +331,7 @@ export default function SignupPage() {
                 inputMode="numeric"
                 maxLength={11}
                 disabled={fieldsDisabled}
-                className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
               />
               {phoneNumber && !phoneValid && (
                 <p className="mt-1 text-xs text-red-500">
@@ -341,7 +341,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div className="rounded border border-gray-300 p-4">
+          <div className="rounded-lg border border-[#dbe7dc] bg-[#f8faf9] p-4">
             <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
@@ -351,9 +351,9 @@ export default function SignupPage() {
                   clearMessage();
                 }}
                 disabled={fieldsDisabled}
-                className="mt-0.5 shrink-0"
+                className="mt-0.5 shrink-0 accent-[#4f7a61]"
               />
-              <span className="text-sm leading-relaxed text-gray-700">
+              <span className="text-sm leading-relaxed text-slate-700">
                 개인정보 수집 및 이용에 동의합니다.
                 <br />
                 수집 항목: 이메일, 닉네임, 연락처
@@ -368,24 +368,24 @@ export default function SignupPage() {
               type="button"
               onClick={handleSignupRequest}
               disabled={!canSaveSignup || signupLoading}
-              className="w-full rounded bg-gray-900 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-30"
+              className="w-full rounded-lg bg-[#4f7a61] py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-30"
             >
               {signupLoading ? "저장 중..." : "회원가입 정보 저장"}
             </button>
           )}
 
           {signupRequested && (
-            <section className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <section className="rounded-xl border border-[#dbe7dc] bg-[#f8faf9] p-5">
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                   <p className="text-sm font-bold">이메일 인증</p>
-                  <p className="mt-1 text-xs text-gray-500">{email}</p>
+                  <p className="mt-1 text-xs text-slate-500">{email}</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleRequestVerification}
                   disabled={requestLoading || submitLoading}
-                  className="rounded border border-gray-900 bg-white px-5 py-3 text-sm font-bold text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-lg border border-[#4f7a61] bg-white px-5 py-3 text-sm font-bold text-[#426f55] transition hover:bg-[#eef5ea] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {requestLoading
                     ? "요청 중..."
@@ -409,7 +409,7 @@ export default function SignupPage() {
                   }}
                   disabled={!emailSent || submitLoading}
                   maxLength={6}
-                  className="w-full rounded border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-600 disabled:bg-gray-100 disabled:text-gray-400"
+                  className="w-full rounded-lg border border-[#dbe7dc] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </label>
             </section>
@@ -424,20 +424,20 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={!verificationCode.trim() || submitLoading}
-              className="w-full rounded bg-gray-900 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-lg bg-[#4f7a61] py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitLoading ? "인증 중..." : "인증 완료 및 회원가입"}
             </button>
           )}
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           이미 계정이 있나요?{" "}
-          <Link href="/login" className="font-bold text-gray-900 underline">
+          <Link href="/login" className="font-bold text-[#426f55] underline">
             로그인
           </Link>
         </p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -38,10 +38,10 @@ function BalanceResultContent() {
 
   if (status === "pending") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 text-sm">잔금 결제 처리 중...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#4f7a61] border-t-transparent" />
+          <p className="text-sm text-slate-600">잔금 결제 처리 중...</p>
         </div>
       </div>
     );
@@ -49,18 +49,18 @@ function BalanceResultContent() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-sm w-full px-6">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1] px-5">
+        <div className="w-full max-w-sm rounded-xl border border-[#dbe7dc] bg-white p-6 text-center shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">결제에 실패했습니다</h1>
-          <p className="text-gray-500 text-sm mb-6">{errorMessage}</p>
+          <h1 className="mb-2 text-xl font-bold text-slate-950">결제에 실패했습니다</h1>
+          <p className="mb-6 text-sm text-slate-500">{errorMessage}</p>
           <button
             onClick={() => router.back()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            className="w-full rounded-xl bg-[#4f7a61] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#426f55]"
           >
             돌아가기
           </button>
@@ -70,27 +70,27 @@ function BalanceResultContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center max-w-sm w-full px-6">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1] px-5">
+      <div className="w-full max-w-sm rounded-xl border border-[#dbe7dc] bg-white p-6 text-center shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-2">잔금 결제 완료!</h1>
-        <p className="text-gray-500 text-sm mb-6">
+        <h1 className="mb-2 text-xl font-bold text-slate-950">잔금 결제 완료!</h1>
+        <p className="mb-6 text-sm text-slate-500">
           잔금이 성공적으로 처리되었습니다. 이제 탑승 준비가 완료되었습니다.
         </p>
         <div className="space-y-2">
           <button
             onClick={() => router.push("/fundings")}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            className="w-full rounded-xl bg-[#4f7a61] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#426f55]"
           >
             펀딩 목록으로
           </button>
           <button
             onClick={() => router.push("/mypage")}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl border border-gray-200 transition-colors text-sm"
+            className="w-full rounded-xl border border-[#dbe7dc] bg-white py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-[#eef5ea]"
           >
             마이페이지에서 확인
           </button>
@@ -103,8 +103,8 @@ function BalanceResultContent() {
 export default function BalanceResultPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f7f1]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#4f7a61] border-t-transparent" />
       </div>
     }>
       <BalanceResultContent />

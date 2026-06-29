@@ -162,7 +162,7 @@ export default function FundingDetailPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-gray-50 px-5 py-10 text-center text-sm text-gray-500">
+            <main className="min-h-screen bg-[#f3f7f1] px-5 py-10 text-center text-sm font-medium text-slate-500">
                 펀딩 상세를 불러오는 중입니다.
             </main>
         );
@@ -170,8 +170,8 @@ export default function FundingDetailPage() {
 
     if (!funding) {
         return (
-            <main className="min-h-screen bg-gray-50 px-5 py-10">
-                <div className="mx-auto max-w-3xl rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <main className="min-h-screen bg-[#f3f7f1] px-5 py-10">
+                <div className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                     {error || "펀딩을 찾을 수 없습니다."}
                 </div>
             </main>
@@ -183,55 +183,18 @@ export default function FundingDetailPage() {
     const ratio = getParticipantRatio(funding.currentParticipants, funding.maxParticipants);
 
     return (
-        <main className="min-h-screen bg-gray-50 text-gray-950">
-            <div className="mx-auto grid w-full max-w-5xl gap-8 px-5 py-8">
+        <main className="min-h-screen bg-[#f3f7f1] text-slate-950">
+            <div className="mx-auto grid w-full max-w-6xl gap-5 px-5 py-6">
                 <div className="flex items-center justify-between gap-3">
-                    <Link href="/fundings" className="w-fit text-sm font-medium text-gray-600">
+                    <Link href="/fundings" className="w-fit text-sm font-semibold text-slate-600 hover:text-[#426f55]">
                         목록으로
                     </Link>
-                    <button
-                        type="button"
-                        onClick={handleShare}
-                        className="rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100"
-                    >
-                        {copied ? "링크 복사됨" : "공유"}
-                    </button>
-                </div>
-
-                <section className="grid gap-6 rounded border border-gray-200 bg-white p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                                <span className="rounded bg-gray-100 px-2 py-1">{statusLabels[funding.status]}</span>
-                                <span className="rounded bg-gray-100 px-2 py-1">{busTypeLabels[funding.busType]}</span>
-                                <span className="rounded bg-gray-100 px-2 py-1">{tripTypeLabels[funding.tripType]}</span>
-                                {isHost && (
-                                    <span className="rounded bg-gray-950 px-2 py-1 text-white">방장</span>
-                                )}
-                                {isJoined && !isHost && (
-                                    <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-800">참가중</span>
-                                )}
-                                {isCanceled && (
-                                    <span className="rounded bg-red-100 px-2 py-1 text-red-600">취소한 펀딩</span>
-                                )}
-                            </div>
-                            <h1 className="mt-4 text-3xl font-bold">{funding.title}</h1>
-                            <p className="mt-2 text-sm text-gray-600">방장 {funding.hostNickname}</p>
-                        </div>
-                    </div>
-
-                    {error && (
-                        <p className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {error}
-                        </p>
-                    )}
-
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                         {isHost && isRecruiting && (
                             <>
                                 <Link
                                     href={`/fundings/${funding.fundingId}/edit`}
-                                    className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold"
+                                    className="rounded-lg border border-[#dbe7dc] bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-[#eef5ea]"
                                 >
                                     수정
                                 </Link>
@@ -239,101 +202,149 @@ export default function FundingDetailPage() {
                                     type="button"
                                     onClick={handleDelete}
                                     disabled={deleting}
-                                    className="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 disabled:opacity-50"
                                 >
                                     {deleting ? "취소 중" : "삭제"}
                                 </button>
                             </>
                         )}
-
-                        {!isHost && canJoinFunding && (
-                            <>
-                                {!isJoined && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (!isLoggedIn) { router.push("/login"); return; }
-                                            router.push(`/funding/${funding.fundingId}/seats`);
-                                        }}
-                                        className="rounded bg-gray-950 px-4 py-2 text-sm font-semibold text-white"
-                                    >
-                                        {isCanceled ? "다시 참여하기" : "참여하기"}
-                                    </button>
-                                )}
-
-                                {canShowCancel && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setCancelModal(true)}
-                                        className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
-                                    >
-                                        참여 취소
-                                    </button>
-                                )}
-                            </>
-                        )}
+                        <button
+                            type="button"
+                            onClick={handleShare}
+                            className="rounded-lg border border-[#dbe7dc] bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-[#eef5ea]"
+                        >
+                            {copied ? "링크 복사됨" : "공유"}
+                        </button>
                     </div>
+                </div>
 
-                    {isLoggedIn && (
-                        <div className="flex justify-end">
-                            <button
-                                type="button"
-                                onClick={handleChatClick}
-                                className="rounded border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100"
-                            >
-                                💬 주최자에게 문의하기
-                            </button>
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <section className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+                        <div className="grid gap-6">
+                            <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                <span className="rounded-full bg-[#eef5ea] px-2.5 py-1 text-[#426f55]">{statusLabels[funding.status]}</span>
+                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{busTypeLabels[funding.busType]}</span>
+                                <span className="rounded-full bg-[#e8eef7] px-2.5 py-1 text-[#3f6695]">{tripTypeLabels[funding.tripType]}</span>
+                                {isHost && <span className="rounded-full bg-[#4f7a61] px-2.5 py-1 text-white">방장</span>}
+                                {isJoined && !isHost && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-800">참가중</span>}
+                                {isCanceled && <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-600">취소한 펀딩</span>}
+                            </div>
+
+                            <div className="mt-5 grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+                                <div>
+                                    <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                                        {funding.title}
+                                    </h1>
+                                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                                        방장 {funding.hostNickname}
+                                    </p>
+                                </div>
+                                <div className="rounded-xl bg-[#eef5ea] px-5 py-4 text-right">
+                                    <p className="text-xs font-bold text-[#426f55]">총 대절 금액</p>
+                                    <p className="mt-1 text-2xl font-bold text-slate-950">
+                                        {formatMoney(funding.totalPrice)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {funding.content && (
+                                <p className="whitespace-pre-wrap rounded-xl bg-[#f8faf9] px-5 py-4 text-sm font-medium leading-7 text-slate-700 ring-1 ring-[#dbe7dc]">
+                                    {funding.content}
+                                </p>
+                            )}
+
+                            <div className="rounded-xl border border-[#dbe7dc] bg-[#f8faf9] p-5">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {outbound && <RouteLine title="가는 편" pathinfo={outbound} />}
+                                    {returned && <RouteLine title="오는 편" pathinfo={returned} />}
+                                </div>
+                            </div>
+
+                            {error && (
+                                <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                    {error}
+                                </p>
+                            )}
+
+                            <div>
+                                <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+                                    <span>모집 현황</span>
+                                    <span>{ratio}%</span>
+                                </div>
+                                <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#e3ebe3]">
+                                    <div className="h-full rounded-full bg-[#4f7a61]" style={{ width: `${ratio}%` }} />
+                                </div>
+                                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                                    <Summary label="현재 인원" value={`${funding.currentParticipants}명`} />
+                                    <Summary label="최소 인원" value={`${funding.minParticipants}명`} />
+                                    <Summary label="최대 인원" value={`${funding.maxParticipants}명`} />
+                                </div>
+                            </div>
+
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-950">가격</h2>
+                                <div className="mt-3 grid gap-3 md:grid-cols-3">
+                                <Summary label="최소 예상가" value={formatMoney(funding.minPrice)} />
+                                <Summary label="최대 예상가" value={formatMoney(funding.maxPrice)} />
+                                <Summary
+                                    label="현재 기준 예상가"
+                                    value={
+                                        funding.currentParticipants >= funding.minParticipants
+                                            ? formatMoney(roundUpToHundred(Number(funding.totalPrice) / (funding.currentParticipants + 1)))
+                                            : "최소 인원 모집 후 표시"
+                                    }
+                                />
+                                </div>
+                            </div>
                         </div>
-                    )}
+                    </section>
 
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <Summary label="현재 인원" value={`${funding.currentParticipants}명`} />
-                        <Summary label="최소 인원" value={`${funding.minParticipants}명`} />
-                        <Summary label="최대 인원" value={`${funding.maxParticipants}명`} />
-                        <Summary label="총 대절 금액" value={formatMoney(funding.totalPrice)} />
-                    </div>
+                    <aside className="h-fit rounded-xl border border-[#dbe7dc] bg-white p-5 shadow-[0_10px_28px_rgba(31,41,55,0.06)] lg:sticky lg:top-20">
+                        <p className="text-sm font-bold text-slate-950">펀딩 참여</p>
+                        <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+                            좌석을 선택하고 예약을 진행합니다.
+                        </p>
 
-                    <div className="grid gap-2">
-                        <div className="flex items-center justify-between text-sm text-gray-600">
-                            <span>모집 현황</span>
-                            <span>{ratio}%</span>
+                        <div className="mt-5 grid gap-2">
+                            {!isHost && canJoinFunding && (
+                                <>
+                                    {!isJoined && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (!isLoggedIn) { router.push("/login"); return; }
+                                                router.push(`/funding/${funding.fundingId}/seats`);
+                                            }}
+                                            className="h-11 rounded-lg bg-[#4f7a61] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#426f55]"
+                                        >
+                                            {isCanceled ? "다시 참여하기" : "참여하기"}
+                                        </button>
+                                    )}
+
+                                    {canShowCancel && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCancelModal(true)}
+                                            className="h-11 rounded-lg border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-600 hover:bg-red-100"
+                                        >
+                                            참여 취소
+                                        </button>
+                                    )}
+                                </>
+                            )}
+
+                            {isLoggedIn && (
+                                <button
+                                    type="button"
+                                    onClick={handleChatClick}
+                                    className="h-11 rounded-lg border border-[#dbe7dc] bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-[#eef5ea]"
+                                >
+                                    주최자에게 문의하기
+                                </button>
+                            )}
                         </div>
-                        <div className="h-3 overflow-hidden rounded bg-gray-100">
-                            <div className="h-full bg-gray-950" style={{ width: `${ratio}%` }} />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-3 rounded border border-gray-200 p-4">
-                        <h2 className="text-lg font-semibold">노선</h2>
-                        {outbound && <RouteLine title="가는 편" pathinfo={outbound} />}
-                        {returned && <RouteLine title="오는 편" pathinfo={returned} />}
-                    </div>
-
-                    <div className="grid gap-3 rounded border border-gray-200 p-4">
-                        <h2 className="text-lg font-semibold">가격</h2>
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <Summary label="최소 예상가" value={formatMoney(funding.minPrice)} />
-                            <Summary label="최대 예상가" value={formatMoney(funding.maxPrice)} />
-                            <Summary
-                                label="현재 기준 예상가"
-                                value={
-                                    funding.currentParticipants >= funding.minParticipants
-                                        ? formatMoney(roundUpToHundred(Number(funding.totalPrice) / (funding.currentParticipants + 1)))
-                                        : "최소 인원 모집 후 표시"
-                                }
-                            />
-                        </div>
-                    </div>
-
-                    {funding.content && (
-                        <div className="grid gap-3 rounded border border-gray-200 p-4">
-                            <h2 className="text-lg font-semibold">안내</h2>
-                            <p className="whitespace-pre-wrap text-sm leading-6 text-gray-700">
-                                {funding.content}
-                            </p>
-                        </div>
-                    )}
-                </section>
+                    </aside>
+                </div>
             </div>
 
             {cancelModal && (
@@ -364,7 +375,7 @@ export default function FundingDetailPage() {
                             <button
                                 type="button"
                                 onClick={() => setCancelModal(false)}
-                                className="flex-1 rounded border border-gray-300 py-2 text-sm font-semibold text-gray-700"
+                                className="flex-1 rounded-lg border border-[#dbe7dc] py-2 text-sm font-semibold text-slate-700 hover:bg-[#eef5ea]"
                             >
                                 닫기
                             </button>
@@ -388,7 +399,7 @@ export default function FundingDetailPage() {
                         <button
                             type="button"
                             onClick={() => setCancelSuccess(false)}
-                            className="rounded bg-gray-950 px-6 py-2 text-sm font-semibold text-white"
+                            className="rounded-lg bg-[#4f7a61] px-6 py-2 text-sm font-semibold text-white hover:bg-[#426f55]"
                         >
                             확인
                         </button>
@@ -401,9 +412,9 @@ export default function FundingDetailPage() {
 
 function Summary({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded border border-gray-200 p-4">
-            <p className="text-xs font-semibold text-gray-500">{label}</p>
-            <p className="mt-2 text-lg font-bold">{value}</p>
+        <div className="rounded-lg border border-[#dbe7dc] bg-white p-4">
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="mt-2 text-lg font-bold text-slate-950">{value}</p>
         </div>
     );
 }
@@ -414,10 +425,10 @@ function roundUpToHundred(value: number) {
 
 function RouteLine({ title, pathinfo }: { title: string; pathinfo: Pathinfo }) {
     return (
-        <div className="grid gap-1 border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">
+        <div className="grid gap-1 border-t border-[#dbe7dc] pt-3 first:border-t-0 first:pt-0">
             <p className="text-sm font-semibold">{title}</p>
-            <p className="text-sm text-gray-600">{formatDateTime(pathinfo.departureTime)}</p>
-            <p className="text-sm text-gray-800">
+            <p className="text-sm text-slate-600">{formatDateTime(pathinfo.departureTime)}</p>
+            <p className="text-sm text-slate-800">
                 {regionLabels[pathinfo.departureRegion]} {pathinfo.departureAddress} →{" "}
                 {regionLabels[pathinfo.arrivalRegion]} {pathinfo.arrivalAddress}
             </p>

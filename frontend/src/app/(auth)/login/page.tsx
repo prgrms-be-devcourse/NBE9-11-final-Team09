@@ -149,23 +149,23 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="flex min-h-screen justify-center bg-white px-6 py-16">
-        <div className="w-full max-w-lg">
-          <h1 className="mb-2 text-3xl font-bold">로그인</h1>
-          <p className="mb-10 text-sm text-gray-500">
+      <main className="min-h-screen bg-[#f3f7f1] px-5 py-10">
+        <section className="mx-auto w-full max-w-md rounded-xl border border-[#dbe7dc] bg-white p-7 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+          <h1 className="text-3xl font-bold text-slate-950">로그인</h1>
+          <p className="mt-2 mb-8 text-sm font-medium text-slate-500">
             가입한 이메일과 비밀번호를 입력해주세요.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <div>
-              <label className="mb-2 block text-sm font-bold">이메일</label>
+              <label className="mb-2 block text-sm font-bold text-slate-800">이메일</label>
               <input
                 type="email"
                 placeholder="example@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-600"
+                className="w-full rounded-lg border border-[#dbe7dc] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10"
               />
             </div>
 
@@ -180,11 +180,12 @@ export default function LoginPage() {
             />
 
             <div className="flex items-center justify-between">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
                 <input
                   type="checkbox"
                   checked={keepLogin}
                   onChange={(e) => setKeepLogin(e.target.checked)}
+                  className="accent-[#4f7a61]"
                 />
                 로그인 상태 유지
               </label>
@@ -195,23 +196,23 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || kakaoLoading}
-              className="w-full rounded bg-gray-900 py-4 text-sm font-bold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-[#4f7a61] py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:opacity-50"
             >
               {loading ? "로그인 중..." : "로그인"}
             </button>
           </form>
 
           <div className="my-6 flex items-center gap-4">
-            <div className="flex-1 border-t border-gray-200" />
-            <span className="text-sm text-gray-400">또는</span>
-            <div className="flex-1 border-t border-gray-200" />
+            <div className="flex-1 border-t border-[#dbe7dc]" />
+            <span className="text-sm text-slate-400">또는</span>
+            <div className="flex-1 border-t border-[#dbe7dc]" />
           </div>
 
           <button
             type="button"
             onClick={handleKakaoLogin}
             disabled={loading || kakaoLoading || !kakaoReady}
-            className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-[#FEE500] text-[15px] font-semibold text-black/85 transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-[52px] w-full items-center justify-center gap-3 rounded-lg bg-[#FEE500] text-[15px] font-semibold text-black/85 transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="카카오 로그인"
           >
             <svg
@@ -230,14 +231,14 @@ export default function LoginPage() {
             </p>
           )}
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-slate-500">
             아직 계정이 없나요?{" "}
-            <Link href="/signup" className="font-bold text-gray-900 underline">
+            <Link href="/signup" className="font-bold text-[#426f55] underline">
               회원가입
             </Link>
           </p>
-        </div>
-      </div>
+        </section>
+      </main>
     </>
   );
 }

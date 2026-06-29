@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fa] text-slate-900">
+    <div className="min-h-screen bg-[#f3f7f1] text-slate-900">
       {sidebarOpen && (
         <button
           type="button"
@@ -94,12 +94,12 @@ export default function AdminDashboard() {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[#13263b] text-white transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[#2f4f3d] text-white transition-transform lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <Link href="/admin" className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-300 font-black text-[#13263b]">M</span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#cfe1d0] font-black text-[#2f4f3d]">M</span>
           <div>
             <p className="font-black">모여타</p>
             <p className="text-[10px] font-bold tracking-[0.22em] text-slate-400">ADMIN</p>
@@ -116,11 +116,11 @@ export default function AdminDashboard() {
               }}
               className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
                 section === item.id
-                  ? "bg-white text-[#13263b] shadow-lg shadow-black/10"
+                  ? "bg-white text-[#2f4f3d] shadow-lg shadow-black/10"
                   : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <span className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${section === item.id ? "bg-[#dff5f7] text-[#245c70]" : "bg-white/10"}`}>
+              <span className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${section === item.id ? "bg-[#eef5ea] text-[#426f55]" : "bg-white/10"}`}>
                 {item.short}
               </span>
               {item.label}

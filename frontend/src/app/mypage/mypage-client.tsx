@@ -8,7 +8,6 @@ import {
   getMyDashboard,
   getMyHistory,
   getMyParticipations,
-  logoutMember,
   updateMyProfile,
   withdrawMember,
 } from "@/lib/member-api";
@@ -22,7 +21,6 @@ import type {
   MyParticipation,
   PageResponse,
 } from "@/types/member";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -102,7 +100,7 @@ function statusTone(status: string) {
     return "bg-emerald-50 text-emerald-700 ring-emerald-600/15";
   }
   if (["CONFIRMED", "COMPLETED"].includes(status)) {
-    return "bg-blue-50 text-blue-700 ring-blue-600/15";
+    return "bg-[#eef5ea] text-[#426f55] ring-[#4f7a61]/20";
   }
   if (["CANCELED", "CANCELLED", "FAILED", "NO_SHOW"].includes(status)) {
     return "bg-rose-50 text-rose-700 ring-rose-600/15";
@@ -122,9 +120,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function LoadingView() {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f7f8f5] px-6">
+    <main className="grid min-h-screen place-items-center bg-[#f3f7f1] px-6">
       <div className="text-center">
-        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#235347]" />
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#4f7a61]" />
         <p className="text-sm font-medium text-slate-600">
           마이페이지를 불러오고 있습니다.
         </p>
@@ -145,7 +143,6 @@ export default function MypageClient() {
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawPassword, setWithdrawPassword] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
@@ -290,20 +287,6 @@ export default function MypageClient() {
     }
   }
 
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      await logoutMember();
-    } catch (requestError) {
-      if (!(requestError instanceof AuthenticationRequiredError)) {
-        clearAccessToken();
-      }
-    } finally {
-      setLoggingOut(false);
-      router.replace("/login");
-    }
-  }
-
   function closeWithdrawModal() {
     if (withdrawing) return;
     setWithdrawModalOpen(false);
@@ -343,7 +326,7 @@ export default function MypageClient() {
 
   if (!profile) {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#f7f8f5] px-6">
+      <main className="grid min-h-screen place-items-center bg-[#f3f7f1] px-6">
         <div className="max-w-md rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
           <p className="text-lg font-bold text-slate-900">
             마이페이지를 열지 못했습니다.
@@ -354,7 +337,7 @@ export default function MypageClient() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-6 rounded-xl bg-[#235347] px-5 py-3 text-sm font-bold text-white"
+            className="mt-6 rounded-xl bg-[#4f7a61] px-5 py-3 text-sm font-bold text-white hover:bg-[#426f55]"
           >
             다시 시도
           </button>
@@ -364,34 +347,7 @@ export default function MypageClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f8f5] text-slate-900">
-      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#235347] text-lg text-white">
-              M
-            </span>
-            <span className="text-xl font-black tracking-tight">모여타</span>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              홈으로
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
-            >
-              {loggingOut ? "로그아웃 중" : "로그아웃"}
-            </button>
-          </nav>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#f3f7f1] text-slate-900">
       <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="mb-8">
           <p className="text-sm font-bold text-[#357465]">MY PAGE</p>
@@ -411,7 +367,7 @@ export default function MypageClient() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="space-y-5">
-            <section className="overflow-hidden rounded-3xl bg-[#204d42] p-6 text-white shadow-sm">
+            <section className="overflow-hidden rounded-3xl bg-[#426f55] p-6 text-white shadow-sm">
               <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/15 text-2xl font-black ring-1 ring-white/20">
                 {profile.nickname.slice(0, 1).toUpperCase()}
               </div>
@@ -439,7 +395,7 @@ export default function MypageClient() {
                   onClick={() => setActiveTab(tab)}
                   className={`flex items-center justify-between rounded-2xl px-3 py-3 text-left transition ${
                     activeTab === tab
-                      ? "bg-[#edf4f1] text-[#235347]"
+                      ? "bg-[#eef5ea] text-[#426f55]"
                       : "text-slate-500 hover:bg-slate-50"
                   }`}
                 >
@@ -674,7 +630,7 @@ function ProfileSection({
             value={nickname}
             onChange={(event) => onNicknameChange(event.target.value)}
             maxLength={20}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#357465] focus:ring-4 focus:ring-[#357465]/10"
+            className="w-full rounded-xl border border-[#dbe7dc] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-4 focus:ring-[#4f7a61]/10"
           />
         </label>
 
@@ -687,7 +643,7 @@ function ProfileSection({
             value={phoneNumber}
             onChange={(event) => onPhoneNumberChange(event.target.value)}
             placeholder="010-0000-0000"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#357465] focus:ring-4 focus:ring-[#357465]/10"
+            className="w-full rounded-xl border border-[#dbe7dc] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-4 focus:ring-[#4f7a61]/10"
           />
         </label>
 
@@ -701,7 +657,7 @@ function ProfileSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-xl bg-[#235347] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#193e35] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[#4f7a61] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "저장 중" : "변경사항 저장"}
           </button>
@@ -778,7 +734,7 @@ function HistorySection({
                     onClick={() => onTabChange(tab)}
                     className={`whitespace-nowrap border-b-2 pb-4 text-sm font-bold transition ${
                         activeTab === tab
-                            ? "border-[#235347] text-[#235347]"
+                            ? "border-[#4f7a61] text-[#426f55]"
                             : "border-transparent text-slate-400 hover:text-slate-700"
                     }`}
                 >
@@ -791,7 +747,7 @@ function HistorySection({
         <div className="relative min-h-64 px-6 py-6 sm:px-8">
           {loading && (
               <div className="absolute inset-0 z-10 grid place-items-center bg-white/75 backdrop-blur-[1px]">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#235347]" />
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#dfe5dc] border-t-[#4f7a61]" />
               </div>
           )}
 
