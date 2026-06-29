@@ -3,6 +3,7 @@ package com.back.team9.moyeota.domain.funding.repository;
 
 import com.back.team9.moyeota.domain.funding.dto.FundingSearchCondition;
 import com.back.team9.moyeota.domain.funding.entity.Funding;
+import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.pathinfo.entity.Region;
 import com.querydsl.core.types.OrderSpecifier;
@@ -119,6 +120,7 @@ public class FundingRepositoryImpl implements FundingRepositoryCustom {
         return new BooleanExpression[]{
                 pathinfo.direction.eq(Direction.OUTBOUND), // 가는 노선만
                 funding.status.in(condition.effectiveStatuses()), // 상태 필터
+                tripTypeEq(condition.tripType()), // 편도/왕복 필터
                 departureDateEq(condition.departureDate()), // 출발일 필터
                 departureRegionEq(condition.departureRegion()), // 출발지 필터
                 arrivalRegionEq(condition.arrivalRegion()) // 도착지 필터
@@ -129,6 +131,12 @@ public class FundingRepositoryImpl implements FundingRepositoryCustom {
         return departureDate == null
                 ? null
                 : funding.departureDate.eq(departureDate);
+    }
+
+    private BooleanExpression tripTypeEq(TripType tripType) {
+        return tripType == null
+                ? null
+                : funding.tripType.eq(tripType);
     }
 
     private BooleanExpression departureRegionEq(Region departureRegion) {

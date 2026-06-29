@@ -76,6 +76,7 @@ class FundingTimelineProcessorUnitTest {
 
         // Then
         assertThat(funding.getStatus()).isEqualTo(FundingStatus.CONFIRMED);
+        assertThat(funding.getFinalPrice()).isEqualByComparingTo("23900");
         verify(notificationService).sendToFundingHost(
                 1L,
                 10L,
