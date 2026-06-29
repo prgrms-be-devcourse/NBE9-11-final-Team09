@@ -28,3 +28,11 @@ app:
   cors:
     allowed-origins:
       "https://www.moyeota.site,https://moyeota.site"
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
