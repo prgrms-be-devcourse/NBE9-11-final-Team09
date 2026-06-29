@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { getNotifications } from "@/lib/notificationApi";
 import { Notification } from "@/types/notification";
+import DOMPurify from "isomorphic-dompurify";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // 👇 어떤 알림이 열려있는지 관리
+  const [openId, setOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchNotifications() {
@@ -37,17 +41,43 @@ export default function NotificationsPage() {
       ) : (
         <>
           <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div key={notification.notificationId} className="border rounded-lg p-4">
-                <h2 className="font-semibold">{notification.title}</h2>
-                <p className="text-sm text-gray-600 mt-2">{notification.content}</p>
-                <p className="text-xs text-gray-400 mt-3">
-                  {new Date(notification.emailSentAt).toLocaleString()}
-                </p>
-              </div>
-            ))}
+            {notifications.map((notification) => {
+              const isOpen = openId === notification.notificationId;
+
+              return (
+                <div
+                  key={notification.notificationId}
+                  className="border rounded-lg p-4"
+                >
+                  {/* 제목 (클릭 가능) */}
+                  <h2
+                    className="font-semibold cursor-pointer hover:text-blue-600"
+                    onClick={() =>
+                      setOpenId(isOpen ? null : notification.notificationId)
+                    }
+                  >
+                    {notification.title}
+                  </h2>
+
+                  {/* 내용 (토글) */}
+                  {isOpen && (
+                    <div
+                        className="text-sm text-gray-600 mt-2"
+                        dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(notification.content),
+                        }}
+                    />
+                    )}
+
+                  <p className="text-xs text-gray-400 mt-3">
+                    {new Date(notification.emailSentAt).toLocaleString()}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
+          {/* pagination 그대로 */}
           <div className="flex items-center justify-center gap-2 mt-8">
             <button
               onClick={() => setCurrentPage((p) => p - 1)}
@@ -56,17 +86,21 @@ export default function NotificationsPage() {
             >
               이전
             </button>
+
             {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`px-3 py-1 rounded border text-sm ${
-                  currentPage === page ? "bg-gray-900 text-white border-gray-900" : "hover:bg-gray-100"
+                  currentPage === page
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "hover:bg-gray-100"
                 }`}
               >
                 {page + 1}
               </button>
             ))}
+
             <button
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={currentPage === totalPages - 1}

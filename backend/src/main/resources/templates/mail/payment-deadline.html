@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .header { border-bottom: 2px solid #F59E0B; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { color: #F59E0B; font-size: 24px; margin: 0; }
+    .content { margin-bottom: 30px; }
+    .warning-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f3f4f6; border-radius: 6px; }
+    .info-table td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+    .info-table td.label { font-weight: bold; width: 30%; color: #4b5563; }
+    .btn { display: inline-block; padding: 12px 24px; color: #ffffff !important; background-color: #F59E0B; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+    .footer { font-size: 12px; color: #9ca3af; margin-top: 30px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Moyeota 긴급 안내 ⚠</h1>
+  </div>
+  <div class="content">
+    <h2>안녕하세요, <span th:text="${nickname}">사용자</span>님.</h2>
+    <p>참가 신청하신 <strong><span th:text="${fundingTitle}">펀딩 제목</span></strong>의 결제 마감 시간이 임박했습니다.</p>
+
+    <div class="warning-box">
+      <strong>[결제 마감 시각] <span th:text="${deadlineTime}">2026-07-01 18:00</span>까지</strong><br>
+      기간 내에 결제가 완료되지 않으면 예약이 자동 취소되며 패널티가 부과될 수 있습니다.
+    </div>
+
+    <table class="info-table">
+      <tr>
+        <td class="label">결제 대상 펀딩</td>
+        <td th:text="${fundingTitle}">펀딩 제목</td>
+      </tr>
+    </table>
+
+  </div>
+  <div class="footer">
+    본 메일은 발신전용입니다. 관련 문의는 Moyeota 고객센터를 이용해주세요.
+  </div>
+</div>
+</body>
+</html>

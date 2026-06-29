@@ -8,6 +8,7 @@ import com.back.team9.moyeota.domain.notification.dto.NotificationResponse;
 import com.back.team9.moyeota.domain.notification.entity.Notification;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.entity.SendStatus;
+import com.back.team9.moyeota.domain.notification.event.NotificationCreatedEvent;
 import com.back.team9.moyeota.domain.notification.repository.NotificationRepository;
 import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
@@ -15,11 +16,15 @@ import com.back.team9.moyeota.global.error.ErrorCode;
 import com.back.team9.moyeota.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -36,10 +41,11 @@ public class NotificationService {
     private final FundingRepository fundingRepository;
     private final NotificationRepository notificationRepository;
     private final ParticipationRepository participationRepository;
-    private final Clock clock;
+    private final NotificationAsyncService notificationAsyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    private final MailService mailService;
     private final NotificationTemplateService templateService;
+    private final NotificationTransactionService notificationTransactionService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendMimeMessage(Long memberId,
@@ -56,76 +62,93 @@ public class NotificationService {
     }
 
     // 방장용 알림
-    public void sendToFundingHost(
-            Long memberId,
-            Long fundingId,
-            NotificationType type
-    ) {
-        if (isAlreadySent(memberId, fundingId, type)) {
-            return;
-        }
+    public void sendToFundingHost(Long memberId, Long fundingId, NotificationType type) {
+        if (isAlreadySent(memberId, fundingId, type)) return;
 
-        try {
-            Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-            Funding funding = fundingRepository.findById(fundingId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
-
-            sendMessage(member, funding, type);
-        } catch (Exception e) {
-            log.error(
-                    "펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
-                    memberId,
-                    fundingId,
-                    type,
-                    e
-            );
-        }
-    }
-
-    // 참가자용 알림
-    public void sendToFundingParticipants(
-            Long fundingId,
-            NotificationType type
-    ) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Funding funding = fundingRepository.findById(fundingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
 
-        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(
-                fundingId,
-                ParticipationStatus.ACTIVE
-        );
-
-        if (memberIds.isEmpty()) {
-            return;
+        try {
+            notificationTransactionService.saveAndPublish(member, funding, type); // REQUIRES_NEW
+        } catch (Exception e) {
+            log.error("펀딩 방장 알림 발송 실패 memberId={}, fundingId={}, type={}", memberId, fundingId, type, e);
         }
+    }
+
+//    // 참가자용 알림
+//    @Transactional
+//    public void sendToFundingParticipants(
+//            Long fundingId,
+//            NotificationType type
+//    ) {
+//        Funding funding = fundingRepository.findById(fundingId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+//
+//        List<Long> memberIds = participationRepository.findMemberIdsByFundingIdAndStatus(
+//                fundingId,
+//                ParticipationStatus.ACTIVE
+//        );
+//
+//        if (memberIds.isEmpty()) {
+//            return;
+//        }
+//
+//        Set<Long> sentMemberIds = new HashSet<>(
+//                notificationRepository.findSentMemberIds(
+//                        fundingId,
+//                        type,
+//                        memberIds
+//                )
+//        );
+//
+//        List<Member> members = memberRepository.findAllById(memberIds);
+//
+//        for (Member member : members) {
+//            if (sentMemberIds.contains(member.getMemberId())) {
+//                continue;
+//            }
+//
+//            try {
+//                sendMessage(member, funding, type);
+//            } catch (Exception e) {
+//                log.error(
+//                        "펀딩 참가자 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
+//                        member.getMemberId(),
+//                        fundingId,
+//                        type,
+//                        e
+//                );
+//            }
+//        }
+//    }
+
+    @Transactional(readOnly = true)
+    public void sendToFundingParticipants(Long fundingId, NotificationType type) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
+
+        List<Long> memberIds = participationRepository
+                .findMemberIdsByFundingIdAndStatus(fundingId, ParticipationStatus.ACTIVE);
+
+        if (memberIds.isEmpty()) return;
 
         Set<Long> sentMemberIds = new HashSet<>(
-                notificationRepository.findSentMemberIds(
-                        fundingId,
-                        type,
-                        memberIds
-                )
-        );
+                notificationRepository.findSentMemberIds(fundingId, type, memberIds));
 
         List<Member> members = memberRepository.findAllById(memberIds);
 
         for (Member member : members) {
-            if (sentMemberIds.contains(member.getMemberId())) {
-                continue;
-            }
+            if (sentMemberIds.contains(member.getMemberId())) continue;
 
             try {
-                sendMessage(member, funding, type);
+                // 알림 1건 = 독립 트랜잭션
+                notificationTransactionService.saveAndPublish(member, funding, type);
             } catch (Exception e) {
                 log.error(
                         "펀딩 참가자 알림 발송 실패 memberId={}, fundingId={}, notificationType={}",
-                        member.getMemberId(),
-                        fundingId,
-                        type,
-                        e
-                );
+                        member.getMemberId(), fundingId, type, e);
             }
         }
     }
@@ -151,18 +174,13 @@ public class NotificationService {
                 .sendStatus(SendStatus.PENDING)
                 .build();
 
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
 
-        try {
-            sendMailWithRetry(member.getEmail(), title, content);
-            notification.markSuccess(LocalDateTime.now(clock));
-
-        } catch (Exception e) {
-            notification.markFailed();
-            throw new BusinessException(ErrorCode.NOTIFICATION_SEND_FAILED);
-        } finally {
-            notificationRepository.save(notification);
-        }
+        eventPublisher.publishEvent(
+                new NotificationCreatedEvent(
+                        savedNotification.getNotificationId()
+                )
+        );
     }
 
     private boolean isAlreadySent(
@@ -175,30 +193,6 @@ public class NotificationService {
                 fundingId,
                 type
         );
-    }
-
-    private void sendMailWithRetry(
-            String email,
-            String title,
-            String content
-    ) {
-        int retryCount = 0;
-
-        while (retryCount < 3) {
-            try {
-                mailService.send(email, title, content);
-                return;
-
-            } catch (Exception e) {
-                retryCount++;
-
-                log.warn("메일 발송 실패 ({} / 3)", retryCount);
-
-                if (retryCount >= 3) {
-                    throw e;
-                }
-            }
-        }
     }
 
     @Transactional(readOnly = true)
