@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getNotifications } from "@/lib/notificationApi";
 import { Notification } from "@/types/notification";
+import DOMPurify from "isomorphic-dompurify";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -61,12 +62,12 @@ export default function NotificationsPage() {
                   {/* 내용 (토글) */}
                   {isOpen && (
                     <div
-                      className="text-sm text-gray-600 mt-2"
-                      dangerouslySetInnerHTML={{
-                        __html: notification.content,
-                      }}
+                        className="text-sm text-gray-600 mt-2"
+                        dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(notification.content),
+                        }}
                     />
-                  )}
+                    )}
 
                   <p className="text-xs text-gray-400 mt-3">
                     {new Date(notification.emailSentAt).toLocaleString()}
