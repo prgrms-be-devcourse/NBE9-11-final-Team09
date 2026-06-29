@@ -110,6 +110,12 @@ export default function PaymentPage() {
   
     if (!member.phoneNumber?.trim()) {
       alert("결제 진행을 위해 마이페이지에서 전화번호를 먼저 등록해주세요.");
+    
+      await cancelParticipation(participationId).catch((err) => {
+        console.warn("전화번호 미등록으로 인한 참여 취소 실패:", err);
+      });
+    
+      sessionStorage.removeItem(`paymentContext_${participationId}`);
       router.push("/mypage");
       return;
     }
