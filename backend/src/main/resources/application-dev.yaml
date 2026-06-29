@@ -15,13 +15,6 @@ springdoc:
     enabled: true
   default-produces-media-type: application/json; charset=UTF-8
 
-logging:
-  level:
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.orm.jdbc.extract: TRACE
-    org.springframework.transaction.interceptor: TRACE
-    org.springframework.security: DEBUG
-
 app:
   cookie:
     secure: true

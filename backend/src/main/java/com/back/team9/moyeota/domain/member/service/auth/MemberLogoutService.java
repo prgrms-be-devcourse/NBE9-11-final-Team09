@@ -7,8 +7,10 @@ import com.back.team9.moyeota.global.jwt.dto.JwtAccessTokenInfo;
 import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.resolver.JwtTokenResolver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberLogoutService {
@@ -19,9 +21,10 @@ public class MemberLogoutService {
 
     public void logout(String authorization) {
         String accessToken = jwtTokenResolver.findToken(authorization)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.TOKEN_INVALID
-                ));
+                .orElseThrow(() -> {
+                    log.warn("로그아웃 실패 - 토큰 없음");
+                    return new BusinessException(ErrorCode.TOKEN_INVALID);
+                });
 
         JwtAccessTokenInfo tokenInfo = jwtTokenProvider
                 .findAccessTokenInfo(accessToken)
@@ -33,5 +36,6 @@ public class MemberLogoutService {
                 tokenInfo.jti(),
                 tokenInfo.remainingExpiration()
         );
+        log.info("로그아웃 완료 (jti={})", tokenInfo.jti());
     }
 }

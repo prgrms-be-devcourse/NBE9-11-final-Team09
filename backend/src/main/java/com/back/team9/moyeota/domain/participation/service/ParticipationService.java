@@ -55,6 +55,9 @@ public class ParticipationService {
     @Transactional
     public ParticipationResponse createParticipation(Long memberId, ParticipationCreateRequest request) {
 
+        log.info("참여 신청 요청 (fundingId={}, memberId={})",
+                request.fundingId(), memberId);
+
         // 펀딩 조회
         Funding funding = fundingRepository.findById(request.fundingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.FUNDING_NOT_FOUND));
@@ -89,6 +92,8 @@ public class ParticipationService {
                         ParticipationPaymentStatus.COMPLETED
                 )
         )) {
+            log.warn("중복 참여 신청 (fundingId={}, memberId={})",
+                    funding.getFundingId(), memberId);
             throw new BusinessException(ErrorCode.DUPLICATE_PARTICIPATION);
         }
 
@@ -102,6 +107,8 @@ public class ParticipationService {
                         )
                 );
         if (currentParticipants >= funding.getMaxParticipants()) {
+            log.warn("정원 초과 참여 시도 (fundingId={}, memberId={})",
+                    funding.getFundingId(), memberId);
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
         Seat outboundSeat = getValidatedSeat(
@@ -140,6 +147,10 @@ public class ParticipationService {
         );
 
         participationRepository.save(participation);
+        log.info("참여 신청 완료 (participationId={}, fundingId={}, memberId={})",
+                participation.getParticipationId(),
+                funding.getFundingId(),
+                memberId);
 
         return ParticipationResponse.from(participation);
     }
@@ -159,11 +170,8 @@ public class ParticipationService {
     private void releaseSeatHoldSafely(Long seatId, Long memberId) {
         boolean released = seatRedisService.releaseSeat(seatId, memberId);
         if (!released) {
-            log.warn(
-                    "좌석 HOLD 해제 실패 (이미 만료/타인 소유 또는 Redis 장애 - TTL로 자동 정리됨) - seatId: {}, memberId: {}",
-                    seatId,
-                    memberId
-            );
+            log.warn("좌석 HOLD 해제 실패 (seatId={}, memberId={})",
+                    seatId, memberId);
         }
     }
 
@@ -202,6 +210,8 @@ public class ParticipationService {
     // ============================== 2. 참여 취소 ==============================
     @Transactional
     public void cancelParticipation(Long memberId, Long participationId) {
+        log.info("참여 취소 요청 (participationId={}, memberId={})",
+                participationId, memberId);
 
         Participation participation = participationRepository
                 .findByParticipationIdAndMember_MemberId(participationId, memberId)
@@ -209,6 +219,8 @@ public class ParticipationService {
                         new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
         if (participation.getStatus() == ParticipationStatus.CANCELED) {
+            log.warn("이미 취소된 참여 (participationId={}, memberId={})",
+                    participationId, memberId);
             throw new BusinessException(ErrorCode.ALREADY_CANCELED_PARTICIPATION);
         }
 
@@ -223,6 +235,8 @@ public class ParticipationService {
             }
 
             participation.cancel();
+            log.info("참여 취소 완료 (participationId={}, memberId={})",
+                    participationId, memberId);
             return;
         }
 
@@ -239,6 +253,8 @@ public class ParticipationService {
                 .atStartOfDay();
 
         if (now.isAfter(cancelDeadline)) {
+            log.warn("취소 기한 초과 (participationId={}, memberId={})",
+                    participationId, memberId);
             throw new BusinessException(ErrorCode.PARTICIPATION_CANCEL_NOT_ALLOWED);
         }
 
@@ -254,6 +270,8 @@ public class ParticipationService {
         }
 
         participation.cancel();
+        log.info("참여 취소 완료 (participationId={}, memberId={})",
+                participationId, memberId);
         participation.getOutboundSeat().release();
 
         if (participation.getReturnSeat() != null) {
@@ -300,6 +318,8 @@ public class ParticipationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void confirmAfterPayment(Long paymentId) {
 
+        log.info("참여 확정 시작 (paymentId={})", paymentId);
+
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
@@ -316,12 +336,21 @@ public class ParticipationService {
         // 가는편 좌석 Redis HOLD 유효성 확인
         Long outboundSeatId = participation.getOutboundSeat().getSeatId();
         if (!seatRedisService.isHeldBy(outboundSeatId, memberId)) {
+            log.warn("좌석 HOLD 만료 (paymentId={}, seatId={}, memberId={})",
+                    paymentId, outboundSeatId, memberId);
             throw new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED);
         }
 
         // 왕복인 경우 오는편 좌석도 확인
         Seat returnSeat = participation.getReturnSeat();
-        if (returnSeat != null && !seatRedisService.isHeldBy(returnSeat.getSeatId(), memberId)) {
+        if (returnSeat != null &&
+                !seatRedisService.isHeldBy(returnSeat.getSeatId(), memberId)) {
+
+            log.warn("오는편 좌석 HOLD 만료 (paymentId={}, seatId={}, memberId={})",
+                    paymentId,
+                    returnSeat.getSeatId(),
+                    memberId);
+
             throw new BusinessException(ErrorCode.SEAT_HOLD_EXPIRED);
         }
 
@@ -334,6 +363,10 @@ public class ParticipationService {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
         participation.confirmPayment();
+
+        log.info("참여 확정 완료 (participationId={}, paymentId={})",
+                participation.getParticipationId(),
+                paymentId);
 
         Funding funding = participation.getFunding();
         long activeCount = participationRepository.countByFunding_FundingIdAndPaymentStatusIn(
@@ -350,6 +383,8 @@ public class ParticipationService {
     // ============================== 5. 결제 실패 시 참여 취소 ==============================
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cancelByPaymentFailure(Long paymentId) {
+
+        log.info("결제 실패로 참여 취소 (paymentId={})", paymentId);
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
@@ -372,11 +407,17 @@ public class ParticipationService {
         if (returnSeat != null) {
             releaseSeatHoldSafely(returnSeat.getSeatId(), memberId);
         }
+        log.info("결제 실패 처리 완료 (participationId={}, paymentId={})",
+                participation.getParticipationId(),
+                paymentId);
     }
 
     // ============================== 6. 잔액 결제 완료 시 COMPLETED 전환 ==============================
     @Transactional
     public void completeBalancePayment(Long participationId) {
+
+        log.info("잔액 결제 완료 처리 시작 (participationId={})",
+                participationId);
 
         Participation participation = participationRepository.findById(participationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPATION_NOT_FOUND));
@@ -387,8 +428,15 @@ public class ParticipationService {
         }
 
         if (participation.getPaymentStatus() != ParticipationPaymentStatus.ACTIVE) {
+
+            log.warn("잔액 결제 불가 상태 (participationId={}, status={})",
+                    participationId,
+                    participation.getPaymentStatus());
+
             throw new BusinessException(ErrorCode.INVALID_PARTICIPATION_STATUS);
         }
         participation.completePayment();
+        log.info("잔액 결제 완료 (participationId={})",
+                participationId);
     }
 }

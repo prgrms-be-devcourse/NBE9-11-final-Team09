@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!-- ===== 경로 설정 ===== -->
     <property name="LOG_DIR" value="logs"/>
-    <property name="APP_LOG" value="${LOG_DIR}/app"/>
-    <property name="ERROR_LOG" value="${LOG_DIR}/error"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
-    <property name="CONSOLE_PATTERN" value="%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{36}) - %msg%n"/>
+    <property name="ERROR_LOG_DIR" value="logs/error"/>
 
-    <!-- ===== Appenders ===== -->
+    <!-- ===== 로그 패턴 설정 ===== -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{0}] [%X{traceId:-NO_TRACE}] - %msg%n"/>
+    <property name="CONSOLE_PATTERN"
+              value="%d{HH:mm:ss.SSS} %highlight([%-5level]) %cyan([%logger{0}]) [%X{traceId:-NO_TRACE}] - %msg%n"/>
 
+    <!-- ===== 콘솔 출력 ===== -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_PATTERN}</pattern>
@@ -16,15 +19,18 @@
         </encoder>
     </appender>
 
-    <!-- INFO 이상 전체 로그 -->
+    <!--
+        전체 로그 파일 (INFO 이상)
+        10MB 초과 시 260801.1.log 로 자동 분할
+    -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${APP_LOG}.log</file>
+        <file>${LOG_DIR}/current.log</file>
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${APP_LOG}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/%d{yyMMdd}.%i.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>30</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
@@ -34,15 +40,15 @@
         </filter>
     </appender>
 
-    <!-- ERROR 전용 로그 -->
+    <!-- ===== ERROR 전용 파일 ===== -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${ERROR_LOG}.log</file>
+        <file>${ERROR_LOG_DIR}/current.log</file>
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${ERROR_LOG}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${ERROR_LOG_DIR}/%d{yyMMdd}.%i.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>500MB</totalSizeCap>
@@ -54,9 +60,24 @@
         </filter>
     </appender>
 
+    <!-- ===== 시스템 로그 필터링 (모든 환경 공통) ===== -->
+
+    <logger name="org.hibernate.SQL" level="OFF"/>
+    <logger name="org.hibernate.orm.jdbc.bind" level="OFF"/>
+    <logger name="org.hibernate.orm.jdbc.extract" level="OFF"/>
+
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.security" level="WARN"/>
+
+    <logger name="org.apache" level="WARN"/>
+
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+
+    <logger name="io.lettuce" level="WARN"/>
+
     <!-- ===== 로컬 환경: 콘솔만 ===== -->
     <springProfile name="local">
-        <root level="INFO">
+        <root level="WARN">
             <appender-ref ref="CONSOLE"/>
         </root>
         <logger name="com.back.team9.moyeota" level="DEBUG" additivity="false">
@@ -66,7 +87,7 @@
 
     <!-- ===== dev/prod 환경: 콘솔 + 파일 ===== -->
     <springProfile name="dev,prod">
-        <root level="INFO">
+        <root level="WARN">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
             <appender-ref ref="ERROR_FILE"/>
@@ -76,9 +97,6 @@
             <appender-ref ref="FILE"/>
             <appender-ref ref="ERROR_FILE"/>
         </logger>
-        <!-- SQL 로그는 파일에 남기지 않음 -->
-        <logger name="org.hibernate.SQL" level="OFF"/>
-        <logger name="org.hibernate.orm.jdbc.bind" level="OFF"/>
     </springProfile>
 
 </configuration>

@@ -8,13 +8,13 @@ import com.back.team9.moyeota.domain.member.dto.auth.MemberLoginResult;
 import com.back.team9.moyeota.domain.member.entity.Member;
 import com.back.team9.moyeota.domain.member.entity.Provider;
 import com.back.team9.moyeota.domain.member.infrastructure.social.KakaoSocialLoginClient;
-import com.back.team9.moyeota.global.error.ErrorCode;
-import com.back.team9.moyeota.global.exception.BusinessException;
 import com.back.team9.moyeota.global.jwt.provider.JwtTokenProvider;
 import com.back.team9.moyeota.global.jwt.dto.JwtTokenResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberSocialLoginService {
@@ -26,6 +26,7 @@ public class MemberSocialLoginService {
     public MemberLoginResult loginWithKakaoAuthorizationCode(
             KakaoAuthorizationCodeLoginRequest request
     ) {
+        log.info("소셜 로그인 요청 (provider={})", Provider.KAKAO);
         KakaoTokenResponse tokenResponse = kakaoSocialLoginClient.getToken(
                 request.code(),
                 request.redirectUri()
@@ -39,6 +40,9 @@ public class MemberSocialLoginService {
                 Provider.KAKAO,
                 userInfo
         );
+
+        log.info("소셜 로그인 성공 (memberId={}, provider={})",
+                member.getMemberId(), Provider.KAKAO);
 
         return createLoginResult(member);
     }
