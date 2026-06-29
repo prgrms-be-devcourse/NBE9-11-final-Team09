@@ -4,6 +4,8 @@ import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
 import com.back.team9.moyeota.domain.funding.entity.TripType;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
+import com.back.team9.moyeota.domain.member.entity.Member;
+import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.participation.dto.MyParticipationResponse;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationCreateRequest;
 import com.back.team9.moyeota.domain.participation.dto.ParticipationListResponse;
@@ -14,11 +16,9 @@ import com.back.team9.moyeota.domain.participation.entity.ParticipationStatus;
 import com.back.team9.moyeota.domain.participation.event.FundingMinReachedEvent;
 import com.back.team9.moyeota.domain.participation.event.ParticipationCancelledEvent;
 import com.back.team9.moyeota.domain.participation.repository.ParticipationRepository;
-import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
-import com.back.team9.moyeota.domain.member.entity.Member;
-import com.back.team9.moyeota.domain.member.repository.MemberRepository;
 import com.back.team9.moyeota.domain.pathinfo.entity.Direction;
 import com.back.team9.moyeota.domain.payment.entity.Payment;
+import com.back.team9.moyeota.domain.payment.repository.PaymentRepository;
 import com.back.team9.moyeota.domain.seat.entity.Seat;
 import com.back.team9.moyeota.domain.seat.entity.SeatStatus;
 import com.back.team9.moyeota.domain.seat.repository.SeatRepository;
@@ -29,11 +29,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-
-
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -165,7 +162,7 @@ public class ParticipationService {
         if (status == FundingStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.FUNDING_CANCELLED);
         }
-        if (status == FundingStatus.COMPLETED || status == FundingStatus.FAILED) {
+        if (status != FundingStatus.RECRUITING && status != FundingStatus.CONFIRMED) {
             throw new BusinessException(ErrorCode.FUNDING_RECRUITMENT_CLOSED);
         }
     }

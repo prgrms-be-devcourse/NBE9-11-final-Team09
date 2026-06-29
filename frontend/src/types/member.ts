@@ -19,7 +19,7 @@ export interface MemberProfile {
   email: string;
   name: string;
   nickname: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   provider: string | null;
   status: string;
   createdAt: string;
@@ -35,7 +35,7 @@ export interface MemberUpdateResponse {
   email: string;
   name: string;
   nickname: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   updatedAt: string;
 }
 

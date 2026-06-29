@@ -36,6 +36,8 @@ export default function FundingDetailPage() {
     const isJoined = Boolean(funding?.isJoined);
     const isCanceled = Boolean(funding?.isCanceled);
     const isRecruiting = funding?.status === "RECRUITING";
+    const canJoinFunding =
+        funding?.status === "RECRUITING" || funding?.status === "CONFIRMED";
     const myParticipationId = funding?.myParticipationId ?? null;
 
     const outboundPathinfo = funding?.pathinfos.find((p) => p.direction === "OUTBOUND");
@@ -244,7 +246,7 @@ export default function FundingDetailPage() {
                             </>
                         )}
 
-                        {!isHost && isRecruiting && (
+                        {!isHost && canJoinFunding && (
                             <>
                                 {!isJoined && (
                                     <button

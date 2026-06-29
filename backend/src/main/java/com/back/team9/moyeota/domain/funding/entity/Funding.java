@@ -95,6 +95,10 @@ public class Funding extends BaseEntity {
         this.status = FundingStatus.CONFIRMED;
     }
 
+    public void closeRecruitment() {
+        this.status = FundingStatus.CLOSED;
+    }
+
     public void fail() {
         this.status = FundingStatus.FAILED;
     }

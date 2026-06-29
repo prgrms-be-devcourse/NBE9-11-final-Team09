@@ -32,6 +32,7 @@ public class FundingTimelineProcessor {
 
     // 펀딩 확정 기준 날짜 (현재 10일)
     private static final int CONFIRMATION_DAYS_BEFORE_DEPARTURE = 10;
+    private static final int RECRUITMENT_CLOSE_HOURS_BEFORE = 24;
     private static final int DEPARTURE_REMINDER_HOURS_BEFORE = 2;
 
     private final FundingRepository fundingRepository;
@@ -90,6 +91,26 @@ public class FundingTimelineProcessor {
         }
     }
 
+    // 가는 노선 출발 24시간 전부터 신규 참여 마감
+    @Transactional
+    public void closeRecruitment(LocalDateTime now) {
+        LocalDateTime deadline =
+                now.plusHours(RECRUITMENT_CLOSE_HOURS_BEFORE);
+
+        List<Pathinfo> pathinfos =
+                pathinfoRepository.findRecruitmentCloseTargets(
+                        PathinfoStatus.PENDING,
+                        Direction.OUTBOUND,
+                        deadline,
+                        FundingStatus.CONFIRMED
+                );
+
+        pathinfos.stream()
+                .map(Pathinfo::getFunding)
+                .distinct()
+                .forEach(Funding::closeRecruitment);
+    }
+
     // 출발 n 시간 전 알림
     public void sendDepartureReminders(LocalDateTime now) {
         LocalDateTime reminderStart =
@@ -103,7 +124,7 @@ public class FundingTimelineProcessor {
                         Direction.OUTBOUND,
                         reminderStart,
                         reminderEnd,
-                        FundingStatus.CONFIRMED
+                        FundingStatus.CLOSED
                 );
         log.info("출발 알림 대상 조회 완료 (count={})",
                 pathinfos.size());
@@ -126,7 +147,7 @@ public class FundingTimelineProcessor {
                 pathinfoRepository.findPathinfosWithFunding(
                         PathinfoStatus.PENDING,
                         now,
-                        FundingStatus.CONFIRMED
+                        FundingStatus.CLOSED
                 );
 
         pathinfos.forEach(Pathinfo::complete);
