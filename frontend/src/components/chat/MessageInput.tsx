@@ -26,7 +26,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     };
 
     return (
-        <div className="flex items-center gap-2 border-t border-[#dbe7dc] bg-white p-4">
+        <div className="flex shrink-0 items-center gap-2 border-t border-[#dbe7dc] bg-white p-4 shadow-[0_-8px_18px_rgba(31,41,55,0.04)]">
             <input
                 type="text"
                 value={input}
@@ -34,13 +34,13 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
                 onKeyDown={handleKeyDown}
                 disabled={disabled}
                 placeholder="주최자에게 문의할 내용을 입력하세요..."
-                className="flex-1 rounded-full border border-[#dbe7dc] px-4 py-2 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-100"
+                className="h-11 flex-1 rounded-full border border-[#dbe7dc] bg-[#f8faf9] px-4 text-sm outline-none transition focus:border-[#4f7a61] focus:bg-white focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-100"
             />
             <button
                 type="button"
                 onClick={handleSend}
                 disabled={disabled || !input.trim()}
-                className="rounded-full bg-[#4f7a61] px-4 py-2 text-sm font-semibold text-white hover:bg-[#426f55] disabled:opacity-50"
+                className="h-11 rounded-full bg-[#4f7a61] px-5 text-sm font-semibold text-white hover:bg-[#426f55] disabled:opacity-50"
             >
                 전송
             </button>
