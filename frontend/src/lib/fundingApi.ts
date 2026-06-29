@@ -1,4 +1,5 @@
 import { getFundingAccessToken } from "@/lib/fundingAuth";
+import { createApiUrl } from "@/lib/api-url";
 import type {
   ApiResponse,
   FundingCreateResponse,
@@ -38,7 +39,7 @@ async function request<T>(path: string, init: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(createApiUrl(path), {
     ...init,
     headers,
   });
@@ -134,7 +135,7 @@ export function getSeatLayout(pathId: number) {
 export async function holdSeat(seatId: number) {
   const token = getFundingAccessToken();
 
-  const response = await fetch(`/api/seats/${seatId}/hold`, {
+  const response = await fetch(createApiUrl(`/api/seats/${seatId}/hold`), {
     method: "POST",
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
