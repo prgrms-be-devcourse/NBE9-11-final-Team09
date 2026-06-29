@@ -52,7 +52,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         ChatRoom room = mock(ChatRoom.class);
@@ -75,7 +74,7 @@ public class ChatMessageServiceTest {
                 .willReturn(savedMessage);
 
         // when
-        Message result = chatMessageService.sendMessage(request);
+        Message result = chatMessageService.sendMessage(request,1L);
 
         // then
         assertThat(result.getMessageId()).isEqualTo(1L);
@@ -93,7 +92,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         given(memberRepository.findById(1L))
@@ -101,7 +99,7 @@ public class ChatMessageServiceTest {
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> chatMessageService.sendMessage(request)
+                () -> chatMessageService.sendMessage(request,1L)
         );
 
         assertThat(exception.getErrorCode())
@@ -117,7 +115,6 @@ public class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest();
 
         ReflectionTestUtils.setField(request, "chatRoomId", 1L);
-        ReflectionTestUtils.setField(request, "senderId", 1L);
         ReflectionTestUtils.setField(request, "message", "안녕하세요");
 
         given(chatRoomService.getRoomById(1L))
@@ -125,7 +122,7 @@ public class ChatMessageServiceTest {
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> chatMessageService.sendMessage(request)
+                () -> chatMessageService.sendMessage(request,1L)
         );
 
         assertThat(exception.getErrorCode())
