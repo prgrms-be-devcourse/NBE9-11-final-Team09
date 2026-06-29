@@ -94,6 +94,9 @@ jobs:
             echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}" >> .env
             echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}" >> .env
             
+            echo "GRAFANA_ADMIN_USER=${{secrets.GRAFANA_ADMIN_USER}}" >> .env
+            echo "GRAFANA_ADMIN_PASSWORD=${{secrets.GRAFANA_ADMIN_PASSWORD}}" >> .env
+            
             echo "REDIS_HOST=redis" >> .env
             
             chmod +x deploy.sh
