@@ -71,6 +71,8 @@ export default function AppHeader() {
         }
       } catch {
         if (!ignore) {
+          clearAccessToken();
+          setHasToken(false);
           setMember(null);
         }
       }
