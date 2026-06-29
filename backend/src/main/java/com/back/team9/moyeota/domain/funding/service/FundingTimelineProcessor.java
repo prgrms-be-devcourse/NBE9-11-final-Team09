@@ -2,6 +2,7 @@ package com.back.team9.moyeota.domain.funding.service;
 
 import com.back.team9.moyeota.domain.funding.entity.Funding;
 import com.back.team9.moyeota.domain.funding.entity.FundingStatus;
+import com.back.team9.moyeota.domain.funding.policy.FundingPricePolicy;
 import com.back.team9.moyeota.domain.funding.repository.FundingRepository;
 import com.back.team9.moyeota.domain.notification.entity.NotificationType;
 import com.back.team9.moyeota.domain.notification.service.NotificationService;
@@ -76,7 +77,12 @@ public class FundingTimelineProcessor {
                     activeParticipantCountMap.getOrDefault(funding.getFundingId(), 0L);
 
             if (activeParticipants >= funding.getMinParticipants()) {
-                funding.confirm();
+                funding.confirm(
+                        FundingPricePolicy.calculateRoundedPrice(
+                                funding.getTotalPrice(),
+                                Math.toIntExact(activeParticipants) + 1
+                        )
+                );
                 sendFundingNotification(funding, NotificationType.FUNDING_CONFIRMED);
                 continue;
             }

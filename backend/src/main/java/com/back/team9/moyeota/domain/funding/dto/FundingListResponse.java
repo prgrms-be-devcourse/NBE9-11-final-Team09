@@ -22,6 +22,7 @@ public record FundingListResponse(
         Integer maxParticipants,
         TripType tripType,
         BigDecimal totalPrice,
+        BigDecimal finalPrice,
         BigDecimal currentPrice,
         BigDecimal minPrice,
         BigDecimal maxPrice
@@ -59,6 +60,7 @@ public record FundingListResponse(
                 funding.getMaxParticipants(),
                 funding.getTripType(),
                 funding.getTotalPrice(),
+                funding.getFinalPrice(),
                 currentPrice,
                 minPrice,
                 maxPrice

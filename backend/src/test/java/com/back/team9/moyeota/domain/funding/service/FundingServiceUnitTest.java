@@ -511,7 +511,7 @@ class FundingServiceUnitTest {
                 Direction.OUTBOUND
         );
         FundingSearchCondition condition =
-                new FundingSearchCondition(null, null, null, null);
+                new FundingSearchCondition(null, null, null, null, null);
         PageRequest pageable = PageRequest.of(0, 10);
 
         given(fundingRepository.findPageByCondition(condition, pageable))

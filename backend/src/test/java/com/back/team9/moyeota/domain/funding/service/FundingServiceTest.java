@@ -804,6 +804,7 @@ class FundingServiceTest {
                                 List.of(FundingStatus.CANCELLED),
                                 null,
                                 null,
+                                null,
                                 null
                         ),
                         PageRequest.of(0, 10)
@@ -847,7 +848,43 @@ class FundingServiceTest {
                                 List.of(FundingStatus.RECRUITING),
                                 LocalDate.of(2027, 6, 21),
                                 Region.SEOUL,
-                                Region.INCHEON
+                                Region.INCHEON,
+                                null
+                        ),
+                        PageRequest.of(0, 10)
+                );
+
+        // Then
+        assertThat(result.content())
+                .extracting(FundingListResponse::fundingId)
+                .containsExactly(expected.fundingId());
+    }
+
+    @Test
+    @DisplayName("펀딩 목록 - 편도/왕복 필터 동작")
+    void getFundingList_filtersByTripType() {
+        // Given
+        Member member = saveMember();
+        FundingCreateResponse expected =
+                fundingService.createFunding(
+                        member.getMemberId(),
+                        oneWayCreateRequest()
+                );
+
+        fundingService.createFunding(
+                member.getMemberId(),
+                roundCreateRequest()
+        );
+
+        // When
+        PageResponse<FundingListResponse> result =
+                fundingService.getFundingList(
+                        new FundingSearchCondition(
+                                List.of(FundingStatus.RECRUITING),
+                                null,
+                                null,
+                                null,
+                                TripType.ONE_WAY
                         ),
                         PageRequest.of(0, 10)
                 );
@@ -1178,7 +1215,7 @@ class FundingServiceTest {
     }
 
     private FundingSearchCondition emptyCondition() {
-        return new FundingSearchCondition(null, null, null, null);
+        return new FundingSearchCondition(null, null, null, null, null);
     }
 
     private Funding findFunding(Long fundingId) {

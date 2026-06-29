@@ -570,6 +570,7 @@ class FundingControllerTest {
                                 TripType.ONE_WAY,
                                 BigDecimal.valueOf(500000),
                                 null,
+                                null,
                                 BigDecimal.valueOf(11200),
                                 BigDecimal.valueOf(25000)
                         )
