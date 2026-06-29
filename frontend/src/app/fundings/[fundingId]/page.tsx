@@ -228,7 +228,7 @@ export default function FundingDetailPage() {
                     <section className="rounded-xl border border-[#dbe7dc] bg-white p-6 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
                         <div className="grid gap-6">
                             <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                                <span className="rounded-full bg-[#eef5ea] px-2.5 py-1 text-[#426f55]">{statusLabels[funding.status]}</span>
+                                <span className={`rounded-full px-2.5 py-1 ${getDetailStatusBadgeClass(funding.status)}`}>{statusLabels[funding.status]}</span>
                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{busTypeLabels[funding.busType]}</span>
                                 <span className="rounded-full bg-[#e8eef7] px-2.5 py-1 text-[#3f6695]">{tripTypeLabels[funding.tripType]}</span>
                                 {isHost && <span className="rounded-full bg-[#4f7a61] px-2.5 py-1 text-white">방장</span>}
@@ -477,6 +477,30 @@ function roundUpToHundred(value: number) {
 
 function isFixedPriceStatus(status: FundingDetail["status"]) {
     return status === "CONFIRMED" || status === "CLOSED" || status === "COMPLETED";
+}
+
+function getDetailStatusBadgeClass(status: FundingDetail["status"]) {
+    if (status === "RECRUITING") {
+        return "bg-emerald-100 text-emerald-700";
+    }
+
+    if (status === "CONFIRMED") {
+        return "bg-sky-100 text-sky-700";
+    }
+
+    if (status === "CLOSED") {
+        return "bg-amber-100 text-amber-700";
+    }
+
+    if (status === "COMPLETED") {
+        return "bg-violet-100 text-violet-700";
+    }
+
+    if (status === "CANCELLED" || status === "FAILED") {
+        return "bg-rose-100 text-rose-700";
+    }
+
+    return "bg-slate-100 text-slate-700";
 }
 
 function RouteLine({ title, pathinfo }: { title: string; pathinfo: Pathinfo }) {

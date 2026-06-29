@@ -695,19 +695,23 @@ function getFundingAccent(): FundingAccent {
 
 function getStatusBadgeClass(status: FundingStatus) {
   if (status === "RECRUITING") {
-    return "bg-[#e8f1e7] text-[#426f55]";
+    return "bg-emerald-100 text-emerald-700";
   }
 
   if (status === "CONFIRMED") {
-    return "bg-[#edf4e9] text-[#4f7a61]";
+    return "bg-sky-100 text-sky-700";
   }
 
   if (status === "CLOSED") {
-    return "bg-[#eef0ef] text-[#5f6d68]";
+    return "bg-amber-100 text-amber-700";
+  }
+
+  if (status === "COMPLETED") {
+    return "bg-violet-100 text-violet-700";
   }
 
   if (status === "CANCELLED" || status === "FAILED") {
-    return "bg-[#f8eeee] text-[#9a4a4a]";
+    return "bg-rose-100 text-rose-700";
   }
 
   return "bg-[#eef0ef] text-[#5f6d68]";
