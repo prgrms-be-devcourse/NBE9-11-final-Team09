@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSettlement, type SettlementResponse } from "@/lib/payment-api";
 import { formatMoney } from "@/lib/fundingFormat";
+import { parseBackendKstDateTime } from "@/lib/dateTime";
 
 const STATUS_LABEL: Record<SettlementResponse["status"], string> = {
   CALCULATED: "정산 대기",
@@ -34,7 +35,7 @@ function formatKoreanDateTime(value: string | null) {
     return "-";
   }
 
-  const date = new Date(value);
+  const date = parseBackendKstDateTime(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;
