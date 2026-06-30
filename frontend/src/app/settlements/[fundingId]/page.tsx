@@ -19,6 +19,16 @@ const STATUS_COLOR: Record<SettlementResponse["status"], string> = {
   COMPLETED: "bg-green-100 text-green-700",
 };
 
+const koreanDateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Seoul",
+});
+
 function formatKoreanDateTime(value: string | null) {
   if (!value) {
     return "-";
@@ -30,15 +40,7 @@ function formatKoreanDateTime(value: string | null) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Seoul",
-  }).format(date);
+  return koreanDateTimeFormatter.format(date);
 }
 
 export default function SettlementPage() {
