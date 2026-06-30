@@ -19,6 +19,28 @@ const STATUS_COLOR: Record<SettlementResponse["status"], string> = {
   COMPLETED: "bg-green-100 text-green-700",
 };
 
+function formatKoreanDateTime(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Seoul",
+  }).format(date);
+}
+
 export default function SettlementPage() {
   const params = useParams<{ fundingId: string }>();
   const router = useRouter();
@@ -77,13 +99,11 @@ export default function SettlementPage() {
     },
     {
       label: "지급 완료 일시",
-      value: settlement.paybackPaidAt
-        ? new Date(settlement.paybackPaidAt).toLocaleString("ko-KR")
-        : "-",
+      value: formatKoreanDateTime(settlement.paybackPaidAt),
     },
     {
       label: "정산 생성일",
-      value: new Date(settlement.createdAt).toLocaleString("ko-KR"),
+      value: formatKoreanDateTime(settlement.createdAt),
     },
   ];
 

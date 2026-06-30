@@ -76,6 +76,8 @@ export default function FundingDetailPage() {
     useEffect(() => {
         let ignore = false;
 
+        window.scrollTo({ top: 0, left: 0 });
+
         async function load() {
             setLoading(true);
             setError("");

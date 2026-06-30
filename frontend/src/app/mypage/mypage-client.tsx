@@ -79,6 +79,7 @@ function formatDate(value: string, includeTime = false) {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "Asia/Seoul",
     ...(includeTime
       ? { hour: "2-digit", minute: "2-digit", hour12: false }
       : {}),

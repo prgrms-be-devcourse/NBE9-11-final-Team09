@@ -13,6 +13,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
+        timeZone: "Asia/Seoul",
     });
 
     // 말풍선 색상/스타일
