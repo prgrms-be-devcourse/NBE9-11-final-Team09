@@ -825,14 +825,22 @@ function formatKoreanShortDate(date: Date) {
     month: "short",
     day: "numeric",
     weekday: "short",
+    timeZone: "Asia/Seoul",
   }).format(date);
 
   return dateLabel;
 }
 
 function formatKoreanMeridiemTime(date: Date) {
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Seoul",
+  }).formatToParts(date);
+  const rawHours = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const hours = rawHours % 24;
+  const minutes = parts.find((part) => part.type === "minute")?.value ?? "00";
   const meridiem = hours < 12 ? "오전" : "오후";
   const displayHours = hours === 0 ? 0 : hours > 12 ? hours - 12 : hours;
   const hourLabel = String(displayHours).padStart(2, "0");

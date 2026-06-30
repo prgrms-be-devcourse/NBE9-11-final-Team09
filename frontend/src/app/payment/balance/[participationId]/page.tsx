@@ -311,7 +311,7 @@ export default function BalancePaymentPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">잔금 결제 금액</span>
                   <span className="text-xl font-bold text-slate-950">
-                    {formatMoney(context.amount)}원
+                    {formatMoney(context.amount)}
                   </span>
                 </div>
               </div>
