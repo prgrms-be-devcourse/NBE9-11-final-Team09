@@ -91,7 +91,7 @@
 ![Gmail](https://img.shields.io/badge/Gmail_SMTP-EA4335?style=flat-square&logo=gmail&logoColor=white)
 
 **Testing**
-![k6](https://img.shields.io/badge/k6-7D64FFgoColor=white)
+![k6](https://img.shields.io/badge/k6-7D64FF?style=flat-square&logo=k6&logoColor=white)
 
 ---
 
