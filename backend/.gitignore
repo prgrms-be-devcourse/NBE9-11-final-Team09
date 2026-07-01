@@ -1,0 +1,47 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+src/main/generated/
+
+# macOS
+.DS_Store
+
+# Dev tools (local only, share manually)
+src/main/resources/static/paytest.html
+
+# Spring Boot
+application-local.properties
+application-local.yml
+application-local.yaml
+application-secret.properties
+application-secret.yml
+
+# Secrets / credentials
+*.env
+.env
+*.pem
+*.key
+
+# Compiled
+*.class
+
+*.mv.db
+*.trace.db
+db_dev.mv.db
+
+application-secret.yml
+application-secret.yaml
+
+.env
+
+*.sql
+
+# k6 local test scripts
+k6/

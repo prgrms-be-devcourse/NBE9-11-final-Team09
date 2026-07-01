@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      platform: dev
+      continue-on-error: true
+      mode: always
+
+springdoc:
+  api-docs:
+    enabled: true
+  default-produces-media-type: application/json; charset=UTF-8
+
+app:
+  cookie:
+    secure: true
+  cors:
+    allowed-origins:
+      - "http://localhost:3000"
+      - "https://www.moyeota.site"

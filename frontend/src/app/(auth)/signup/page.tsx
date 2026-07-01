@@ -1,0 +1,443 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import PasswordField from "@/components/ui/PasswordField";
+import { createApiUrl } from "@/lib/api-url";
+
+const EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+const PHONE_REGEX = /^010\d{8}$/;
+
+function formatPhoneNumber(phoneNumber: string) {
+  const numbers = phoneNumber.replace(/\D/g, "");
+
+  if (numbers.length !== 11) {
+    return numbers;
+  }
+
+  return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+}
+
+async function readErrorMessage(response: Response, fallback: string) {
+  try {
+    const errorData = await response.json();
+    return errorData.message ?? errorData.msg ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export default function SignupPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [agreed, setAgreed] = useState(false);
+
+  const [signupRequested, setSignupRequested] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [stepError, setStepError] = useState("");
+  const [stepSuccess, setStepSuccess] = useState("");
+
+  const emailValid = EMAIL_REGEX.test(email.trim());
+  const passwordValid = PASSWORD_REGEX.test(password);
+  const passwordsMatch = password === passwordConfirm;
+  const phoneValid = PHONE_REGEX.test(phoneNumber);
+
+  const canSaveSignup =
+    emailValid &&
+    passwordValid &&
+    !!passwordConfirm &&
+    passwordsMatch &&
+    !!name.trim() &&
+    !!nickname.trim() &&
+    phoneValid &&
+    agreed;
+
+  function clearMessage() {
+    setStepError("");
+    setStepSuccess("");
+  }
+
+  function editSignupInformation() {
+    setSignupRequested(false);
+    setEmailSent(false);
+    setVerificationCode("");
+    clearMessage();
+  }
+
+  async function handleSignupRequest() {
+    clearMessage();
+
+    if (!canSaveSignup) {
+      setStepError("회원정보를 올바르게 입력하고 개인정보 수집에 동의해주세요.");
+      return;
+    }
+
+    setSignupLoading(true);
+    try {
+      const response = await fetch(createApiUrl("/api/members/signup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          name: name.trim(),
+          nickname: nickname.trim(),
+          phoneNumber: formatPhoneNumber(phoneNumber),
+        }),
+      });
+
+      if (!response.ok) {
+        setStepError(
+          await readErrorMessage(
+            response,
+            "회원가입 정보를 저장하지 못했습니다.",
+          ),
+        );
+        return;
+      }
+
+      setSignupRequested(true);
+      setStepSuccess(
+        "회원가입 정보가 저장되었습니다. 인증 메일을 요청해주세요.",
+      );
+    } catch {
+      setStepError("서버와 연결할 수 없습니다.");
+    } finally {
+      setSignupLoading(false);
+    }
+  }
+
+  async function handleRequestVerification() {
+    clearMessage();
+
+    if (!signupRequested) {
+      setStepError("회원가입 정보를 먼저 저장해주세요.");
+      return;
+    }
+
+    setRequestLoading(true);
+    try {
+      const response = await fetch(
+        createApiUrl("/api/members/email-verification/request"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        },
+      );
+
+      if (!response.ok) {
+        setStepError(
+          await readErrorMessage(response, "인증 메일을 발송하지 못했습니다."),
+        );
+        return;
+      }
+
+      setEmailSent(true);
+      setVerificationCode("");
+      setStepSuccess("인증 코드가 발송되었습니다. 이메일을 확인해주세요.");
+    } catch {
+      setStepError("서버와 연결할 수 없습니다.");
+    } finally {
+      setRequestLoading(false);
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    clearMessage();
+
+    if (!emailSent) {
+      setStepError("이메일 인증을 먼저 요청해주세요.");
+      return;
+    }
+
+    if (!verificationCode.trim()) {
+      setStepError("인증 코드를 입력해주세요.");
+      return;
+    }
+
+    setSubmitLoading(true);
+    try {
+      const response = await fetch(
+        createApiUrl("/api/members/email-verification/confirm"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim(),
+            verificationCode: verificationCode.trim(),
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        setStepError(
+          await readErrorMessage(response, "이메일 인증에 실패했습니다."),
+        );
+        return;
+      }
+
+      router.push("/login");
+    } catch {
+      setStepError("서버와 연결할 수 없습니다.");
+    } finally {
+      setSubmitLoading(false);
+    }
+  }
+
+  const fieldsDisabled = signupRequested || signupLoading;
+
+  return (
+    <main className="min-h-screen bg-[#f3f7f1] px-5 py-10">
+      <section className="mx-auto w-full max-w-2xl rounded-xl border border-[#dbe7dc] bg-white p-7 shadow-[0_10px_28px_rgba(31,41,55,0.06)]">
+        <h1 className="text-3xl font-bold text-slate-950">회원가입</h1>
+        <p className="mt-2 mb-8 text-sm font-medium text-slate-500">
+          회원정보 저장 후 이메일 인증을 진행해주세요.
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-sm font-bold text-slate-800">이메일</label>
+              {signupRequested && (
+                <button
+                  type="button"
+                  onClick={editSignupInformation}
+                  disabled={requestLoading || submitLoading}
+                  className="text-xs font-bold text-slate-500 underline disabled:opacity-40"
+                >
+                  정보 수정
+                </button>
+              )}
+            </div>
+            <input
+              type="email"
+              placeholder="example@email.com"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                clearMessage();
+              }}
+              disabled={fieldsDisabled}
+              className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
+            />
+            {email && !emailValid && (
+              <p className="mt-1 text-xs text-red-500">
+                올바른 이메일 형식으로 입력해주세요.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-bold text-slate-800">이름</label>
+            <input
+              type="text"
+              placeholder="이름 입력"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                clearMessage();
+              }}
+              disabled={fieldsDisabled}
+              className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <PasswordField
+                label="비밀번호"
+                placeholder="비밀번호 입력"
+                value={password}
+                visible={showPassword}
+                disabled={fieldsDisabled}
+                onChange={(value) => {
+                  setPassword(value);
+                  clearMessage();
+                }}
+                onToggleVisible={() => setShowPassword((current) => !current)}
+              />
+              {password && !passwordValid && (
+                <p className="mt-1 text-xs text-red-500">
+                  영문, 숫자, 특수문자 포함 8자 이상
+                </p>
+              )}
+            </div>
+            <div>
+              <PasswordField
+                label="비밀번호 확인"
+                placeholder="비밀번호 재입력"
+                value={passwordConfirm}
+                visible={showPasswordConfirm}
+                disabled={fieldsDisabled}
+                onChange={(value) => {
+                  setPasswordConfirm(value);
+                  clearMessage();
+                }}
+                onToggleVisible={() =>
+                  setShowPasswordConfirm((current) => !current)
+                }
+              />
+              {passwordConfirm && !passwordsMatch && (
+                <p className="mt-1 text-xs text-red-500">
+                  비밀번호가 일치하지 않습니다.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-800">닉네임</label>
+              <input
+                type="text"
+                placeholder="닉네임 입력"
+                value={nickname}
+                onChange={(event) => {
+                  setNickname(event.target.value);
+                  clearMessage();
+                }}
+                disabled={fieldsDisabled}
+                className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-800">연락처</label>
+              <input
+                type="tel"
+                placeholder="01012345678"
+                value={phoneNumber}
+                onChange={(event) => {
+                  setPhoneNumber(
+                    event.target.value.replace(/\D/g, "").slice(0, 11),
+                  );
+                  clearMessage();
+                }}
+                inputMode="numeric"
+                maxLength={11}
+                disabled={fieldsDisabled}
+                className="w-full rounded-lg border border-[#dbe7dc] px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-50 disabled:text-slate-500"
+              />
+              {phoneNumber && !phoneValid && (
+                <p className="mt-1 text-xs text-red-500">
+                  하이픈 없이 01012345678 형식으로 입력해주세요.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-[#dbe7dc] bg-[#f8faf9] p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(event) => {
+                  setAgreed(event.target.checked);
+                  clearMessage();
+                }}
+                disabled={fieldsDisabled}
+                className="mt-0.5 shrink-0 accent-[#4f7a61]"
+              />
+              <span className="text-sm leading-relaxed text-slate-700">
+                개인정보 수집 및 이용에 동의합니다.
+                <br />
+                수집 항목: 이메일, 닉네임, 연락처
+                <br />
+                이용 목적: 회원 식별, 결제 안내, 긴급 공지, 출발 안내
+              </span>
+            </label>
+          </div>
+
+          {!signupRequested && (
+            <button
+              type="button"
+              onClick={handleSignupRequest}
+              disabled={!canSaveSignup || signupLoading}
+              className="w-full rounded-lg bg-[#4f7a61] py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              {signupLoading ? "저장 중..." : "회원가입 정보 저장"}
+            </button>
+          )}
+
+          {signupRequested && (
+            <section className="rounded-xl border border-[#dbe7dc] bg-[#f8faf9] p-5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-sm font-bold">이메일 인증</p>
+                  <p className="mt-1 text-xs text-slate-500">{email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRequestVerification}
+                  disabled={requestLoading || submitLoading}
+                  className="rounded-lg border border-[#4f7a61] bg-white px-5 py-3 text-sm font-bold text-[#426f55] transition hover:bg-[#eef5ea] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {requestLoading
+                    ? "요청 중..."
+                    : emailSent
+                      ? "인증 코드 재전송"
+                      : "인증 메일 요청"}
+                </button>
+              </div>
+
+              <label className="mt-5 block">
+                <span className="mb-2 block text-sm font-bold">
+                  이메일 인증 코드
+                </span>
+                <input
+                  type="text"
+                  placeholder="인증 코드 입력"
+                  value={verificationCode}
+                  onChange={(event) => {
+                    setVerificationCode(event.target.value);
+                    clearMessage();
+                  }}
+                  disabled={!emailSent || submitLoading}
+                  maxLength={6}
+                  className="w-full rounded-lg border border-[#dbe7dc] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4f7a61] focus:ring-3 focus:ring-[#4f7a61]/10 disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </label>
+            </section>
+          )}
+
+          {stepError && <p className="text-sm text-red-500">{stepError}</p>}
+          {stepSuccess && (
+            <p className="text-sm text-green-600">{stepSuccess}</p>
+          )}
+
+          {emailSent && (
+            <button
+              type="submit"
+              disabled={!verificationCode.trim() || submitLoading}
+              className="w-full rounded-lg bg-[#4f7a61] py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#426f55] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {submitLoading ? "인증 중..." : "인증 완료 및 회원가입"}
+            </button>
+          )}
+        </form>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          이미 계정이 있나요?{" "}
+          <Link href="/login" className="font-bold text-[#426f55] underline">
+            로그인
+          </Link>
+        </p>
+      </section>
+    </main>
+  );
+}
