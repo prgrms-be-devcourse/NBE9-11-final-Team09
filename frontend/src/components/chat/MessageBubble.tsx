@@ -1,5 +1,5 @@
 import { ChatMessageResponse } from "@/types/chat";
-import { parseBackendUtcDateTime } from "@/lib/dateTime";
+import { parseBackendKstDateTime } from "@/lib/dateTime";
 
 interface MessageBubbleProps {
     message: ChatMessageResponse;
@@ -10,7 +10,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     const isHost = host;
 
     // 시간 포맷 (예: "오후 4:02")
-    const formattedTime = parseBackendUtcDateTime(createdAt).toLocaleTimeString("ko-KR", {
+    const formattedTime = parseBackendKstDateTime(createdAt).toLocaleTimeString("ko-KR", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
@@ -32,7 +32,6 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                     {content}
                 </div>
                 <span
-                    suppressHydrationWarning
                     className={`mt-1 text-xs text-slate-400 ${
                         isHost ? "text-left ml-1" : "text-right mr-1"
                     }`}

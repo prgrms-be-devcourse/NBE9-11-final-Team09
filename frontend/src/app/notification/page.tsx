@@ -5,7 +5,7 @@ import { getNotifications } from "@/lib/notificationApi";
 import { Notification } from "@/types/notification";
 import DOMPurify from "isomorphic-dompurify";
 import { Bell, ChevronDown, MailOpen } from "lucide-react";
-import { parseBackendUtcDateTime } from "@/lib/dateTime";
+import { parseBackendKstDateTime } from "@/lib/dateTime";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -188,7 +188,7 @@ function formatNotificationDate(value: string) {
     return "-";
   }
 
-  const date = parseBackendUtcDateTime(value);
+  const date = parseBackendKstDateTime(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;

@@ -1,7 +1,7 @@
 "use client";
 
 import { cancelParticipation } from "@/lib/fundingApi";
-import { parseBackendUtcDateTime } from "@/lib/dateTime";
+import { parseBackendKstDateTime } from "@/lib/dateTime";
 
 import {
   AuthenticationRequiredError,
@@ -71,10 +71,7 @@ function emptyPage<T>(): PageResponse<T> {
 function formatDate(value: string, includeTime = false) {
   if (!value) return "-";
 
-  const normalized = value.includes("T") ? value : `${value}T00:00:00`;
-  const date = includeTime
-    ? parseBackendUtcDateTime(normalized)
-    : new Date(normalized);
+  const date = parseBackendKstDateTime(value);
 
   if (Number.isNaN(date.getTime())) return value;
 
