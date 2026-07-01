@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -605,19 +606,20 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("참여 ID 환불 - BALANCE 타입 결제는 환불 없이 스킵")
-    void refundByParticipationId_잔액결제_스킵() {
+    @DisplayName("참여 ID 환불 - BALANCE 타입 결제도 환불 처리")
+    void refundByParticipationId_잔액결제_환불처리() {
         Payment balancePayment = Payment.builder()
                 .paymentId(1L).participation(mock(Participation.class)).paymentType(PaymentType.BALANCE)
                 .amount(new BigDecimal("450000")).tossPaymentKey("test_paymentKey")
                 .orderId("test_orderId").status(PaymentStatus.PAID).build();
 
         given(paymentRepository.findByParticipation_ParticipationId(1L)).willReturn(List.of(balancePayment));
+        doNothing().when(tossPaymentClient).cancel(anyString(), anyString());
 
         paymentService.refundByParticipationId(1L);
 
-        verify(tossPaymentClient, never()).cancel(anyString(), anyString());
-        verify(paymentWriter, never()).save(any());
+        verify(tossPaymentClient).cancel(anyString(), anyString());
+        verify(paymentWriter, times(2)).save(any());
     }
 
     @Test

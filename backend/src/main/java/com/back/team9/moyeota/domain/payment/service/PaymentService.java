@@ -208,11 +208,12 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
 
+        // TODO: 사용자 자진 취소와 관리자/방장에 의한 강제 취소가 동일 로직을 공유함.
+        // 사용자 취소 정책: 출발 -7일 이전까지 취소 가능, -10일 이전에는 보증금 환불 O, -10일~-7일은 환불 없이 취소만 가능.
+        // -10일 이전(환불 가능 시점)에는 펀딩이 CONFIRMED 전이라 BALANCE 납부 불가 → 현재는 문제없음.
+        // 추후 두 경로를 분리하여 각각의 환불 정책을 독립적으로 적용할 필요 있음.
         for (Payment payment : payments) {
             if (payment.getStatus() != PaymentStatus.PAID) {
-                continue;
-            }
-            if (payment.getPaymentType() != PaymentType.DEPOSIT) {
                 continue;
             }
             payment.startRefund();

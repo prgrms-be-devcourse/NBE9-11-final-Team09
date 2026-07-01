@@ -117,24 +117,17 @@ class PaymentIntegrationTest {
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.PAID);
     }
 
-    // ===== 케이스 6: 잔액 결제 환불 없음 — DEPOSIT만 환불, BALANCE 스킵 =====
+    // ===== 케이스 6: DEPOSIT + BALANCE 모두 환불 =====
 
     @Test
-    void refundByParticipationId_DEPOSIT만환불_BALANCE스킵() {
+    void refundByParticipationId_DEPOSIT과BALANCE_모두환불() {
         Participation participation = givenParticipationWithDepositAndBalance();
         doNothing().when(tossPaymentClient).cancel(anyString(), anyString());
 
         paymentService.refundByParticipationId(participation.getParticipationId());
 
         paymentRepository.findByParticipation_ParticipationId(participation.getParticipationId())
-                .forEach(p -> {
-                    if (p.getPaymentType() == PaymentType.DEPOSIT) {
-                        assertThat(p.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
-                    } else {
-                        // BALANCE는 환불하지 않음
-                        assertThat(p.getStatus()).isEqualTo(PaymentStatus.PAID);
-                    }
-                });
+                .forEach(p -> assertThat(p.getStatus()).isEqualTo(PaymentStatus.REFUNDED));
     }
 
     // ===== 케이스 5/7: 참여 취소 이벤트 → @Async 리스너 → 환불 완료 (Awaitility) =====
