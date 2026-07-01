@@ -219,4 +219,4 @@ frontend/
 - 좌석 상태(`Seat.status`)는 DB에는 `AVAILABLE / BOOKED`만 존재하며, `HOLD` 상태는 동시성 제어를 위해 Redis에서만 관리됩니다.
 - `Funding.totalPrice`는 버스 대절비에 플랫폼 수수료(10%)가 포함된 금액이며, 1인당 금액은 `totalPrice ÷ 실제 참여 인원` (100원 단위 올림)으로 서버에서 계산됩니다.
 
-*(ERD 상세 다이어그램은 Notion 문서 참고)*
+- https://www.erdcloud.com/d/YrbMpbuYmkLkYrEiE
