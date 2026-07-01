@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="core-erd-flow" name="Core ERD Flow">
+    <mxGraphModel dx="1689" dy="932" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="canvas" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=2;arcSize=4;" value="" vertex="1">
+          <mxGeometry height="560" width="1180" x="40" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="member" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#075985;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="Member&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;사용자&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="180" x="110" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="funding" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#92400E;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="Funding&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;모집&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="190" x="470" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="settlement" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#166534;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="Settlement&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;정산&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="210" x="850" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="notification" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#DB2777;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#9D174D;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="Notification&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;알림&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="210" x="850" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="chatroom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#5B21B6;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="ChatRoom&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;채팅방&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="190" x="470" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="message" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=3;fontSize=22;fontStyle=1;fontColor=#991B1B;align=center;verticalAlign=middle;arcSize=16;shadow=1;" value="Message&lt;br&gt;&lt;font style=&quot;font-size:14px;font-weight:400;color:#64748B&quot;&gt;메시지&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="210" x="850" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-member-funding" edge="1" parent="1" source="member" style="endArrow=block;html=1;rounded=0;strokeWidth=4;strokeColor=#111827;" target="funding" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-member-funding" connectable="0" parent="edge-member-funding" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#111827;labelBackgroundColor=#FFFFFF;" value="creates" vertex="1">
+          <mxGeometry relative="1" x="-0.05" y="-1" as="geometry">
+            <mxPoint y="-18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-funding-settlement" edge="1" parent="1" source="funding" style="endArrow=block;html=1;rounded=0;strokeWidth=4;strokeColor=#16A34A;" target="settlement" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-funding-settlement" connectable="0" parent="edge-funding-settlement" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#166534;labelBackgroundColor=#FFFFFF;" value="completed" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint y="-18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-funding-notification" edge="1" parent="1" source="funding" style="endArrow=block;html=1;rounded=0;strokeWidth=4;strokeColor=#DB2777;" target="notification" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-funding-notification" connectable="0" parent="edge-funding-notification" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#9D174D;labelBackgroundColor=#FFFFFF;" value="triggers" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint y="18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-funding-chatroom" edge="1" parent="1" source="funding" style="endArrow=block;html=1;rounded=0;strokeWidth=4;strokeColor=#7C3AED;" target="chatroom" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-funding-chatroom" connectable="0" parent="edge-funding-chatroom" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#5B21B6;labelBackgroundColor=#FFFFFF;" value="opens" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint x="-25" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-chatroom-message" edge="1" parent="1" source="chatroom" style="endArrow=block;html=1;rounded=0;strokeWidth=4;strokeColor=#DC2626;" target="message" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-chatroom-message" connectable="0" parent="edge-chatroom-message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#991B1B;labelBackgroundColor=#FFFFFF;" value="contains" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint y="-18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-member-notification" edge="1" parent="1" source="member" style="endArrow=block;html=1;rounded=0;strokeWidth=3;strokeColor=#DB2777;dashed=1;dashPattern=8 6;" target="notification" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="220" />
+              <mxPoint x="955" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-member-notification" connectable="0" parent="edge-member-notification" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#9D174D;labelBackgroundColor=#FFFFFF;" value="receives" vertex="1">
+          <mxGeometry relative="1" x="-0.25" y="-1" as="geometry">
+            <mxPoint y="-18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-member-message" edge="1" parent="1" source="member" style="endArrow=block;html=1;rounded=0;strokeWidth=3;strokeColor=#DC2626;dashed=1;dashPattern=8 6;" target="message" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="650" />
+              <mxPoint x="955" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-member-message" connectable="0" parent="edge-member-message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=15;fontStyle=1;fontColor=#991B1B;labelBackgroundColor=#FFFFFF;" value="writes" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="-1" as="geometry">
+            <mxPoint y="18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
